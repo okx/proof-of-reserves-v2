@@ -1,6 +1,6 @@
 use plonky2::{
     hash::{
-        hash_types::HashOutTarget,
+        hash_types::{HashOutTarget, NUM_HASH_OUT_ELTS},
         poseidon::PoseidonHash,
     },
     iop::target::Target,
@@ -43,7 +43,32 @@ impl MerkleSumNodeTarget {
             hash
         }
     }
+
+    pub fn registered_as_public_inputs(&self, builder: &mut CircuitBuilder<F, D>) {
+        builder.register_public_input(self.amount_equity);
+        builder.register_public_input(self.amount_debt);
+        builder.register_public_inputs(self.hash.elements.as_slice());
+    }
 }
+
+impl From<Vec<Target>> for MerkleSumNodeTarget {
+    /// the parsing order must be consistent with the order of public input registration in `registered_as_public_inputs`
+	fn from(inputs: Vec<Target>) -> MerkleSumNodeTarget {
+		let mut iter = inputs.into_iter();
+		let equity_target = iter.next().unwrap();
+		let debt_target = iter.next().unwrap();
+		let hash_target = HashOutTarget::from_vec(
+			iter.by_ref().take(NUM_HASH_OUT_ELTS).collect(),
+		);
+
+		MerkleSumNodeTarget {
+			amount_equity: equity_target,
+			amount_debt: debt_target,
+			hash: hash_target,
+		}
+	}
+}
+
 
 
 /// We can represent the Merkle Sum Tree as a vector of merkle sum nodes, with the root being the last node in the vector.    
