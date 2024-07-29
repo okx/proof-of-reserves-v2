@@ -9,15 +9,17 @@ use plonky2::{
 
 use crate::types::{F,D};
 
+use super::{account_circuit::AccountSumTargets, circuit_utils::assert_non_negative_unsigned};
+
 /// A node in the merkle sum tree, contains the total amount of equity (in usd) and the total amount of debt (in usd) and the hash.
 /// 
 /// The hash is Hash(hash_left, hash_right).
 /// 
 /// The amount of equity and amount of debt is the sum of the equity and debt of the children.
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone,)]
 pub struct MerkleSumNodeTarget{
-    pub amount_equity: Target,
-    pub amount_debt: Target,
+    pub sum_assets: Target,
+    pub sum_debt: Target,
     pub hash: HashOutTarget
 }
 
@@ -28,8 +30,12 @@ impl MerkleSumNodeTarget {
         left_node: &MerkleSumNodeTarget,
         right_node: &MerkleSumNodeTarget,
     )->MerkleSumNodeTarget{
-        let amount_equity = builder.add(left_node.amount_equity, right_node.amount_equity);
-        let amount_debt = builder.add(left_node.amount_debt, right_node.amount_debt);
+        let sum_assets = builder.add(left_node.sum_assets, right_node.sum_assets);
+        let sum_debt = builder.add(left_node.sum_debt, right_node.sum_debt);
+
+        // Ensure the amount of assets at this node is greater than the total amount of debt
+        let diff_between_asset_debt = builder.sub(sum_assets, sum_debt);
+        assert_non_negative_unsigned(builder, diff_between_asset_debt);
 
         let hash_inputs = vec![
             left_node.hash.elements.to_vec(),
@@ -38,8 +44,26 @@ impl MerkleSumNodeTarget {
 
         let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs);
         MerkleSumNodeTarget{
-            amount_equity,
-            amount_debt,
+            sum_assets,
+            sum_debt,
+            hash
+        }
+    }
+
+    /// Get a merkle sum node from account sum targets.
+    pub fn get_node_from_account_targets(
+        builder: &mut CircuitBuilder<F, D>,
+        account_targets: &AccountSumTargets
+    )-> MerkleSumNodeTarget{
+        let hash_inputs = vec![
+            account_targets.sum_assets,
+            account_targets.sum_debt
+        ];
+
+        let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs);
+        MerkleSumNodeTarget{
+            sum_assets: account_targets.sum_assets,
+            sum_debt: account_targets.sum_debt,
             hash
         }
     }
@@ -52,7 +76,6 @@ pub struct MerkleSumTreeTarget{
 }
 
 impl MerkleSumTreeTarget{
-    /// Gets the root of the merkle sum tree as a Merkle Sum Node
     pub fn get_root(&self)-> &MerkleSumNodeTarget{
         self.sum_tree.last().unwrap()
     }
@@ -74,4 +97,21 @@ pub fn build_merkle_sum_tree(
         leaves.push(MerkleSumNodeTarget::get_child_from_parents(builder, left_child, right_child));
     }
 }
+
+/// Given a list of account targets, build the corresponding merkle sum tree.
+pub fn build_merkle_sum_tree_from_account_targets(
+    builder: &mut CircuitBuilder<F, D>,
+    accounts: &mut Vec<AccountSumTargets>,
+)-> MerkleSumTreeTarget {
+    let mut leaves: Vec<MerkleSumNodeTarget> = accounts.iter().map( |x|
+        MerkleSumNodeTarget::get_node_from_account_targets(builder, x)
+    ).collect();
+
+    build_merkle_sum_tree(builder, &mut leaves);
+
+    MerkleSumTreeTarget{
+        sum_tree: leaves
+    }
+}
+
 
