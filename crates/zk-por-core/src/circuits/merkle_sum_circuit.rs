@@ -109,9 +109,14 @@ pub fn build_merkle_sum_tree_from_account_targets(
 
     build_merkle_sum_tree(builder, &mut leaves);
 
-    MerkleSumTreeTarget{
+    let tree = MerkleSumTreeTarget{
         sum_tree: leaves
-    }
+    };
+    
+    let root = tree.get_root();
+    builder.register_public_inputs(&root.hash.elements);
+
+    return tree;
 }
 
 

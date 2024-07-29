@@ -7,19 +7,18 @@ use super::circuit_utils::assert_non_negative_unsigned;
 #[derive(Debug, Clone)]
 /// Targets representing a users account, where their assets and liabilities are split into individual tokens.
 pub struct AccountTargets{
-    assets: Vec<Target>,
-    debt: Vec<Target>,
+    pub assets: Vec<Target>,
+    pub debt: Vec<Target>,
 }
 
 impl AccountTargets{
     pub fn set_account_targets(
         &self,
-        account_info: Account,
+        account_info: &Account,
         pw: &mut PartialWitness<F>
     ){
         pw.set_target_arr(self.assets.as_slice(), account_info.assets.as_slice());
         pw.set_target_arr(self.debt.as_slice(), account_info.debt.as_slice());
-
     }
 }
 
