@@ -8,4 +8,3 @@ pub const MAX_POSITIVE_AMOUNT_LOG: usize = 62;
 
 pub type C = PoseidonGoldilocksConfig;
 pub type F = <C as GenericConfig<D>>::F;
-

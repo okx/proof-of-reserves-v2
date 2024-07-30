@@ -1,9 +1,23 @@
-use std::panic;
 use log::Level;
-use plonky2::{hash::hash_types::{HashOutTarget, RichField}, iop::{target::{BoolTarget, Target}, witness::PartialWitness}, plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitData, config::GenericConfig, prover::prove}, util::timing::TimingTree};
+use plonky2::{
+    hash::hash_types::{HashOutTarget, RichField},
+    iop::{
+        target::{BoolTarget, Target},
+        witness::PartialWitness,
+    },
+    plonk::{
+        circuit_builder::CircuitBuilder, circuit_data::CircuitData, config::GenericConfig,
+        prover::prove,
+    },
+    util::timing::TimingTree,
+};
 use plonky2_field::extension::Extendable;
+use std::panic;
 
-use crate::{circuits::circuit_config::STANDARD_CONFIG, types::{C, MAX_POSITIVE_AMOUNT_LOG}};
+use crate::{
+    circuits::circuit_config::STANDARD_CONFIG,
+    types::{C, MAX_POSITIVE_AMOUNT_LOG},
+};
 
 /// Test runner for ease of testing
 pub fn run_circuit_test<T, F, const D: usize>(test: T) -> ()
@@ -18,7 +32,11 @@ where
     builder.print_gate_counts(0);
     let mut timing = TimingTree::new("prove", Level::Debug);
     let data = builder.build::<C>();
-    let CircuitData { prover_only, common, verifier_only: _ } = &data;
+    let CircuitData {
+        prover_only,
+        common,
+        verifier_only: _,
+    } = &data;
     let proof = prove(&prover_only, &common, pw, &mut timing).expect("Prove fail");
     timing.print();
     data.verify(proof).expect("Verify fail")
