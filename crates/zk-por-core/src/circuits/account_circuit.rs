@@ -36,7 +36,7 @@ impl AccountSumTargets{
             builder.add(x, *y)
         });
 
-        let sum_debt = account.assets.iter().fold(builder.zero(), |x, y| {
+        let sum_debt = account.debt.iter().fold(builder.zero(), |x, y| {
             builder.add(x, *y)
         });
 

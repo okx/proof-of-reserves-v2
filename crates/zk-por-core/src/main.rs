@@ -42,6 +42,7 @@ pub fn main(){
     let proof_res = prove(&prover_only, &common, pw.clone(), &mut timing);
     let proof = proof_res.expect("Proof failed");
 
+    println!("PROOF: {:?}", proof);
     println!("Finished Proving");
 
     println!("Verifying Proof");
