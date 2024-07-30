@@ -114,6 +114,8 @@ pub fn build_merkle_sum_tree_from_account_targets(
     };
     
     let root = tree.get_root();
+    builder.register_public_input(root.sum_assets);
+    builder.register_public_input(root.sum_debt);
     builder.register_public_inputs(&root.hash.elements);
 
     return tree;
