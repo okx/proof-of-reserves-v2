@@ -41,11 +41,7 @@ fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>) -> Vec<Accou
                 account_id = value.as_str().unwrap();
             }
         }
-        accounts_data.push(Account {
-            id: account_id.into(),
-            equity: inner_vec,
-            debt: Vec::new(),
-        });
+        accounts_data.push(Account { id: account_id.into(), equity: inner_vec, debt: Vec::new() });
     }
     accounts_data
 }

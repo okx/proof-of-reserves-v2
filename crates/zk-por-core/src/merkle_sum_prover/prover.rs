@@ -40,10 +40,7 @@ impl MerkleSumTreeProver {
                 builder.add_virtual_targets(self.accounts.get(i).unwrap().equity.len());
             let debt_targets =
                 builder.add_virtual_targets(self.accounts.get(i).unwrap().debt.len());
-            let account_target = AccountTargets {
-                equity: equity_targets,
-                debt: debt_targets,
-            };
+            let account_target = AccountTargets { equity: equity_targets, debt: debt_targets };
 
             account_target.set_account_targets(self.accounts.get(i).unwrap(), pw);
             account_targets.push(account_target);
@@ -70,11 +67,7 @@ impl MerkleSumTreeProver {
         let mut timing = TimingTree::new("prove", Level::Debug);
         let data = builder.build::<C>();
 
-        let CircuitData {
-            prover_only,
-            common,
-            verifier_only: _,
-        } = &data;
+        let CircuitData { prover_only, common, verifier_only: _ } = &data;
 
         println!("Started Proving");
 
@@ -112,20 +105,13 @@ pub mod test {
 
         let path = "../../test-data/batch0.json";
         let accounts = read_json_into_accounts_vec(path);
-        let prover = MerkleSumTreeProver {
-            batch_id: 0,
-            accounts,
-        };
+        let prover = MerkleSumTreeProver { batch_id: 0, accounts };
 
         prover.build_and_set_merkle_tree_targets(&mut builder, &mut pw);
 
         let data = builder.build::<C>();
 
-        let CircuitData {
-            prover_only,
-            common,
-            verifier_only: _,
-        } = &data;
+        let CircuitData { prover_only, common, verifier_only: _ } = &data;
 
         println!("Started Proving");
         let mut timing = TimingTree::new("prove", Level::Debug);
@@ -141,10 +127,7 @@ pub mod test {
     pub fn test_get_proof() {
         let path = "../../test-data/batch0.json";
         let accounts = read_json_into_accounts_vec(path);
-        let prover = MerkleSumTreeProver {
-            batch_id: 0,
-            accounts,
-        };
+        let prover = MerkleSumTreeProver { batch_id: 0, accounts };
 
         let _proof = prover.get_proof();
     }

@@ -32,11 +32,7 @@ where
     builder.print_gate_counts(0);
     let mut timing = TimingTree::new("prove", Level::Debug);
     let data = builder.build::<C>();
-    let CircuitData {
-        prover_only,
-        common,
-        verifier_only: _,
-    } = &data;
+    let CircuitData { prover_only, common, verifier_only: _ } = &data;
     let proof = prove(&prover_only, &common, pw, &mut timing).expect("Prove fail");
     timing.print();
     data.verify(proof).expect("Verify fail")
@@ -66,8 +62,7 @@ pub fn assert_non_negative_unsigned<F: RichField + Extendable<D>, const D: usize
 #[cfg(test)]
 pub mod test {
     use crate::types::F;
-    use plonky2_field::types::Field;
-    use plonky2_field::types::Field64;
+    use plonky2_field::types::{Field, Field64};
 
     use super::{assert_non_negative_unsigned, run_circuit_test};
 

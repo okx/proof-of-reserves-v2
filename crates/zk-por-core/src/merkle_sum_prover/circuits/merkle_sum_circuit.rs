@@ -41,18 +41,11 @@ impl MerkleSumNodeTarget {
         let diff_between_debt_left_and_sum = builder.sub(sum_debt, left_node.sum_debt);
         assert_non_negative_unsigned(builder, diff_between_debt_left_and_sum);
 
-        let hash_inputs = vec![
-            left_node.hash.elements.to_vec(),
-            right_node.hash.elements.to_vec(),
-        ]
-        .concat();
+        let hash_inputs =
+            vec![left_node.hash.elements.to_vec(), right_node.hash.elements.to_vec()].concat();
 
         let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs);
-        MerkleSumNodeTarget {
-            sum_equity,
-            sum_debt,
-            hash,
-        }
+        MerkleSumNodeTarget { sum_equity, sum_debt, hash }
     }
 
     /// Get a merkle sum node target from account sum targets.
@@ -103,11 +96,7 @@ pub fn build_merkle_sum_tree(
         let right_child_index = 2 * (i - num_leaves) + 1;
         let left_child = leaves.get(left_child_index).unwrap();
         let right_child = leaves.get(right_child_index).unwrap();
-        leaves.push(MerkleSumNodeTarget::get_child_from_parents(
-            builder,
-            left_child,
-            right_child,
-        ));
+        leaves.push(MerkleSumNodeTarget::get_child_from_parents(builder, left_child, right_child));
     }
 }
 
@@ -169,10 +158,8 @@ pub mod test {
                 &merkle_sum_node_target_2,
             );
 
-            let sum_equity = builder.add(
-                account_sum_target_1.sum_equity,
-                account_sum_target_2.sum_equity,
-            );
+            let sum_equity =
+                builder.add(account_sum_target_1.sum_equity, account_sum_target_2.sum_equity);
             let sum_debt =
                 builder.add(account_sum_target_1.sum_debt, account_sum_target_2.sum_debt);
 
