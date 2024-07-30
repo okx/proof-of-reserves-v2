@@ -80,6 +80,14 @@ impl MerkleSumTreeTarget {
     pub fn get_root(&self) -> &MerkleSumNodeTarget {
         self.sum_tree.last().unwrap()
     }
+
+    /// Register the root hash, sum_equity and sum_debt as public inputs to be used in recursive proving.
+    pub fn register_public_inputs(&self, builder: &mut CircuitBuilder<F, D>) {
+        let root = self.get_root();
+        builder.register_public_input(root.sum_equity);
+        builder.register_public_input(root.sum_debt);
+        builder.register_public_inputs(&root.hash.elements);
+    }
 }
 
 /// Builds a merkle sum tree of a given size (based on the number of leaves). It will build the merkle sum tree on top of the leaves vector
@@ -117,10 +125,7 @@ pub fn build_merkle_sum_tree_from_account_targets(
 
     let tree = MerkleSumTreeTarget { sum_tree: leaves };
 
-    let root = tree.get_root();
-    builder.register_public_input(root.sum_equity);
-    builder.register_public_input(root.sum_debt);
-    builder.register_public_inputs(&root.hash.elements);
+    tree.register_public_inputs(builder);
 
     return tree;
 }
