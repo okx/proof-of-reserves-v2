@@ -108,7 +108,6 @@ pub struct VdTree<F: RichField + Extendable<D>, const D: usize> {
 impl<F: RichField + Extendable<D>, const D: usize> VdTree<F, D> {
     /// vd_digests is only used to initialize. its len might be smaller than `size`
     pub fn new(vd_digests: Vec<Vec<F>>, leaf_size: usize) -> Self {
-        assert!(vd_digests.len() > 0);
         let mut leaves = vec![vec![]; leaf_size];
         vd_digests.iter().unique().enumerate().for_each(|(i, vd)| {
             leaves[i] = vd.to_vec();
@@ -131,6 +130,13 @@ impl<F: RichField + Extendable<D>, const D: usize> VdTree<F, D> {
         proofs: Vec<&ProofTuple<F, C, D>>,
     ) {
         let vd_digests = proofs.iter().map(|p| p.1.clone().digest()).collect::<Vec<Vec<F>>>();
+        self.update_vd_digests::<C>(vd_digests);
+    }
+
+    pub fn update_vd_digests<C: GenericConfig<D, F = F>>(
+        &mut self,
+        vd_digests: Vec<Vec<F>>,
+    ) {
         for vd in vd_digests {
             if !self.vd_proof_map.contains_key(&vd) {
                 self.inner_tree.change_leaf_and_update( vd, self.next_vd_index);

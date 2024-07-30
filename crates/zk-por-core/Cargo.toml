@@ -27,6 +27,7 @@ lazy_static = "1.5.0"
 serde={workspace=true}
 serde_json={workspace=true}
 rayon={workspace=true}
+env_logger = "0.11.5"
 
 [build-dependencies]
 bindgen = { version = "0.68.1" }
