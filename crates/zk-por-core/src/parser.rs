@@ -52,7 +52,8 @@ fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>) -> Vec<Accou
 
 #[cfg(test)]
 mod test {
-    use crate::core::parser::read_json_into_accounts_vec;
+
+    use crate::parser::read_json_into_accounts_vec;
 
     use super::{parse_exchange_state, read_json_file_into_map};
 

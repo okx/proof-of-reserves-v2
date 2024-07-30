@@ -15,7 +15,7 @@ use plonky2_field::extension::Extendable;
 use std::panic;
 
 use crate::{
-    circuits::circuit_config::STANDARD_CONFIG,
+    circuit_config::STANDARD_CONFIG,
     types::{C, MAX_POSITIVE_AMOUNT_LOG},
 };
 
@@ -61,4 +61,30 @@ pub fn assert_non_negative_unsigned<F: RichField + Extendable<D>, const D: usize
     x: Target,
 ) {
     builder.range_check(x, MAX_POSITIVE_AMOUNT_LOG);
+}
+
+#[cfg(test)]
+pub mod test {
+    use crate::types::F;
+    use plonky2_field::types::Field;
+    use plonky2_field::types::Field64;
+
+    use super::{assert_non_negative_unsigned, run_circuit_test};
+
+    #[test]
+    fn test_assert_non_negative_unsigned() {
+        run_circuit_test(|builder, _pw| {
+            let x = builder.constant(F::from_canonical_u16(0));
+            assert_non_negative_unsigned(builder, x);
+        });
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_assert_non_negative_unsigned_panic() {
+        run_circuit_test(|builder, _pw| {
+            let x = builder.constant(F::from_canonical_i64(-1));
+            assert_non_negative_unsigned(builder, x);
+        });
+    }
 }

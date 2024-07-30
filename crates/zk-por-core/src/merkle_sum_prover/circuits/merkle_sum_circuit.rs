@@ -129,3 +129,58 @@ pub fn build_merkle_sum_tree_from_account_targets(
 
     return tree;
 }
+
+#[cfg(test)]
+pub mod test {
+    use crate::{
+        merkle_sum_prover::circuits::{
+            account_circuit::{AccountSumTargets, AccountTargets},
+            circuit_utils::run_circuit_test,
+        },
+        parser::read_json_into_accounts_vec,
+    };
+
+    use super::MerkleSumNodeTarget;
+
+    #[test]
+    pub fn test_merkle_sum_node() {
+        run_circuit_test(|builder, pw| {
+            let path = "../../test-data/batch0.json";
+            let accounts = read_json_into_accounts_vec(path);
+
+            let account_target_1 =
+                AccountTargets::new_from_account(accounts.get(0).unwrap(), builder);
+            let account_target_2 =
+                AccountTargets::new_from_account(accounts.get(1).unwrap(), builder);
+
+            let account_sum_target_1 =
+                AccountSumTargets::from_account_target(&account_target_1, builder);
+            let account_sum_target_2 =
+                AccountSumTargets::from_account_target(&account_target_2, builder);
+
+            let merkle_sum_node_target_1 =
+                MerkleSumNodeTarget::get_node_from_account_targets(builder, &account_sum_target_1);
+            let merkle_sum_node_target_2 =
+                MerkleSumNodeTarget::get_node_from_account_targets(builder, &account_sum_target_2);
+
+            let merkle_sum_node_target_3 = MerkleSumNodeTarget::get_child_from_parents(
+                builder,
+                &merkle_sum_node_target_1,
+                &merkle_sum_node_target_2,
+            );
+
+            let sum_equity = builder.add(
+                account_sum_target_1.sum_equity,
+                account_sum_target_2.sum_equity,
+            );
+            let sum_debt =
+                builder.add(account_sum_target_1.sum_debt, account_sum_target_2.sum_debt);
+
+            builder.connect(merkle_sum_node_target_3.sum_equity, sum_equity);
+            builder.connect(merkle_sum_node_target_3.sum_debt, sum_debt);
+
+            account_target_1.set_account_targets(accounts.get(0).unwrap(), pw);
+            account_target_2.set_account_targets(accounts.get(1).unwrap(), pw);
+        });
+    }
+}
