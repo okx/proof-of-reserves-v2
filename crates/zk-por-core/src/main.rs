@@ -13,10 +13,10 @@ pub fn main(){
     let mut account_targets: Vec<AccountTargets> = Vec::new();
 
     for i in 0..accounts.len(){
-        let asset_targets = builder.add_virtual_targets(accounts.get(i).unwrap().assets.len());
+        let equity_targets = builder.add_virtual_targets(accounts.get(i).unwrap().equity.len());
         let debt_targets = builder.add_virtual_targets(accounts.get(i).unwrap().debt.len());
         let account_target = AccountTargets{
-            assets: asset_targets,
+            equity: equity_targets,
             debt: debt_targets,
         };
 

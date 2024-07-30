@@ -37,6 +37,7 @@ pub fn select_hash<F: RichField + Extendable<D>, const D: usize>(
 }
 
 /// Assert 0 <= x <= MAX_POSITIVE_AMOUNT
+/// MAX_POSITIVE_AMOUNT =  (1 << MAX_POSITIVE_AMOUNT_LOG) - 1
 pub fn assert_non_negative_unsigned<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     x: Target,

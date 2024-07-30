@@ -34,6 +34,8 @@ fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>)-> Vec<Accoun
                 if let Some(number_str) = value.as_str() {
                     if let Ok(number) = number_str.parse::<u64>() {
                         inner_vec.push(F::from_canonical_u64(number));
+                    }else{
+                        
                     }
                 }
             }else{
@@ -42,7 +44,7 @@ fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>)-> Vec<Accoun
         }
         accounts_data.push(Account{
             id: account_id.into(),
-            assets: inner_vec,
+            equity: inner_vec,
             debt: Vec::new()
         });
 

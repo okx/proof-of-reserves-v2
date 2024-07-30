@@ -5,9 +5,9 @@ use crate::{core::account::Account, types::{D, F}};
 use super::circuit_utils::assert_non_negative_unsigned;
 
 #[derive(Debug, Clone)]
-/// Targets representing a users account, where their assets and liabilities are split into individual tokens.
+/// Targets representing a users account, where their equity and debt are split into individual tokens.
 pub struct AccountTargets{
-    pub assets: Vec<Target>,
+    pub equity: Vec<Target>,
     pub debt: Vec<Target>,
 }
 
@@ -17,22 +17,22 @@ impl AccountTargets{
         account_info: &Account,
         pw: &mut PartialWitness<F>
     ){
-        pw.set_target_arr(self.assets.as_slice(), account_info.assets.as_slice());
+        pw.set_target_arr(self.equity.as_slice(), account_info.equity.as_slice());
         pw.set_target_arr(self.debt.as_slice(), account_info.debt.as_slice());
     }
 }
 
 #[derive(Debug, Clone)]
-/// Targets representing a users account, where their assets and liabilities are summed into 2 summed values.
+/// Targets representing a users account, where their equity and liabilities are summed into 2 summed values.
 pub struct AccountSumTargets{
-    pub sum_assets: Target,
+    pub sum_equity: Target,
     pub sum_debt: Target,
 }
 
 impl AccountSumTargets{
-    /// Given Account Targets, sum the account assets and liabilities and return a AccountSumTargets.
+    /// Given Account Targets, sum the account equity and liabilities and return a AccountSumTargets.
     pub fn from_account_target(account: &AccountTargets, builder: &mut CircuitBuilder<F, D>)->AccountSumTargets{
-        let sum_assets = account.assets.iter().fold(builder.zero(), |x, y| {
+        let sum_equity = account.equity.iter().fold(builder.zero(), |x, y| {
             builder.add(x, *y)
         });
 
@@ -40,13 +40,13 @@ impl AccountSumTargets{
             builder.add(x, *y)
         });
 
-        let diff_between_asset_debt = builder.sub(sum_assets, sum_debt);
+        let diff_between_equity_debt = builder.sub(sum_equity, sum_debt);
 
-        // Ensure the assets is greater than the debt. This works as long as we constrict our assets to 62 bits.
-        assert_non_negative_unsigned(builder, diff_between_asset_debt);
+        // Ensure the equity is greater than the debt. This works as long as we constrict our equity to 62 bits.
+        assert_non_negative_unsigned(builder, diff_between_equity_debt);
 
         AccountSumTargets{
-            sum_assets,
+            sum_equity,
             sum_debt
         }
     }

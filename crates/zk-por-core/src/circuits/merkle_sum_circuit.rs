@@ -18,24 +18,31 @@ use super::{account_circuit::AccountSumTargets, circuit_utils::assert_non_negati
 /// The amount of equity and amount of debt is the sum of the equity and debt of the children.
 #[derive(Debug, Copy, Clone,)]
 pub struct MerkleSumNodeTarget{
-    pub sum_assets: Target,
+    pub sum_equity: Target,
     pub sum_debt: Target,
     pub hash: HashOutTarget
 }
 
 impl MerkleSumNodeTarget {
-    /// Given two children, generate the next MerkleSumNode
+    /// Given two children, generate the next MerkleSumNodeTarget
     pub fn get_child_from_parents(
         builder: &mut CircuitBuilder<F, D>,
         left_node: &MerkleSumNodeTarget,
         right_node: &MerkleSumNodeTarget,
     )->MerkleSumNodeTarget{
-        let sum_assets = builder.add(left_node.sum_assets, right_node.sum_assets);
+        let sum_equity = builder.add(left_node.sum_equity, right_node.sum_equity);
         let sum_debt = builder.add(left_node.sum_debt, right_node.sum_debt);
 
-        // Ensure the amount of assets at this node is greater than the total amount of debt
-        let diff_between_asset_debt = builder.sub(sum_assets, sum_debt);
-        assert_non_negative_unsigned(builder, diff_between_asset_debt);
+        // Ensure the amount of equity at this node is greater than the total amount of debt
+        let diff_between_equity_debt = builder.sub(sum_equity, sum_debt);
+        assert_non_negative_unsigned(builder, diff_between_equity_debt);
+
+        // Ensure no overflow. We only need to check one child since in any overflow, the new value will be less than both the left and 
+        // right children. 
+        let diff_between_equity_left_and_sum = builder.sub(sum_equity, left_node.sum_equity);
+        assert_non_negative_unsigned(builder, diff_between_equity_left_and_sum);
+        let diff_between_debt_left_and_sum = builder.sub(sum_debt, left_node.sum_debt);
+        assert_non_negative_unsigned(builder, diff_between_debt_left_and_sum);
 
         let hash_inputs = vec![
             left_node.hash.elements.to_vec(),
@@ -44,25 +51,25 @@ impl MerkleSumNodeTarget {
 
         let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs);
         MerkleSumNodeTarget{
-            sum_assets,
+            sum_equity,
             sum_debt,
             hash
         }
     }
 
-    /// Get a merkle sum node from account sum targets.
+    /// Get a merkle sum node target from account sum targets.
     pub fn get_node_from_account_targets(
         builder: &mut CircuitBuilder<F, D>,
         account_targets: &AccountSumTargets
     )-> MerkleSumNodeTarget{
         let hash_inputs = vec![
-            account_targets.sum_assets,
+            account_targets.sum_equity,
             account_targets.sum_debt
         ];
 
         let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs);
         MerkleSumNodeTarget{
-            sum_assets: account_targets.sum_assets,
+            sum_equity: account_targets.sum_equity,
             sum_debt: account_targets.sum_debt,
             hash
         }
@@ -114,7 +121,7 @@ pub fn build_merkle_sum_tree_from_account_targets(
     };
     
     let root = tree.get_root();
-    builder.register_public_input(root.sum_assets);
+    builder.register_public_input(root.sum_equity);
     builder.register_public_input(root.sum_debt);
     builder.register_public_inputs(&root.hash.elements);
 
