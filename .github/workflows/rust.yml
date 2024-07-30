@@ -1,0 +1,38 @@
+name: Rust Format and Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "*" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Clone main repository
+      uses: actions/checkout@v4
+
+    - uses: moonrepo/setup-rust@v1
+      with:
+        components: rustfmt
+        cache: false
+      name: Setup Rust Toolchain
+
+    - uses: Swatinem/rust-cache@v2
+      name: Cache Rust Dependencies
+
+    - run: cargo build
+      name: Run build scripts
+
+    - name: Check Format
+      run: cargo fmt --check
+      working-directory: .
+
+    - name: Run Tests
+      run: cargo test --verbose
+      working-directory: .
