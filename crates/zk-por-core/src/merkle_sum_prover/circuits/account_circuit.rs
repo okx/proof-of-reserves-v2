@@ -32,8 +32,14 @@ impl AccountTargets {
     }
 
     pub fn set_account_targets(&self, account_info: &Account, pw: &mut PartialWitness<F>) {
-        assert_eq!(self.equity.len(), account_info.equity.len());
-        assert_eq!(self.debt.len(), account_info.debt.len());
+        if self.equity.len() != account_info.equity.len() {
+            panic!("Equity targets != Equity inputs")
+        }
+
+        if self.debt.len() != account_info.debt.len() {
+            panic!("Debt targets != Debt inputs")
+        }
+
         pw.set_target_arr(self.equity.as_slice(), account_info.equity.as_slice());
         pw.set_target_arr(self.debt.as_slice(), account_info.debt.as_slice());
     }

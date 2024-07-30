@@ -72,9 +72,20 @@ impl MerkleSumTreeProver {
         println!("Started Proving");
 
         let proof_res = prove(&prover_only, &common, pw.clone(), &mut timing);
+
+        if proof_res.is_err() {
+            panic!("Proof generation failed!");
+        }
+
         let proof = proof_res.expect("Proof failed");
 
         println!("Finished Proving");
+
+        let proof_verification_res = data.verify(proof.clone());
+
+        if proof_verification_res.is_err() {
+            panic!("Proof verification failed!");
+        }
 
         proof
     }

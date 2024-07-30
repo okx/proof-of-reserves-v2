@@ -16,8 +16,12 @@ pub fn read_json_into_accounts_vec(path: &str) -> Vec<Account> {
 
 /// Reads a json file into a json string.
 fn read_json_file_into_map(path: &str) -> Vec<BTreeMap<String, Value>> {
-    let file = File::open(path).expect("Cannot read file");
-    let reader = BufReader::new(file);
+    let file = File::open(path);
+    if file.is_err() {
+        panic!("File not found at specified path");
+    }
+
+    let reader = BufReader::new(file.expect(""));
 
     // Deserialize the binary data to a struct
     serde_json::from_reader(reader).expect("Unable to parse Json Data")
@@ -35,7 +39,10 @@ fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>) -> Vec<Accou
                     if let Ok(number) = number_str.parse::<u64>() {
                         inner_vec.push(F::from_canonical_u64(number));
                     } else {
+                        panic!("Error in parsing token value number");
                     }
+                } else {
+                    panic!("Error in parsing string from json");
                 }
             } else {
                 account_id = value.as_str().unwrap();
