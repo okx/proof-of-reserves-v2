@@ -28,3 +28,19 @@ serde_json = "1.0.120"
 thiserror = "1.0"
 tracing = "0.1"
 opentelemetry = { version = "0.17", features = ["serialize"]}
+
+[profile.dev]
+opt-level = 0
+debug = true
+split-debuginfo = "off"
+panic = "unwind"
+overflow-checks = true
+lto = false
+
+[profile.release]
+opt-level = 3
+debug = false
+split-debuginfo = "off"
+panic = "abort"
+overflow-checks = false
+lto = true
