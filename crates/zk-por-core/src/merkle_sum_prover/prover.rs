@@ -22,7 +22,7 @@ use crate::{
 /// A merkle sum tree prover with a batch id representing its index in the recursive proof tree and a Vec of accounts representing accounts in this batch.
 #[derive(Clone, Debug)]
 pub struct MerkleSumTreeProver {
-    batch_id: usize,
+    // batch_id: usize,
     accounts: Vec<Account>,
 }
 
@@ -116,7 +116,10 @@ pub mod test {
 
         let path = "../../test-data/batch0.json";
         let accounts = read_json_into_accounts_vec(path);
-        let prover = MerkleSumTreeProver { batch_id: 0, accounts };
+        let prover = MerkleSumTreeProver {
+            // batch_id: 0,
+            accounts,
+        };
 
         prover.build_and_set_merkle_tree_targets(&mut builder, &mut pw);
 
@@ -138,7 +141,10 @@ pub mod test {
     pub fn test_get_proof() {
         let path = "../../test-data/batch0.json";
         let accounts = read_json_into_accounts_vec(path);
-        let prover = MerkleSumTreeProver { batch_id: 0, accounts };
+        let prover = MerkleSumTreeProver {
+            // batch_id: 0,
+            accounts,
+        };
 
         let _proof = prover.get_proof();
     }
