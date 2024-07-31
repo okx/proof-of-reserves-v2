@@ -19,6 +19,7 @@ default = []
 [dependencies]
 plonky2={workspace=true}
 plonky2_field={workspace=true}
+rand={workspace=true}
 log = "0.4.17"
 serde_with = "3.9.0"
 itertools = "0.13.0"

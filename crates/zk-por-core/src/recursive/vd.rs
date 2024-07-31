@@ -154,19 +154,19 @@ impl<F: RichField + Extendable<D>, const D: usize> VdTree<F, D> {
         }
     }
 
-    pub fn get_vd_proofs<C: GenericConfig<D, F = F>>(
+    pub fn get_vd_proofs(
         &self,
-        proofs: &Vec<ProofTuple<F, C, D>>,
+        vds: &Vec<Vec<F>>,
     ) -> Vec<VDProof<F, D>> {
-        let vd_proofs = proofs.iter().map(|proof| self.get_vd_proof(proof)).collect::<Vec<_>>();
+        let vd_proofs = vds.iter().map(|proof| self.get_vd_proof(proof)).collect::<Vec<_>>();
         vd_proofs
     }
 
-    pub fn get_vd_proof<C: GenericConfig<D, F = F>>(
+    pub fn get_vd_proof(
         &self,
-        proof: &ProofTuple<F, C, D>,
+        vd: &Vec<F>,
     ) -> VDProof<F, D> {
-        self.vd_proof_map.get(&proof.1.digest()).unwrap().clone()
+        self.vd_proof_map.get(&vd).unwrap().clone()
     }
 
     /// Given a merkle tree with vd at each leaf, we make merkle proofs for each one of the leaf and returns a vd proof for each leaf as a vec of vd proofs

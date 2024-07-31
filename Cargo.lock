@@ -1469,6 +1469,7 @@ dependencies = [
  "log",
  "plonky2",
  "plonky2_field",
+ "rand",
  "rayon",
  "serde",
  "serde_json",
