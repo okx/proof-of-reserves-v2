@@ -1,0 +1,34 @@
+[package]
+name = "zk-por-core"
+description = "zk por circuits and proving logic"
+version = "0.1.0"
+authors = [
+]
+
+readme = "README.md"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[features]
+default = []
+
+[dependencies]
+plonky2={workspace=true}
+plonky2_field={workspace=true}
+log = "0.4.17"
+serde={workspace=true}
+serde_json={workspace=true}
+rayon={workspace=true}
+
+[dev-dependencies]
+criterion = { version = "0.5.1", default-features = false }
+
+[target.'cfg(not(target_os = "macos"))'.dev-dependencies]
+jemallocator = "0.5.0"
+
+
+

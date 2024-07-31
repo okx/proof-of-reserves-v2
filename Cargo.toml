@@ -1,4 +1,21 @@
-[package]
-name = "proof-of-reserves-v2"
-version = "0.1.0"
+[workspace]
+members = [
+    "crates/zk-por-core",
+    "crates/zk-por-api",
+]
+resolver = "2"
+
+[workspace.package]
 edition = "2021"
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/okx/proof-of-reserves-v2.git"
+repository = "https://github.com/okx/proof-of-reserves-v2.git"
+keywords = ["crypto", "por", "plonky2"]
+categories = ["por"]
+
+[workspace.dependencies]
+plonky2 = { git = "https://github.com/okx/plonky2"}
+plonky2_field = { git = "https://github.com/okx/plonky2"}
+serde = "1.0.204"
+serde_json = "1.0.120"
+rayon = "1.8"
