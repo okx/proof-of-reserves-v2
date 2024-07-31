@@ -1,3 +1,15 @@
+use tracing::{debug, Level};
+use zk_por_tracing::{init_tracing, TraceConfig};
+
 pub fn main() {
-    println!("It works!");
+    let cfg = TraceConfig {
+        prefix: "zkpor".to_string(),
+        dir: "logs".to_string(),
+        level: Level::DEBUG,
+        console: false,
+        flame: false,
+    };
+    let guard = init_tracing(cfg);
+    debug!("tracing works");
+    drop(guard)
 }

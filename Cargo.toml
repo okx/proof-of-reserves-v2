@@ -2,10 +2,12 @@
 members = [
     "crates/zk-por-core",
     "crates/zk-por-api",
+    "crates/zk-por-tracing"
 ]
 resolver = "2"
 
 [workspace.package]
+version="0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/okx/proof-of-reserves-v2.git"
@@ -14,8 +16,31 @@ keywords = ["crypto", "por", "plonky2"]
 categories = ["por"]
 
 [workspace.dependencies]
+# zkp
 plonky2 = { git = "https://github.com/okx/plonky2"}
 plonky2_field = { git = "https://github.com/okx/plonky2"}
+# computing
+rayon = "1.8"
+# data
 serde = "1.0.204"
 serde_json = "1.0.120"
-rayon = "1.8"
+# misc
+thiserror = "1.0"
+tracing = "0.1"
+opentelemetry = { version = "0.17", features = ["serialize"]}
+
+[profile.dev]
+opt-level = 0
+debug = true
+split-debuginfo = "off"
+panic = "unwind"
+overflow-checks = true
+lto = false
+
+[profile.release]
+opt-level = 3
+debug = false
+split-debuginfo = "off"
+panic = "abort"
+overflow-checks = false
+lto = true

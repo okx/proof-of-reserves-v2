@@ -26,7 +26,7 @@ jobs:
     - uses: Swatinem/rust-cache@v2
       name: Cache Rust Dependencies
 
-    - run: cargo build
+    - run: export RUSTFLAGS="-D warnings" && cargo build
       name: Run build scripts
 
     - name: Check Format

@@ -1,2 +1,4 @@
 .vscode/
 target/
+logs/
+plonky2/

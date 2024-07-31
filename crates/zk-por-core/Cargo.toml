@@ -1,7 +1,7 @@
 [package]
 name = "zk-por-core"
 description = "zk por circuits and proving logic"
-version = "0.1.0"
+version ={workspace=true}
 authors = [
 ]
 
@@ -17,12 +17,15 @@ categories.workspace = true
 default = []
 
 [dependencies]
+zk-por-tracing={path="../zk-por-tracing"}
 plonky2={workspace=true}
 plonky2_field={workspace=true}
 log = "0.4.17"
 serde={workspace=true}
 serde_json={workspace=true}
 rayon={workspace=true}
+tracing={workspace=true}
+thiserror={workspace=true}
 
 [dev-dependencies]
 criterion = { version = "0.5.1", default-features = false }
