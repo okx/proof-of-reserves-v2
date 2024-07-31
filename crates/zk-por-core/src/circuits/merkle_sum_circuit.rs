@@ -16,7 +16,7 @@ use super::{account_circuit::AccountSumTargets, circuit_utils::assert_non_negati
 /// The hash is Hash(hash_left, hash_right).
 /// 
 /// The amount of equity and amount of debt is the sum of the equity and debt of the children.
-#[derive(Debug, Copy, Clone,)]
+#[derive(Debug, Copy, Clone)]
 pub struct MerkleSumNodeTarget{
     pub sum_assets: Target,
     pub sum_debt: Target,
@@ -24,6 +24,14 @@ pub struct MerkleSumNodeTarget{
 }
 
 impl MerkleSumNodeTarget {
+    pub fn default() -> Self {
+        MerkleSumNodeTarget {
+            sum_assets: Target::default(),
+            sum_debt: Target::default(),
+            hash: [Target::default(); NUM_HASH_OUT_ELTS].into(),
+        }
+    }
+
     /// Given two children, generate the next MerkleSumNode
     pub fn get_child_from_parents(
         builder: &mut CircuitBuilder<F, D>,
