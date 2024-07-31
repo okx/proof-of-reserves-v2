@@ -145,5 +145,3 @@ pub fn build_merkle_sum_tree_from_account_targets(
 
     return tree;
 }
-
-
