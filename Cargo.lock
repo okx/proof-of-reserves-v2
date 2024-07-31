@@ -1562,6 +1562,7 @@ dependencies = [
  "rayon",
  "serde",
  "serde_json",
+ "thiserror",
  "tracing",
  "zk-por-tracing",
 ]

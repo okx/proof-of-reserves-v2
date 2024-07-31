@@ -1,9 +1,9 @@
 use std::{collections::BTreeMap, fs::File, io::BufReader};
 
+use crate::types::F;
 use plonky2_field::types::Field;
 use serde_json::Value;
-
-use crate::types::F;
+use tracing::error;
 
 use super::account::Account;
 
@@ -17,14 +17,17 @@ pub fn read_json_into_accounts_vec(path: &str) -> Vec<Account> {
 /// Reads a json file into a json string.
 fn read_json_file_into_map(path: &str) -> Vec<BTreeMap<String, Value>> {
     let file = File::open(path);
-    if file.is_err() {
-        panic!("File not found at specified path");
+    match file {
+        Ok(f) => {
+            let reader = BufReader::new(f);
+            // Deserialize the binary data to a struct
+            serde_json::from_reader(reader).expect("Unable to parse Json Data")
+        }
+        Err(e) => {
+            error!("file open error, {:?}", e);
+            panic!("File not found at specified path");
+        }
     }
-
-    let reader = BufReader::new(file.expect(""));
-
-    // Deserialize the binary data to a struct
-    serde_json::from_reader(reader).expect("Unable to parse Json Data")
 }
 
 /// Parses the exchanges state at some snapshot and returns.
@@ -36,13 +39,16 @@ fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>) -> Vec<Accou
         for (key, value) in obj.iter() {
             if key != "id" {
                 if let Some(number_str) = value.as_str() {
-                    if let Ok(number) = number_str.parse::<u64>() {
-                        inner_vec.push(F::from_canonical_u64(number));
-                    } else {
-                        panic!("Error in parsing token value number");
+                    match number_str.parse::<u64>() {
+                        Ok(number) => inner_vec.push(F::from_canonical_u64(number)),
+                        Err(e) => {
+                            error!("Error in parsing token value number: {:?}", e);
+                            panic!("Error in parsing token value number: {:?}", e);
+                        }
                     }
                 } else {
-                    panic!("Error in parsing string from json");
+                    error!("Error in parsing string from json: {:?}", value);
+                    panic!("Error in parsing string from json: {:?}", value);
                 }
             } else {
                 account_id = value.as_str().unwrap();

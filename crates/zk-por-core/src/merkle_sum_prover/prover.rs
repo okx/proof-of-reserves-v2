@@ -1,3 +1,12 @@
+use crate::{
+    account::Account,
+    circuit_config::STANDARD_CONFIG,
+    merkle_sum_prover::circuits::{
+        account_circuit::{AccountSumTargets, AccountTargets},
+        merkle_sum_circuit::build_merkle_sum_tree_from_account_targets,
+    },
+    types::{C, D, F},
+};
 use log::Level;
 use plonky2::{
     iop::witness::PartialWitness,
@@ -8,22 +17,13 @@ use plonky2::{
     util::timing::TimingTree,
 };
 use plonky2_field::goldilocks_field::GoldilocksField;
-
-use crate::{
-    account::Account,
-    circuit_config::STANDARD_CONFIG,
-    merkle_sum_prover::circuits::{
-        account_circuit::{AccountSumTargets, AccountTargets},
-        merkle_sum_circuit::build_merkle_sum_tree_from_account_targets,
-    },
-    types::{C, D, F},
-};
+use tracing::error;
 
 /// A merkle sum tree prover with a batch id representing its index in the recursive proof tree and a Vec of accounts representing accounts in this batch.
 #[derive(Clone, Debug)]
 pub struct MerkleSumTreeProver {
     // batch_id: usize,
-    accounts: Vec<Account>,
+    pub accounts: Vec<Account>,
 }
 
 impl MerkleSumTreeProver {
@@ -73,21 +73,24 @@ impl MerkleSumTreeProver {
 
         let proof_res = prove(&prover_only, &common, pw.clone(), &mut timing);
 
-        if proof_res.is_err() {
-            panic!("Proof generation failed!");
+        match proof_res {
+            Ok(proof) => {
+                println!("Finished Proving");
+
+                let proof_verification_res = data.verify(proof.clone());
+                match proof_verification_res {
+                    Ok(_) => proof,
+                    Err(e) => {
+                        error!("Proof verification failed: {:?}", e);
+                        panic!("Proof verification failed!");
+                    }
+                }
+            }
+            Err(e) => {
+                error!("Proof generation failed: {:?}", e);
+                panic!("Proof generation failed!");
+            }
         }
-
-        let proof = proof_res.expect("Proof failed");
-
-        println!("Finished Proving");
-
-        let proof_verification_res = data.verify(proof.clone());
-
-        if proof_verification_res.is_err() {
-            panic!("Proof verification failed!");
-        }
-
-        proof
     }
 }
 

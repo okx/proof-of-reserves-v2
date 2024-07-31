@@ -25,6 +25,7 @@ serde={workspace=true}
 serde_json={workspace=true}
 rayon={workspace=true}
 tracing={workspace=true}
+thiserror={workspace=true}
 
 [dev-dependencies]
 criterion = { version = "0.5.1", default-features = false }
