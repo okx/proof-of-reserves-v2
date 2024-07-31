@@ -14,7 +14,7 @@ use plonky2::{
     }, util::timing::TimingTree
 };
 
-use super::super::circuits::circuit_config;
+use crate::circuit_config;
 use crate::types::{C, D, F};
 use anyhow::Result;
 use lazy_static::lazy_static;

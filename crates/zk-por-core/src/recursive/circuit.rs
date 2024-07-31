@@ -11,7 +11,7 @@ use plonky2::{
     }
 };
 
-use crate::circuits::merkle_sum_circuit::MerkleSumNodeTarget;
+use crate::merkle_sum_prover::circuits::merkle_sum_circuit::MerkleSumNodeTarget;
 
 use crate::types::{D, F};
 

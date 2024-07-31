@@ -1,0 +1,10 @@
+[toolchain]
+channel = "nightly-2024-01-16"
+components = []
+targets = [
+    # Linux
+    "x86_64-unknown-linux-gnu",
+    # macOS
+    "aarch64-apple-darwin"
+]
+profile = "default"
