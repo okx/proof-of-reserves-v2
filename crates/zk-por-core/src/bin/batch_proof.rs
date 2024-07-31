@@ -5,11 +5,14 @@ use plonky2::{
 };
 use plonky2_field::goldilocks_field::GoldilocksField;
 
+use tracing::Level;
 use zk_por_core::{
-    circuit_config::STANDARD_CONFIG, merkle_sum_prover::prover::MerkleSumTreeProver, parser::read_json_into_accounts_vec, types::{C, D, F}
+    circuit_config::STANDARD_CONFIG,
+    merkle_sum_prover::prover::MerkleSumTreeProver,
+    parser::read_json_into_accounts_vec,
+    types::{C, D, F},
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
-use tracing::Level;
 
 fn main() {
     let cfg = TraceConfig {
