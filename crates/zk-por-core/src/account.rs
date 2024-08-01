@@ -17,13 +17,9 @@ pub struct Account {
 impl Account {
     /// Gets the account hash for a given account.
     pub fn get_hash(&self) -> HashOut<F> {
-        let sum_equity = self.equity.iter().fold(F::ZERO, |acc, x| {
-            acc + *x
-        });
+        let sum_equity = self.equity.iter().fold(F::ZERO, |acc, x| acc + *x);
 
-        let sum_debt = self.debt.iter().fold(F::ZERO, |acc, x| {
-            acc + *x
-        });
+        let sum_debt = self.debt.iter().fold(F::ZERO, |acc, x| acc + *x);
 
         let hash = PoseidonHash::hash_no_pad(vec![sum_equity, sum_debt].as_slice());
 

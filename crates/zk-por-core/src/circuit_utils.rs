@@ -55,10 +55,7 @@ pub fn select_hash(
 
 /// Assert 0 <= x <= MAX_POSITIVE_AMOUNT
 /// MAX_POSITIVE_AMOUNT =  (1 << MAX_POSITIVE_AMOUNT_LOG) - 1
-pub fn assert_non_negative_unsigned(
-    builder: &mut CircuitBuilder<F, D>,
-    x: Target,
-) {
+pub fn assert_non_negative_unsigned(builder: &mut CircuitBuilder<F, D>, x: Target) {
     builder.range_check(x, MAX_POSITIVE_AMOUNT_LOG);
 }
 

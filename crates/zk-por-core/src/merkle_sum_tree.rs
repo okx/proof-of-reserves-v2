@@ -1,7 +1,9 @@
 use plonky2::{hash::hash_types::HashOut, util::log2_strict};
 
 use crate::{
-    account::Account, merkle_sum_prover::utils::hash_2_subhashes, types::{D, F}
+    account::Account,
+    merkle_sum_prover::utils::hash_2_subhashes,
+    types::{D, F},
 };
 
 use plonky2_field::types::Field;
@@ -16,14 +18,9 @@ pub struct MerkleSumNode {
 impl MerkleSumNode {
     /// Get a new merkle sum node given a account.
     pub fn new_from_account(account: &Account) -> MerkleSumNode {
-        
-        let sum_equity = account.equity.iter().fold(F::ZERO, |acc, x| {
-            acc + *x
-        });
+        let sum_equity = account.equity.iter().fold(F::ZERO, |acc, x| acc + *x);
 
-        let sum_debt = account.debt.iter().fold(F::ZERO, |acc, x| {
-            acc + *x
-        });
+        let sum_debt = account.debt.iter().fold(F::ZERO, |acc, x| acc + *x);
 
         let hash = account.get_hash();
         MerkleSumNode { hash, sum_equity, sum_debt }
