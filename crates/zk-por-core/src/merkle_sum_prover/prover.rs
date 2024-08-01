@@ -16,7 +16,7 @@ use plonky2::{
     },
     util::timing::TimingTree,
 };
-use plonky2_field::goldilocks_field::GoldilocksField;
+
 use tracing::error;
 
 /// A merkle sum tree prover with a batch id representing its index in the recursive proof tree and a Vec of accounts representing accounts in this batch.
@@ -36,12 +36,9 @@ impl MerkleSumTreeProver {
         let mut account_targets: Vec<AccountTargets> = Vec::new();
 
         for i in 0..self.accounts.len() {
-            let equity_targets =
-                builder.add_virtual_targets(self.accounts.get(i).unwrap().equity.len());
-            let debt_targets =
-                builder.add_virtual_targets(self.accounts.get(i).unwrap().debt.len());
-            let account_target = AccountTargets { equity: equity_targets, debt: debt_targets };
-
+            // Build account targets
+            let account_target = AccountTargets::new_from_account(self.accounts.get(i).unwrap(), builder);
+            // Set account targets
             account_target.set_account_targets(self.accounts.get(i).unwrap(), pw);
             account_targets.push(account_target);
         }
@@ -51,6 +48,7 @@ impl MerkleSumTreeProver {
             .map(|x| AccountSumTargets::from_account_target(x, builder))
             .collect();
 
+        // build merkle sum tree
         let _merkle_tree_targets =
             build_merkle_sum_tree_from_account_targets(builder, &mut account_sum_targets);
     }
@@ -58,7 +56,7 @@ impl MerkleSumTreeProver {
     /// Get the merkle sum tree proof of this batch of accounts.
     pub fn get_proof(&self) -> ProofWithPublicInputs<F, C, D> {
         let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
-        let mut pw = PartialWitness::<GoldilocksField>::new();
+        let mut pw = PartialWitness::<F>::new();
 
         self.build_and_set_merkle_tree_targets(&mut builder, &mut pw);
 

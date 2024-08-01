@@ -1,4 +1,5 @@
 use plonky2::{
+    hash::{hash_types::HashOutTarget, poseidon::PoseidonHash},
     iop::{
         target::Target,
         witness::{PartialWitness, WitnessWrite},
@@ -8,10 +9,9 @@ use plonky2::{
 
 use crate::{
     account::Account,
+    circuit_utils::assert_non_negative_unsigned,
     types::{D, F},
 };
-
-use super::circuit_utils::assert_non_negative_unsigned;
 
 #[derive(Debug, Clone)]
 /// Targets representing a users account, where their equity and debt are split into individual tokens.
@@ -64,14 +64,19 @@ impl AccountSumTargets {
 
         AccountSumTargets { sum_equity, sum_debt }
     }
+
+    /// Get account hash targets
+    pub fn get_account_hash_targets(&self, builder: &mut CircuitBuilder<F, D>) -> HashOutTarget {
+        let hash_inputs = vec![self.sum_equity, self.sum_debt];
+
+        let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs);
+        hash
+    }
 }
 
 #[cfg(test)]
 pub mod test {
-    use crate::{
-        merkle_sum_prover::circuits::circuit_utils::run_circuit_test,
-        parser::read_json_into_accounts_vec,
-    };
+    use crate::{circuit_utils::run_circuit_test, parser::read_json_into_accounts_vec};
 
     use super::{AccountSumTargets, AccountTargets};
 

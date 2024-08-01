@@ -4,9 +4,12 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 
-use crate::types::{D, F};
+use crate::{
+    circuit_utils::assert_non_negative_unsigned,
+    types::{D, F},
+};
 
-use super::{account_circuit::AccountSumTargets, circuit_utils::assert_non_negative_unsigned};
+use super::account_circuit::AccountSumTargets;
 
 /// A node in the merkle sum tree, contains the total amount of equity (in usd) and the total amount of debt (in usd) and the hash.
 ///
@@ -53,9 +56,7 @@ impl MerkleSumNodeTarget {
         builder: &mut CircuitBuilder<F, D>,
         account_targets: &AccountSumTargets,
     ) -> MerkleSumNodeTarget {
-        let hash_inputs = vec![account_targets.sum_equity, account_targets.sum_debt];
-
-        let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs);
+        let hash = account_targets.get_account_hash_targets(builder);
         MerkleSumNodeTarget {
             sum_equity: account_targets.sum_equity,
             sum_debt: account_targets.sum_debt,
@@ -122,10 +123,8 @@ pub fn build_merkle_sum_tree_from_account_targets(
 #[cfg(test)]
 pub mod test {
     use crate::{
-        merkle_sum_prover::circuits::{
-            account_circuit::{AccountSumTargets, AccountTargets},
-            circuit_utils::run_circuit_test,
-        },
+        circuit_utils::run_circuit_test,
+        merkle_sum_prover::circuits::account_circuit::{AccountSumTargets, AccountTargets},
         parser::read_json_into_accounts_vec,
     };
 
