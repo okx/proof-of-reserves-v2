@@ -7,20 +7,18 @@ use crate::{
     },
     types::{C, D, F},
 };
+use anyhow::Result;
 use log::Level;
 use plonky2::{
     iop::witness::PartialWitness,
     plonk::{
-        circuit_builder::CircuitBuilder, circuit_data::CircuitData, 
-        proof::ProofWithPublicInputs,
+        circuit_builder::CircuitBuilder, circuit_data::CircuitData, proof::ProofWithPublicInputs,
         prover::prove,
     },
     util::timing::TimingTree,
 };
 use plonky2_field::goldilocks_field::GoldilocksField;
 use tracing::error;
-use anyhow::Result;
-
 
 /// A merkle sum tree prover with a batch id representing its index in the recursive proof tree and a Vec of accounts representing accounts in this batch.
 #[derive(Clone, Debug)]
@@ -96,13 +94,17 @@ impl MerkleSumTreeProver {
         }
     }
 
-    pub fn prove_with_circuit(&self, circuit_data : &CircuitData<F, C, D>, account_targets : Vec<AccountTargets>)-> Result<ProofWithPublicInputs<F, C, D>> {
+    pub fn prove_with_circuit(
+        &self,
+        circuit_data: &CircuitData<F, C, D>,
+        account_targets: Vec<AccountTargets>,
+    ) -> Result<ProofWithPublicInputs<F, C, D>> {
         if account_targets.len() != self.accounts.len() {
             return Err(anyhow::anyhow!("Account targets length does not match accounts length"));
         }
 
         let mut pw = PartialWitness::new();
- 
+
         let CircuitData { prover_only, common, verifier_only: _ } = circuit_data;
 
         for i in 0..self.accounts.len() {
@@ -130,13 +132,11 @@ pub mod test {
     use plonky2_field::goldilocks_field::GoldilocksField;
 
     use crate::{
+        account::gen_accounts_with_random_data,
         circuit_config::STANDARD_CONFIG,
+        merkle_sum_prover::circuits::merkle_sum_circuit::build_merkle_sum_tree_circuit,
         parser::read_json_into_accounts_vec,
         types::{C, D, F},
-        account::{gen_accounts_with_random_data},
-        merkle_sum_prover::circuits::{
-            merkle_sum_circuit::build_merkle_sum_tree_circuit,
-        },
     };
 
     use super::MerkleSumTreeProver;
@@ -182,18 +182,16 @@ pub mod test {
         let _proof = prover.get_proof();
     }
 
-
-
     #[test]
     pub fn test_separate_circuit_building_and_proving() {
         let num_accounts = 10;
         let num_assets = 5;
-        let (circuit_data, account_targets) = build_merkle_sum_tree_circuit(num_accounts, num_assets);
+        let (circuit_data, account_targets) =
+            build_merkle_sum_tree_circuit(num_accounts, num_assets);
 
-        let (accounts, equity_sum, debt_sum) = gen_accounts_with_random_data(num_accounts, num_assets);
-        let prover = MerkleSumTreeProver {
-            accounts,
-        };
+        let (accounts, equity_sum, debt_sum) =
+            gen_accounts_with_random_data(num_accounts, num_assets);
+        let prover = MerkleSumTreeProver { accounts };
         let proof_result = prover.prove_with_circuit(&circuit_data, account_targets);
         assert!(proof_result.is_ok());
         let proof = proof_result.unwrap();

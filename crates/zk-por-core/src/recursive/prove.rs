@@ -1,12 +1,12 @@
 use plonky2::{
-    iop::witness::{PartialWitness, WitnessWrite}, plonk::{
-        circuit_data::{
-            CircuitData, CommonCircuitData, VerifierOnlyCircuitData
-        },
+    iop::witness::{PartialWitness, WitnessWrite},
+    plonk::{
+        circuit_data::{CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
         config::{AlgebraicHasher, GenericConfig},
         proof::ProofWithPublicInputs,
         prover::prove,
-    }, util::timing::TimingTree
+    },
+    util::timing::TimingTree,
 };
 
 use crate::types::{D, F};
@@ -14,20 +14,19 @@ use anyhow::Result;
 
 use super::circuit::RecursiveTargets;
 
-pub type ProofTuple<F, C, const D: usize> = (
-    ProofWithPublicInputs<F, C, D>,
-    VerifierOnlyCircuitData<C, D>,
-    CommonCircuitData<F, D>,
-);
+pub type ProofTuple<F, C, const D: usize> =
+    (ProofWithPublicInputs<F, C, D>, VerifierOnlyCircuitData<C, D>, CommonCircuitData<F, D>);
 
-pub fn prove_n_subproofs<C: GenericConfig<D, F = F>, InnerC: GenericConfig<D, F = F>, const N: usize>(
+pub fn prove_n_subproofs<
+    C: GenericConfig<D, F = F>,
+    InnerC: GenericConfig<D, F = F>,
+    const N: usize,
+>(
     sub_proofs: Vec<ProofWithPublicInputs<F, InnerC, D>>,
     inner_circuit_vd: &VerifierOnlyCircuitData<InnerC, D>,
     recursive_circuit: &CircuitData<F, C, D>,
     recursive_targets: RecursiveTargets<N>,
-) -> Result<
-    ProofWithPublicInputs<F, C, D>,
->
+) -> Result<ProofWithPublicInputs<F, C, D>>
 where
     InnerC::Hasher: AlgebraicHasher<F>,
     // [(); C::Hasher::HASH_SIZE]:, // TODO: figure out how to make this work
@@ -44,7 +43,10 @@ where
     pw.set_verifier_data_target(&recursive_targets.verifier_circuit_target, inner_circuit_vd);
 
     (0..N).for_each(|i| {
-        pw.set_proof_with_pis_target(&recursive_targets.proof_with_pub_input_targets[i], &sub_proofs[i]);
+        pw.set_proof_with_pis_target(
+            &recursive_targets.proof_with_pub_input_targets[i],
+            &sub_proofs[i],
+        );
     });
 
     let mut timing = TimingTree::new("prove_N_subproofs", log::Level::Debug);
@@ -53,7 +55,8 @@ where
     let proof = prove(&recursive_circuit.prover_only, &recursive_circuit.common, pw, &mut timing)?;
     log::debug!("time for {:?} proofs, {:?}", N, start.elapsed().as_millis());
 
-    #[cfg(debug_assertions)] {
+    #[cfg(debug_assertions)]
+    {
         recursive_circuit.verify(proof.clone())?;
     }
 

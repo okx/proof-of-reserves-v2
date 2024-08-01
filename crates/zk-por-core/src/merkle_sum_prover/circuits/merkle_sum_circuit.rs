@@ -1,12 +1,18 @@
 use plonky2::{
-    hash::{hash_types::{HashOutTarget, NUM_HASH_OUT_ELTS}, poseidon::PoseidonHash},
+    hash::{
+        hash_types::{HashOutTarget, NUM_HASH_OUT_ELTS},
+        poseidon::PoseidonHash,
+    },
     iop::target::Target,
     plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitData},
 };
 
 use crate::types::{C, D, F};
 
-use super::{account_circuit::{AccountSumTargets, AccountTargets}, circuit_utils::assert_non_negative_unsigned};
+use super::{
+    account_circuit::{AccountSumTargets, AccountTargets},
+    circuit_utils::assert_non_negative_unsigned,
+};
 use crate::circuit_config::STANDARD_CONFIG;
 
 /// A node in the merkle sum tree, contains the total amount of equity (in usd) and the total amount of debt (in usd) and the hash.
@@ -80,20 +86,18 @@ impl MerkleSumNodeTarget {
 
 impl From<Vec<Target>> for MerkleSumNodeTarget {
     /// the parsing order must be consistent with the order of public input registration in `registered_as_public_inputs`
-	fn from(inputs: Vec<Target>) -> MerkleSumNodeTarget {
-		let mut iter = inputs.into_iter();
-		let sum_equity_target = iter.next().unwrap();
-		let sum_debt_target = iter.next().unwrap();
-		let hash_target = HashOutTarget::from_vec(
-			iter.by_ref().take(NUM_HASH_OUT_ELTS).collect(),
-		);
+    fn from(inputs: Vec<Target>) -> MerkleSumNodeTarget {
+        let mut iter = inputs.into_iter();
+        let sum_equity_target = iter.next().unwrap();
+        let sum_debt_target = iter.next().unwrap();
+        let hash_target = HashOutTarget::from_vec(iter.by_ref().take(NUM_HASH_OUT_ELTS).collect());
 
-		MerkleSumNodeTarget {
-			sum_equity: sum_equity_target,
-			sum_debt: sum_debt_target,
-			hash: hash_target,
-		}
-	}
+        MerkleSumNodeTarget {
+            sum_equity: sum_equity_target,
+            sum_debt: sum_debt_target,
+            hash: hash_target,
+        }
+    }
 }
 /// We can represent the Merkle Sum Tree as a vector of merkle sum nodes, with the root being the last node in the vector.    
 pub struct MerkleSumTreeTarget {
@@ -151,25 +155,21 @@ pub fn build_merkle_sum_tree_from_account_targets(
 }
 
 pub fn build_merkle_sum_tree_circuit(
-    num_of_leaves : usize,
+    num_of_leaves: usize,
     asset_num: usize,
 ) -> (CircuitData<F, C, D>, Vec<AccountTargets>) {
-
     let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
     let mut account_targets: Vec<AccountTargets> = Vec::new();
     (0..num_of_leaves).for_each(|_| {
         let equity_targets = builder.add_virtual_targets(asset_num);
         let debt_targets = builder.add_virtual_targets(asset_num);
-        let account_target = AccountTargets {
-            equity: equity_targets,
-            debt: debt_targets,
-        };
+        let account_target = AccountTargets { equity: equity_targets, debt: debt_targets };
         account_targets.push(account_target);
     });
     let mut account_sum_targets: Vec<AccountSumTargets> = account_targets
-    .iter()
-    .map(|x| AccountSumTargets::from_account_target(x, &mut builder))
-    .collect();
+        .iter()
+        .map(|x| AccountSumTargets::from_account_target(x, &mut builder))
+        .collect();
 
     _ = build_merkle_sum_tree_from_account_targets(&mut builder, &mut account_sum_targets);
     let circuit_data = builder.build::<C>();
@@ -230,5 +230,4 @@ pub mod test {
             account_target_2.set_account_targets(accounts.get(1).unwrap(), pw);
         });
     }
-
 }
