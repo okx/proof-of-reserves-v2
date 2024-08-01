@@ -1,88 +1,53 @@
-use log::Level;
-use plonky2::{
-    iop::witness::{PartialWitness, WitnessWrite},
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
-        config::{GenericHashOut, PoseidonGoldilocksConfig},
-        proof::ProofWithPublicInputs,
-        prover::prove,
-    },
-    util::timing::TimingTree,
-};
-use super::super::{
-    circuits::{
-        account_circuit::{AccountSumTargets, AccountTargets},
-        circuit_config::STANDARD_CONFIG,
-        merkle_sum_circuit::build_merkle_sum_tree_from_account_targets,
-    },
-    core::{account::Account, parser::read_json_into_accounts_vec},
-    // recursive::{prove::{aggregate_proofs_at_level, prove_n_subproofs}, vd::VdTree},
-    types::{C, D, F},
-};
+use super::{super::{
+    account::gen_accounts_with_random_data,
+    merkle_sum_prover::{
+        circuits::merkle_sum_circuit::build_merkle_sum_tree_circuit, 
+        prover::MerkleSumTreeProver
+    }, 
+    types::{C,F}
+}, circuit::build_recursive_n_circuit};
 
-use plonky2::iop::target::Target;
+use super::prove::prove_n_subproofs;
 use plonky2_field::types::Field;
-use plonky2_field::goldilocks_field::GoldilocksField;
-use rand::Rng;
-use lazy_static::lazy_static;
-
-lazy_static! {
-    pub static ref CIRCUIT : (CircuitData<F,C,D>, Target, Target, Target) = {
-        let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
-        let t1 = builder.add_virtual_target();
-        let t2 = builder.add_virtual_target();
-        let t3 = builder.add_virtual_target();
-
-        let t4 = builder.add(t1, t2);
-        let t5 = builder.mul(t3, t4);
-        builder.register_public_input(t5);
-
-        let circuit_data = builder.build::<C>();
-        (circuit_data, t1.clone(), t2.clone(), t3.clone())
-    };
-}
 
 #[test]
-fn test_one() {
-    let circuit_data = &CIRCUIT.0;
-    let t1 = CIRCUIT.1;
-    let t2 = CIRCUIT.2;
-    let t3 = CIRCUIT.3;
+fn test() {
+    let batch_size = 4;
+    let asset_num = 2;
+    const RECURSIVE_FACTOR : usize = 8;
 
-    let pd = &circuit_data.prover_only;
-    let vd = &circuit_data.verifier_only;
-    let cd = &circuit_data.common;
-    let mut timing = TimingTree::new("prove", Level::Debug);
-
-    let mut pw1: PartialWitness<F> = PartialWitness::new();
-    pw1.set_target(t1, F::ONE);
-    pw1.set_target(t2, F::TWO);
-    pw1.set_target(t3, F::from_canonical_u16(3));
-
-    let proof_res1 = prove(pd, cd, pw1, &mut timing).unwrap();
-    print!("pub inputs1: {:?}", proof_res1.public_inputs);
+    let start = std::time::Instant::now();
+    let (merkle_sum_circuit, account_targets) = build_merkle_sum_tree_circuit(batch_size, asset_num);
+    println!("build merkle sum tree circuit in : {:?}", start.elapsed());
 
 
+    let (accounts, equity_sum, debt_sum) = gen_accounts_with_random_data(batch_size, asset_num);
+    let prover = MerkleSumTreeProver {
+        accounts,
+    };
 
-    ////////////////////////////////////////////////////////////////
-    let circuit_data = &CIRCUIT.0;
-    let t1 = CIRCUIT.1;
-    let t2 = CIRCUIT.2;
-    let t3 = CIRCUIT.3;
+    let start = std::time::Instant::now(); 
+    let merkle_sum_proof = prover.prove_with_circuit(&merkle_sum_circuit, account_targets).unwrap();
+    println!("prove merkle sum tree in : {:?}", start.elapsed());
 
-    let pd = &circuit_data.prover_only;
-    let vd = &circuit_data.verifier_only;
-    let cd = &circuit_data.common;
-    let mut timing = TimingTree::new("prove", Level::Debug);
+    let start = std::time::Instant::now(); 
+    let (recursive_circuit, recursive_account_targets) = build_recursive_n_circuit::<C, RECURSIVE_FACTOR>(&merkle_sum_circuit.common, &merkle_sum_circuit.verifier_only); 
+    println!("build recursive circuit in : {:?}", start.elapsed());
 
-    let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
+    let mut subproofs = Vec::new();
+    (0..RECURSIVE_FACTOR).for_each(|_| {
+        subproofs.push(merkle_sum_proof.clone());
+    });
+    let start = std::time::Instant::now(); 
+    let recursive_proof_result = prove_n_subproofs(subproofs, &merkle_sum_circuit.verifier_only, &recursive_circuit, recursive_account_targets);    
+    println!("prove recursive subproofs in : {:?}", start.elapsed());
 
-    let mut pw1: PartialWitness<F> = PartialWitness::new();
-    pw1.set_target(t1, F::from_canonical_u16(3));
-    pw1.set_target(t2, F::TWO);
-    pw1.set_target(t3, F::from_canonical_u16(1));
+    assert!(recursive_proof_result.is_ok());
+    let recursive_proof = recursive_proof_result.unwrap();
 
-    let proof_res1 = prove(pd, cd, pw1, &mut timing).unwrap();
-    print!("pub inputs2: {:?}", proof_res1.public_inputs);
+    // print public inputs in recursive proof
+    assert_eq!(F::from_canonical_u32(equity_sum * (RECURSIVE_FACTOR as u32)), recursive_proof.public_inputs[0]);
+    assert_eq!(F::from_canonical_u32(debt_sum * (RECURSIVE_FACTOR as u32)), recursive_proof.public_inputs[1]);
+
+    assert!(recursive_circuit.verify(recursive_proof).is_ok());
 }

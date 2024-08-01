@@ -178,6 +178,8 @@ pub fn build_merkle_sum_tree_circuit(
 
 #[cfg(test)]
 pub mod test {
+    use rand::Rng;
+
     use crate::{
         merkle_sum_prover::circuits::{
             account_circuit::{AccountSumTargets, AccountTargets},
@@ -187,6 +189,7 @@ pub mod test {
     };
 
     use super::MerkleSumNodeTarget;
+    use crate::core::account::Account;
 
     #[test]
     pub fn test_merkle_sum_node() {
@@ -227,4 +230,5 @@ pub mod test {
             account_target_2.set_account_targets(accounts.get(1).unwrap(), pw);
         });
     }
+
 }

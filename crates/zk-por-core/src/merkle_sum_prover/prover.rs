@@ -11,7 +11,8 @@ use log::Level;
 use plonky2::{
     iop::witness::PartialWitness,
     plonk::{
-        circuit_builder::CircuitBuilder, circuit_data::{self, CircuitData, CommonCircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData}, proof::ProofWithPublicInputs,
+        circuit_builder::CircuitBuilder, circuit_data::CircuitData, 
+        proof::ProofWithPublicInputs,
         prover::prove,
     },
     util::timing::TimingTree,
@@ -19,6 +20,7 @@ use plonky2::{
 use plonky2_field::goldilocks_field::GoldilocksField;
 use tracing::error;
 use anyhow::Result;
+
 
 /// A merkle sum tree prover with a batch id representing its index in the recursive proof tree and a Vec of accounts representing accounts in this batch.
 #[derive(Clone, Debug)]
@@ -94,14 +96,14 @@ impl MerkleSumTreeProver {
         }
     }
 
-    pub fn prove_with_circuit(&self, circuit_data : CircuitData<F, C, D>, account_targets : Vec<AccountTargets>)-> Result<ProofWithPublicInputs<F, C, D>> {
+    pub fn prove_with_circuit(&self, circuit_data : &CircuitData<F, C, D>, account_targets : Vec<AccountTargets>)-> Result<ProofWithPublicInputs<F, C, D>> {
         if account_targets.len() != self.accounts.len() {
             return Err(anyhow::anyhow!("Account targets length does not match accounts length"));
         }
 
         let mut pw = PartialWitness::new();
  
-        let CircuitData { prover_only, common, verifier_only: _ } = &circuit_data;
+        let CircuitData { prover_only, common, verifier_only: _ } = circuit_data;
 
         for i in 0..self.accounts.len() {
             account_targets[i].set_account_targets(self.accounts.get(i).unwrap(), &mut pw);
@@ -131,9 +133,14 @@ pub mod test {
         circuit_config::STANDARD_CONFIG,
         parser::read_json_into_accounts_vec,
         types::{C, D, F},
+        account::{gen_accounts_with_random_data},
+        merkle_sum_prover::circuits::{
+            merkle_sum_circuit::build_merkle_sum_tree_circuit,
+        },
     };
 
     use super::MerkleSumTreeProver;
+    use plonky2_field::types::Field;
 
     #[test]
     pub fn test_build_and_set_merkle_targets() {
@@ -173,5 +180,27 @@ pub mod test {
         };
 
         let _proof = prover.get_proof();
+    }
+
+
+
+    #[test]
+    pub fn test_separate_circuit_building_and_proving() {
+        let num_accounts = 10;
+        let num_assets = 5;
+        let (circuit_data, account_targets) = build_merkle_sum_tree_circuit(num_accounts, num_assets);
+
+        let (accounts, equity_sum, debt_sum) = gen_accounts_with_random_data(num_accounts, num_assets);
+        let prover = MerkleSumTreeProver {
+            accounts,
+        };
+        let proof_result = prover.prove_with_circuit(&circuit_data, account_targets);
+        assert!(proof_result.is_ok());
+        let proof = proof_result.unwrap();
+
+        // account_sum and debt_sum are the public inputs
+        assert_eq!(F::from_canonical_u32(equity_sum), proof.public_inputs[0]);
+        assert_eq!(F::from_canonical_u32(debt_sum), proof.public_inputs[1]);
+        assert!(circuit_data.verify(proof).is_ok());
     }
 }
