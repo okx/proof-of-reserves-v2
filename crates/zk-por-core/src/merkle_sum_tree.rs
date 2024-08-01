@@ -1,11 +1,9 @@
 use plonky2::{hash::hash_types::HashOut, util::log2_strict};
 
 use crate::{
-    account::Account,
-    types::{D, F},
+    account::Account, merkle_sum_prover::utils::hash_2_subhashes, types::{D, F}
 };
 
-use super::utils::hash_2_subhashes;
 use plonky2_field::types::Field;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
