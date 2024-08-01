@@ -1,16 +1,13 @@
 # proof-of-reserves-v2
-<<<<<<< HEAD
-8,8 circuit_digest: HashOut { elements: [16924078607128298677, 16506615518198267059, 5866901090571266264, 6088775842341458287] }
-16,16 [16924078607128298677, 16506615518198267059, 5866901090571266264, 6088775842341458287]
+
+## Background
+
+OKX launches [Proof of Reserves (PoR)](https://www.okx.com/proof-of-reserves) to improve the security and transparency
+of user's assets. These tools will allow you to independently audit OKX's Proof of Reserves and verify OKX's reserves
+exceed the exchange's known liabilities to users, in order to confirm the solvency of OKX.
 
 
-time for 2 proofs, 2364 ms
-time for 4 proofs, 2503 ms
-time for 8 proofs, 4511 ms
-time for 16 proofs, 13864 ms
-time for 32 proofs, 23451 ms
-time for 64 proofs, 56551
-=======
+## Liabilities
+OKX's PoR uses zk Merkle Sum Tree technology to allow each user to independently review OKX's digital asset reserve on the
+basis of protecting user privacy. We used plonky2 to build the proofs of users' assets using merkle sum tree; A detailed documentation of the technical solution is to be given separately.
 
-this project construct the zkp system for okx's proof of solvency.
->>>>>>> dev
