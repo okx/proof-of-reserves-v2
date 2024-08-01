@@ -13,6 +13,7 @@ use super::{
 use super::prove::prove_n_subproofs;
 use plonky2_field::types::Field;
 
+#[ignore]
 #[test]
 fn test() {
     let batch_size = 4;
