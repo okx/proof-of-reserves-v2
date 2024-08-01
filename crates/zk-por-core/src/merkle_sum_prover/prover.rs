@@ -37,7 +37,8 @@ impl MerkleSumTreeProver {
 
         for i in 0..self.accounts.len() {
             // Build account targets
-            let account_target = AccountTargets::new_from_account(self.accounts.get(i).unwrap(), builder);
+            let account_target =
+                AccountTargets::new_from_account(self.accounts.get(i).unwrap(), builder);
             // Set account targets
             account_target.set_account_targets(self.accounts.get(i).unwrap(), pw);
             account_targets.push(account_target);

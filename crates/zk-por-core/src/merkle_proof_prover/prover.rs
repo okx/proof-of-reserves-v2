@@ -1,8 +1,17 @@
 use log::Level;
-use plonky2::{iop::witness::PartialWitness, plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitData, proof::ProofWithPublicInputs, prover::prove}, util::timing::TimingTree};
+use plonky2::{
+    iop::witness::PartialWitness,
+    plonk::{
+        circuit_builder::CircuitBuilder, circuit_data::CircuitData, proof::ProofWithPublicInputs,
+        prover::prove,
+    },
+    util::timing::TimingTree,
+};
 
 use crate::{
-    circuit_config::STANDARD_CONFIG, merkle_sum_prover::circuits::account_circuit::AccountTargets, types::{C, D, F}
+    circuit_config::STANDARD_CONFIG,
+    merkle_sum_prover::circuits::account_circuit::AccountTargets,
+    types::{C, D, F},
 };
 
 use super::{merkle_proof::MerkleProofProvingInputs, merkle_proof_circuits::MerkleProofTargets};
