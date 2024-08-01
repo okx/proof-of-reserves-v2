@@ -23,13 +23,14 @@ impl Account {
 
         let id = self.get_user_id_in_field();
 
-        let hash = PoseidonHash::hash_no_pad(vec![id, vec![sum_equity, sum_debt]].concat().as_slice());
+        let hash =
+            PoseidonHash::hash_no_pad(vec![id, vec![sum_equity, sum_debt]].concat().as_slice());
 
         hash
     }
 
-    /// Gets a user id as a vec of 5 GF elements. 
-    pub fn get_user_id_in_field(&self)-> Vec<F>{
+    /// Gets a user id as a vec of 5 GF elements.
+    pub fn get_user_id_in_field(&self) -> Vec<F> {
         assert!(self.id.len() == 64);
         let segments = vec![
             self.id[0..14].to_string(),  // First 56 bits (14 hex chars)
@@ -38,8 +39,10 @@ impl Account {
             self.id[42..56].to_string(), // Fourth 56 bits
             self.id[56..64].to_string(), // Remaining 32 bits (8 hex chars, fits in 56 bits)
         ];
-        
-        segments.iter()
-            .map(|seg| F::from_canonical_u64(u64::from_str_radix(seg, 16).unwrap())).collect::<Vec<F>>()
+
+        segments
+            .iter()
+            .map(|seg| F::from_canonical_u64(u64::from_str_radix(seg, 16).unwrap()))
+            .collect::<Vec<F>>()
     }
 }
