@@ -6,7 +6,7 @@ use plonky2::{
     }, iop::witness::{PartialWitness, WitnessWrite}, plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{
-            CircuitConfig, CommonCircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData,
+            self, CircuitConfig, CircuitData, CommonCircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData
         },
         config::{AlgebraicHasher, GenericConfig, GenericHashOut, Hasher},
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
@@ -21,7 +21,7 @@ use lazy_static::lazy_static;
 use serde_json;
 use std::{fs, path::PathBuf};
 
-use super::circuit;
+use super::circuit::RecursiveTargets;
 use super::vd::{VDProof, VdMap};
 
 pub type ProofTuple<F, C, const D: usize> = (
@@ -123,23 +123,17 @@ pub type ProofTuple<F, C, const D: usize> = (
 
 pub fn prove_n_subproofs<C: GenericConfig<D, F = F>, InnerC: GenericConfig<D, F = F>, const N: usize>(
     proofs: [ProofTuple<F, InnerC, D>;N],
-    config: &CircuitConfig,
-) -> Result<(
+    circuit_data: &CircuitData<F, C, D>,
+    recursive_targets: RecursiveTargets<N>,
+) -> Result<
     ProofWithPublicInputs<F, C, D>,
-    VerifierOnlyCircuitData<C, D>,
-    CommonCircuitData<F, D>,
-)>
+>
 where
     InnerC::Hasher: AlgebraicHasher<F>,
     // [(); C::Hasher::HASH_SIZE]:, // TODO: figure out how to make this work
 {
     // get circuit data only from the first proof, as the subsequent proofs are constrained to be identical to the first proof. 
     let (_, verifier_circuit_data, common_circuit_data) = &proofs[0];
-
-    let mut builder = CircuitBuilder::<F, D>::new(config.clone());
-
-    let recursive_targets =
-        circuit::build_recursive_n_circuit::<InnerC, N>(&mut builder, &common_circuit_data);
 
     let mut pw = PartialWitness::new();
     pw.set_verifier_data_target(&recursive_targets.verifier_circuit_target, &verifier_circuit_data);
@@ -149,23 +143,17 @@ where
         pw.set_proof_with_pis_target(&recursive_targets.proof_with_pub_input_targets[i], proof_with_pub_input);
     });
 
-    #[cfg(debug_assertions)]
-    builder.print_gate_counts(0);
-
-    log::debug!("before build");
-    let data = builder.build::<C>();
-    log::debug!("after build");
     let mut timing = TimingTree::new("prove_N_subproofs", log::Level::Debug);
     let start = std::time::Instant::now();
     log::debug!("before prove");
-    let proof = prove(&data.prover_only, &data.common, pw, &mut timing)?;
+    let proof = prove(&circuit_data.prover_only, &circuit_data.common, pw, &mut timing)?;
+    log::debug!("time for {:?} proofs, {:?}", N, start.elapsed().as_millis());
 
     #[cfg(debug_assertions)] {
-        log::debug!("time for {:?} proofs, {:?}", N, start.elapsed().as_millis());
-        data.verify(proof.clone())?;
+        circuit_data.verify(proof.clone())?;
     }
 
-    Ok((proof, data.verifier_only, data.common))
+    Ok(proof)
 }
 
 // pub fn aggregate_proofs_at_level<C: GenericConfig<D, F = F>, InnerC: GenericConfig<D, F = F>, const N: usize>(

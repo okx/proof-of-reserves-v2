@@ -11,13 +11,14 @@ use log::Level;
 use plonky2::{
     iop::witness::PartialWitness,
     plonk::{
-        circuit_builder::CircuitBuilder, circuit_data::CircuitData, proof::ProofWithPublicInputs,
+        circuit_builder::CircuitBuilder, circuit_data::{self, CircuitData, CommonCircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData}, proof::ProofWithPublicInputs,
         prover::prove,
     },
     util::timing::TimingTree,
 };
 use plonky2_field::goldilocks_field::GoldilocksField;
 use tracing::error;
+use anyhow::Result;
 
 /// A merkle sum tree prover with a batch id representing its index in the recursive proof tree and a Vec of accounts representing accounts in this batch.
 #[derive(Clone, Debug)]
@@ -91,6 +92,28 @@ impl MerkleSumTreeProver {
                 panic!("Proof generation failed!");
             }
         }
+    }
+
+    pub fn prove_with_circuit(&self, circuit_data : CircuitData<F, C, D>, account_targets : Vec<AccountTargets>)-> Result<ProofWithPublicInputs<F, C, D>> {
+        if account_targets.len() != self.accounts.len() {
+            return Err(anyhow::anyhow!("Account targets length does not match accounts length"));
+        }
+
+        let mut pw = PartialWitness::new();
+ 
+        let CircuitData { prover_only, common, verifier_only: _ } = &circuit_data;
+
+        for i in 0..self.accounts.len() {
+            account_targets[i].set_account_targets(self.accounts.get(i).unwrap(), &mut pw);
+        }
+
+        let mut timing = TimingTree::new("prove_merkle_sum_tree", Level::Debug);
+        let proof = prove(&prover_only, &common, pw, &mut timing)?;
+
+        #[cfg(debug_assertions)]
+        circuit_data.verify(proof.clone()).unwrap();
+
+        Ok(proof)
     }
 }
 

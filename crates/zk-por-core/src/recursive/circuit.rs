@@ -5,15 +5,16 @@ use plonky2::{
         poseidon::PoseidonHash,
     }, iop::target::Target, plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CommonCircuitData, VerifierCircuitTarget},
+        circuit_data::{CommonCircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData, CircuitData},
         config::{AlgebraicHasher, GenericConfig},
         proof::ProofWithPublicInputsTarget,
     }
 };
 
 use crate::merkle_sum_prover::circuits::merkle_sum_circuit::MerkleSumNodeTarget;
+use crate::circuit_config::STANDARD_CONFIG;
 
-use crate::types::{D, F};
+use crate::types::{C, D, F};
 
 pub struct RecursiveTargets<const N: usize> {
     pub size: usize,
@@ -59,25 +60,27 @@ pub fn build_recursive_n_circuit<
     const N: usize,
 >(
     builder: &mut CircuitBuilder<F, D>,
-    common_circuit_data: &CommonCircuitData<F, D>,
-) -> RecursiveTargets<N>
+    inner_common_circuit_data: &CommonCircuitData<F, D>,
+    _inner_verifier_circuit_data: &VerifierOnlyCircuitData<InnerC, D>,
+) -> (CircuitData<F, C, D>, RecursiveTargets<N>)
 where
     InnerC::Hasher: AlgebraicHasher<F>,
 {
+    let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG.clone());
     let verifier_circuit_target = VerifierCircuitTarget {
         constants_sigmas_cap: builder
-            .add_virtual_cap(common_circuit_data.config.fri_config.cap_height),
+            .add_virtual_cap(inner_common_circuit_data.config.fri_config.cap_height),
         circuit_digest: builder.add_virtual_hash(),
     };
 
 	let mut proof_with_pub_input_targets : Vec<ProofWithPublicInputsTarget<D>> = vec![];
 	(0..N).for_each(|_| {
         let proof_with_pub_input_target =
-            builder.add_virtual_proof_with_pis::<InnerC>(common_circuit_data);
+            builder.add_virtual_proof_with_pis::<InnerC>(inner_common_circuit_data);
         builder.verify_proof::<InnerC>(
             &proof_with_pub_input_target,
             &verifier_circuit_target,
-            common_circuit_data,
+            inner_common_circuit_data,
         );
 		proof_with_pub_input_targets.push(proof_with_pub_input_target);
 	});
@@ -85,17 +88,26 @@ where
 	let mut merkle_sum_node_targets : [MerkleSumNodeTarget;N] = [MerkleSumNodeTarget::default();N];
 	merkle_sum_node_targets[0] = MerkleSumNodeTarget::from(proof_with_pub_input_targets[0].public_inputs.clone());
 	(1..N).for_each(|i| {
-		merkle_sum_node_targets[i] = MerkleSumNodeTarget::get_child_from_parents(builder, &merkle_sum_node_targets[i-1], &MerkleSumNodeTarget::from(proof_with_pub_input_targets[i].public_inputs.clone()));
+		merkle_sum_node_targets[i] = MerkleSumNodeTarget::get_child_from_parents(&mut builder, &merkle_sum_node_targets[i-1], &MerkleSumNodeTarget::from(proof_with_pub_input_targets[i].public_inputs.clone()));
 	});
-	merkle_sum_node_targets[N-1].registered_as_public_inputs(builder);
+	merkle_sum_node_targets[N-1].registered_as_public_inputs(&mut builder);
 
 	// TODO: 
     // let vd_proof_target = build_vd_circuit(builder, vd_proof_len);
     // builder.register_public_inputs(vd_proof_target.vd_root_target.elements.as_slice()); // must be done after parent_node_target is registered as public inputs
+    #[cfg(debug_assertions)]
+    builder.print_gate_counts(0);
 
-    RecursiveTargets::<N> {
-        size: N,
-		proof_with_pub_input_targets: proof_with_pub_input_targets,
-		verifier_circuit_target: verifier_circuit_target,	
-    }
+    log::debug!("before build recurisve {} circuit", N);
+    let circuit_data = builder.build::<C>();
+    log::debug!("after build recurisve {} circuit", N);
+
+    (
+        circuit_data,
+        RecursiveTargets::<N> {
+            size: N,
+            proof_with_pub_input_targets: proof_with_pub_input_targets,
+            verifier_circuit_target: verifier_circuit_target,	
+        }
+    )
 }

@@ -1,12 +1,13 @@
 use plonky2::{
-    hash::{hash_types::HashOutTarget, poseidon::PoseidonHash, hash_types::{NUM_HASH_OUT_ELTS}},
+    hash::{hash_types::{HashOutTarget, NUM_HASH_OUT_ELTS}, poseidon::PoseidonHash},
     iop::target::Target,
-    plonk::circuit_builder::CircuitBuilder,
+    plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitData},
 };
 
-use crate::types::{D, F};
+use crate::types::{C, D, F};
 
-use super::{account_circuit::AccountSumTargets, circuit_utils::assert_non_negative_unsigned};
+use super::{account_circuit::{AccountSumTargets, AccountTargets}, circuit_utils::assert_non_negative_unsigned};
+use crate::circuit_config::STANDARD_CONFIG;
 
 /// A node in the merkle sum tree, contains the total amount of equity (in usd) and the total amount of debt (in usd) and the hash.
 ///
@@ -147,6 +148,32 @@ pub fn build_merkle_sum_tree_from_account_targets(
     tree.register_public_inputs(builder);
 
     return tree;
+}
+
+pub fn build_merkle_sum_tree_circuit(
+    num_of_leaves : usize,
+    asset_num: usize,
+) -> (CircuitData<F, C, D>, Vec<AccountTargets>) {
+
+    let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
+    let mut account_targets: Vec<AccountTargets> = Vec::new();
+    (0..num_of_leaves).for_each(|_| {
+        let equity_targets = builder.add_virtual_targets(asset_num);
+        let debt_targets = builder.add_virtual_targets(asset_num);
+        let account_target = AccountTargets {
+            equity: equity_targets,
+            debt: debt_targets,
+        };
+        account_targets.push(account_target);
+    });
+    let mut account_sum_targets: Vec<AccountSumTargets> = account_targets
+    .iter()
+    .map(|x| AccountSumTargets::from_account_target(x, &mut builder))
+    .collect();
+
+    _ = build_merkle_sum_tree_from_account_targets(&mut builder, &mut account_sum_targets);
+    let circuit_data = builder.build::<C>();
+    (circuit_data, account_targets)
 }
 
 #[cfg(test)]
