@@ -16,6 +16,7 @@ use crate::{
 #[derive(Debug, Clone)]
 /// Targets representing a users account, where their equity and debt are split into individual tokens.
 pub struct AccountTargets {
+    pub id: Vec<Target>,
     pub equity: Vec<Target>,
     pub debt: Vec<Target>,
 }
@@ -25,10 +26,11 @@ impl AccountTargets {
         account: &Account,
         builder: &mut CircuitBuilder<F, D>,
     ) -> AccountTargets {
+        let id = builder.add_virtual_targets(5); // id is 5 targets
         let equity = builder.add_virtual_targets(account.equity.len());
         let debt = builder.add_virtual_targets(account.debt.len());
 
-        AccountTargets { equity, debt }
+        AccountTargets { id, equity, debt }
     }
 
     pub fn set_account_targets(&self, account_info: &Account, pw: &mut PartialWitness<F>) {
@@ -37,12 +39,14 @@ impl AccountTargets {
 
         pw.set_target_arr(self.equity.as_slice(), account_info.equity.as_slice());
         pw.set_target_arr(self.debt.as_slice(), account_info.debt.as_slice());
+        pw.set_target_arr(self.id.as_slice(), &account_info.get_user_id_in_field().as_slice());
     }
 }
 
 #[derive(Debug, Clone)]
 /// Targets representing a users account, where their equity and liabilities are summed into 2 summed values.
 pub struct AccountSumTargets {
+    pub id: Vec<Target>,
     pub sum_equity: Target,
     pub sum_debt: Target,
 }
@@ -62,12 +66,12 @@ impl AccountSumTargets {
         // Ensure the equity is greater than the debt. This works as long as we constrict our equity to 62 bits.
         assert_non_negative_unsigned(builder, diff_between_equity_debt);
 
-        AccountSumTargets { sum_equity, sum_debt }
+        AccountSumTargets { id: account.id.clone(), sum_equity, sum_debt }
     }
 
     /// Get account hash targets
     pub fn get_account_hash_targets(&self, builder: &mut CircuitBuilder<F, D>) -> HashOutTarget {
-        let hash_inputs = vec![self.sum_equity, self.sum_debt];
+        let hash_inputs = vec![self.id.clone(), vec![self.sum_equity, self.sum_debt]].concat();
 
         let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs);
         hash
