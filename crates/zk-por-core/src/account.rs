@@ -16,7 +16,7 @@ pub struct Account {
 
 impl Account {
     /// Gets the account hash for a given account.
-    pub fn get_hash(self) -> HashOut<F> {
+    pub fn get_hash(&self) -> HashOut<F> {
         let mut sum_equity = F::ZERO;
         let mut sum_debt = F::ZERO;
 

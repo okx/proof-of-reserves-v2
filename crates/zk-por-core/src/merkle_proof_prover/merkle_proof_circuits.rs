@@ -1,5 +1,10 @@
 use plonky2::{
-    hash::hash_types::HashOutTarget, iop::target::Target, plonk::circuit_builder::CircuitBuilder,
+    hash::hash_types::HashOutTarget,
+    iop::{
+        target::Target,
+        witness::{PartialWitness, WitnessWrite},
+    },
+    plonk::circuit_builder::CircuitBuilder,
 };
 
 use crate::{
@@ -7,6 +12,8 @@ use crate::{
     merkle_sum_prover::circuits::account_circuit::{AccountSumTargets, AccountTargets},
     types::{D, F},
 };
+
+use super::merkle_proof::MerkleProofProvingInputs;
 
 pub struct MerkleProofTargets {
     pub merkle_root_target: HashOutTarget,
@@ -40,7 +47,7 @@ impl MerkleProofTargets {
     /// Given the siblings in a merkle tree and my root hash, verify the merkle proof of inclusion of the supplied leaf hash.
     /// Since the order of the hash depends on my siblings position, we use the index bits of the index target to determine the order of the
     /// hash inputs.
-    pub fn verify_merkle_proof_circuit(self, builder: &mut CircuitBuilder<F, D>) {
+    pub fn verify_merkle_proof_circuit(&self, builder: &mut CircuitBuilder<F, D>) {
         // Get the index bits up to the merkle tree depth number of bits from Little endian representation
         let index_bits = builder.split_le(self.index_target, self.merkle_tree_depth);
 
@@ -56,5 +63,19 @@ impl MerkleProofTargets {
         }
 
         builder.connect_hashes(leaf_hash, self.merkle_root_target);
+    }
+
+    pub fn set_merkle_proof_targets(
+        &self,
+        merkle_proof_pis: &MerkleProofProvingInputs,
+        pw: &mut PartialWitness<F>,
+    ) {
+        self.siblings.iter().enumerate().for_each(|x| {
+            let hash_pi = merkle_proof_pis.siblings.get(x.0).unwrap();
+            pw.set_hash_target(*x.1, *hash_pi);
+        });
+
+        pw.set_target(self.index_target, merkle_proof_pis.index);
+        pw.set_hash_target(self.merkle_root_target, merkle_proof_pis.root);
     }
 }

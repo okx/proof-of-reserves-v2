@@ -95,48 +95,22 @@ impl MerkleSumTreeProver {
 
 #[cfg(test)]
 pub mod test {
-    use log::Level;
-    use plonky2::{
-        iop::witness::PartialWitness,
-        plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitData, prover::prove},
-        util::timing::TimingTree,
-    };
-    use plonky2_field::goldilocks_field::GoldilocksField;
-
-    use crate::{
-        circuit_config::STANDARD_CONFIG,
-        parser::read_json_into_accounts_vec,
-        types::{C, D, F},
-    };
+    use crate::{circuit_utils::run_circuit_test, parser::read_json_into_accounts_vec};
 
     use super::MerkleSumTreeProver;
 
     #[test]
     pub fn test_build_and_set_merkle_targets() {
-        let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
-        let mut pw = PartialWitness::<GoldilocksField>::new();
+        run_circuit_test(|builder, pw| {
+            let path = "../../test-data/batch0.json";
+            let accounts = read_json_into_accounts_vec(path);
+            let prover = MerkleSumTreeProver {
+                // batch_id: 0,
+                accounts,
+            };
 
-        let path = "../../test-data/batch0.json";
-        let accounts = read_json_into_accounts_vec(path);
-        let prover = MerkleSumTreeProver {
-            // batch_id: 0,
-            accounts,
-        };
-
-        prover.build_and_set_merkle_tree_targets(&mut builder, &mut pw);
-
-        let data = builder.build::<C>();
-
-        let CircuitData { prover_only, common, verifier_only: _ } = &data;
-
-        println!("Started Proving");
-        let mut timing = TimingTree::new("prove", Level::Debug);
-        let proof_res = prove(&prover_only, &common, pw.clone(), &mut timing);
-        let proof = proof_res.expect("Proof failed");
-
-        println!("Verifying Proof");
-        // Verify proof
-        let _proof_verification_res = data.verify(proof.clone()).unwrap();
+            prover.build_and_set_merkle_tree_targets(builder, pw);
+        });
     }
 
     #[test]

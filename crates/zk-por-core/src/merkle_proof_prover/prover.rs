@@ -23,6 +23,7 @@ pub struct MerkleProofProver {
 }
 
 impl MerkleProofProver {
+    /// Build the circuit for a merkle proof of inclusion of a given account at a specific index.
     pub fn build_and_set_merkle_proof_circuit(
         &self,
         builder: &mut CircuitBuilder<F, D>,
@@ -39,10 +40,12 @@ impl MerkleProofProver {
         );
 
         merkle_proof_targets.verify_merkle_proof_circuit(builder);
+        merkle_proof_targets.set_merkle_proof_targets(&self.merkle_proof, pw);
 
         account_targets.set_account_targets(&self.merkle_proof.account, pw);
     }
 
+    /// Get the Proof with PI's of a merkle proof of inclusion of a users account at a given index.
     pub fn get_proof(&self) -> ProofWithPublicInputs<F, C, D> {
         let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
         let mut pw = PartialWitness::<F>::new();
@@ -78,5 +81,44 @@ impl MerkleProofProver {
                 panic!("Proof generation failed!");
             }
         }
+    }
+}
+
+#[cfg(test)]
+pub mod test {
+    use crate::{
+        circuit_utils::run_circuit_test,
+        merkle_proof_prover::{merkle_proof::MerkleProofProvingInputs, prover::MerkleProofProver},
+        merkle_sum_prover::merkle_sum_tree::MerkleSumTree,
+        parser::read_json_into_accounts_vec,
+    };
+
+    #[test]
+    pub fn test_build_and_set_merkle_targets() {
+        run_circuit_test(|builder, pw| {
+            let path = "../../test-data/batch0.json";
+            let accounts = read_json_into_accounts_vec(path);
+            let account = accounts.get(0).unwrap();
+            let merkle_tree = MerkleSumTree::new_tree_from_accounts(&accounts);
+            let merkle_proof_pis =
+                MerkleProofProvingInputs::new_from_merkle_tree(0, account, &merkle_tree);
+            let prover = MerkleProofProver { merkle_proof: merkle_proof_pis };
+
+            prover.build_and_set_merkle_proof_circuit(builder, pw);
+        });
+    }
+
+    #[test]
+    pub fn test_get_proof() {
+        let path = "../../test-data/batch0.json";
+        let accounts = read_json_into_accounts_vec(path);
+        let account = accounts.get(0).unwrap();
+        let merkle_tree = MerkleSumTree::new_tree_from_accounts(&accounts);
+        let merkle_proof_pis =
+            MerkleProofProvingInputs::new_from_merkle_tree(0, account, &merkle_tree);
+
+        let prover = MerkleProofProver { merkle_proof: merkle_proof_pis };
+
+        let _proof = prover.get_proof();
     }
 }
