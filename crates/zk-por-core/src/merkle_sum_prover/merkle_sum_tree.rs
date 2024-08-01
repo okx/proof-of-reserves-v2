@@ -18,14 +18,13 @@ pub struct MerkleSumNode {
 impl MerkleSumNode {
     /// Get a new merkle sum node given a account.
     pub fn new_from_account(account: &Account) -> MerkleSumNode {
-        let mut sum_equity = F::ZERO;
-        account.equity.iter().for_each(|x| {
-            sum_equity = sum_equity + *x;
+        
+        let sum_equity = account.equity.iter().fold(F::ZERO, |acc, x| {
+            acc + *x
         });
 
-        let mut sum_debt = F::ZERO;
-        account.debt.iter().for_each(|x| {
-            sum_debt = sum_debt + *x;
+        let sum_debt = account.debt.iter().fold(F::ZERO, |acc, x| {
+            acc + *x
         });
 
         let hash = account.get_hash();

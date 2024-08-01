@@ -19,7 +19,7 @@ use std::panic;
 
 use crate::{
     circuit_config::STANDARD_CONFIG,
-    types::{C, MAX_POSITIVE_AMOUNT_LOG},
+    types::{C, D, F, MAX_POSITIVE_AMOUNT_LOG},
 };
 
 /// Test runner for ease of testing
@@ -42,7 +42,7 @@ where
 }
 
 /// Computes `if b { h0 } else { h1 }`.
-pub fn select_hash<F: RichField + Extendable<D>, const D: usize>(
+pub fn select_hash(
     builder: &mut CircuitBuilder<F, D>,
     b: BoolTarget,
     h0: HashOutTarget,
@@ -55,7 +55,7 @@ pub fn select_hash<F: RichField + Extendable<D>, const D: usize>(
 
 /// Assert 0 <= x <= MAX_POSITIVE_AMOUNT
 /// MAX_POSITIVE_AMOUNT =  (1 << MAX_POSITIVE_AMOUNT_LOG) - 1
-pub fn assert_non_negative_unsigned<F: RichField + Extendable<D>, const D: usize>(
+pub fn assert_non_negative_unsigned(
     builder: &mut CircuitBuilder<F, D>,
     x: Target,
 ) {
@@ -63,7 +63,7 @@ pub fn assert_non_negative_unsigned<F: RichField + Extendable<D>, const D: usize
 }
 
 /// Get Hash target by doing a poseidon hash on my input vector.
-pub fn get_hash_from_input_targets_circuit<F: RichField + Extendable<D>, const D: usize>(
+pub fn get_hash_from_input_targets_circuit(
     builder: &mut CircuitBuilder<F, D>,
     inputs: Vec<Target>,
 ) -> HashOutTarget {
@@ -71,7 +71,7 @@ pub fn get_hash_from_input_targets_circuit<F: RichField + Extendable<D>, const D
 }
 
 /// Hash 2 hashout targets by splitting it into its individual component elements
-pub fn hash_2_subhashes_circuit<F: RichField + Extendable<D>, const D: usize>(
+pub fn hash_2_subhashes_circuit(
     builder: &mut CircuitBuilder<F, D>,
     hash_1: &HashOutTarget,
     hash_2: &HashOutTarget,
