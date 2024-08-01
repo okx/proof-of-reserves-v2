@@ -20,6 +20,24 @@ default = []
 zk-por-tracing={path="../zk-por-tracing"}
 plonky2={workspace=true}
 plonky2_field={workspace=true}
+rand={workspace=true}
+log = "0.4.17"
+serde_with = "3.9.0"
+itertools = "0.13.0"
+anyhow = "1.0.86"
+lazy_static = "1.5.0"
+serde={workspace=true}
+serde_json={workspace=true}
+rayon={workspace=true}
+env_logger = "0.11.5"
+tracing={workspace=true}
+thiserror={workspace=true}
+
+[build-dependencies]
+bindgen = { version = "0.68.1" }
+zk-por-tracing={path="../zk-por-tracing"}
+plonky2={workspace=true}
+plonky2_field={workspace=true}
 log = "0.4.17"
 serde={workspace=true}
 serde_json={workspace=true}

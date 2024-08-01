@@ -20,6 +20,9 @@ default = []
 plonky2={workspace=true}
 plonky2_field={workspace=true}
 
+[build-dependencies]
+bindgen = { version = "0.68.1" }
+
 [dev-dependencies]
 criterion = { version = "0.5.1", default-features = false }
 
