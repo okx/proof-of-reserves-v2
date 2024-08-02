@@ -14,13 +14,14 @@ use crate::{
 
 use crate::types::{C, D, F};
 
+#[derive(Clone)]
 pub struct RecursiveTargets<const N: usize> {
-    pub size: usize,
     pub proof_with_pub_input_targets: Vec<ProofWithPublicInputsTarget<D>>,
     pub verifier_circuit_target: VerifierCircuitTarget,
-    // pub vd_proof_target: VdProofTarget,
 }
 
+/// build recursive circuit that proves N subproofs and geneate parent merkle sum node targets
+// This circuit hardcode the constraint that the verifier_circuit_target.circuit_digest must be equal to that inner_verifier_circuit_data.circuit_digest;
 pub fn build_recursive_n_circuit<
     // C: GenericConfig<D, F = F>,
     InnerC: GenericConfig<D, F = F>,
@@ -32,14 +33,13 @@ pub fn build_recursive_n_circuit<
 where
     InnerC::Hasher: AlgebraicHasher<F>,
 {
-    let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG.clone());
+    let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
     let verifier_circuit_target = VerifierCircuitTarget {
         constants_sigmas_cap: builder
             .add_virtual_cap(inner_common_circuit_data.config.fri_config.cap_height),
         circuit_digest: builder.add_virtual_hash(),
     };
 
-    // hardcode the constraint the verifier_circuit_target.circuit_digest = _inner_verifier_circuit_data.circuit_digest;
     let vd_digest = inner_verifier_circuit_data.circuit_digest;
     let vd_digest_target = builder.constant_hash(vd_digest);
     builder.connect_hashes(verifier_circuit_target.circuit_digest, vd_digest_target);
@@ -58,10 +58,11 @@ where
     });
 
     let mut merkle_sum_node_targets: [MerkleSumNodeTarget; N] = [MerkleSumNodeTarget::default(); N];
+    // TODO: clone is NOT safe.
     merkle_sum_node_targets[0] =
         MerkleSumNodeTarget::from(proof_with_pub_input_targets[0].public_inputs.clone());
     (1..N).for_each(|i| {
-        merkle_sum_node_targets[i] = MerkleSumNodeTarget::get_child_from_parents(
+        merkle_sum_node_targets[i] = MerkleSumNodeTarget::get_parent_from_children(
             &mut builder,
             &merkle_sum_node_targets[i - 1],
             &MerkleSumNodeTarget::from(proof_with_pub_input_targets[i].public_inputs.clone()),
@@ -72,14 +73,13 @@ where
     #[cfg(debug_assertions)]
     builder.print_gate_counts(0);
 
-    log::debug!("before build recurisve {} circuit", N);
+    tracing::debug!("before build recurisve {} circuit", N);
     let circuit_data = builder.build::<C>();
-    log::debug!("after build recurisve {} circuit", N);
+    tracing::debug!("after build recurisve {} circuit", N);
 
     (
         circuit_data,
         RecursiveTargets::<N> {
-            size: N,
             proof_with_pub_input_targets: proof_with_pub_input_targets,
             verifier_circuit_target: verifier_circuit_target,
         },

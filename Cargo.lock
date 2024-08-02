@@ -2169,7 +2169,6 @@ dependencies = [
 name = "zk-por-api"
 version = "0.1.0"
 dependencies = [
- "bindgen",
  "criterion",
  "jemallocator",
  "plonky2",
@@ -2181,7 +2180,6 @@ name = "zk-por-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bindgen",
  "config",
  "criterion",
  "env_logger",

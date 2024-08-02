@@ -1,13 +1,13 @@
 use crate::{
     account::Account,
     circuit_config::STANDARD_CONFIG,
+    error::ProofError,
     merkle_sum_prover::circuits::{
         account_circuit::{AccountSumTargets, AccountTargets},
         merkle_sum_circuit::build_merkle_sum_tree_from_account_targets,
     },
     types::{C, D, F},
 };
-use anyhow::Result;
 use log::Level;
 use plonky2::{
     iop::witness::PartialWitness,
@@ -98,9 +98,11 @@ impl MerkleSumTreeProver {
         &self,
         circuit_data: &CircuitData<F, C, D>,
         account_targets: Vec<AccountTargets>,
-    ) -> Result<ProofWithPublicInputs<F, C, D>> {
+    ) -> Result<ProofWithPublicInputs<F, C, D>, ProofError> {
         if account_targets.len() != self.accounts.len() {
-            return Err(anyhow::anyhow!("Account targets length does not match accounts length"));
+            return Err(ProofError::InvalidParameter(
+                "Account targets length does not match accounts length".to_string(),
+            ));
         }
 
         let mut pw = PartialWitness::new();
@@ -112,9 +114,9 @@ impl MerkleSumTreeProver {
         }
 
         let mut timing = TimingTree::new("prove_merkle_sum_tree", Level::Debug);
-        let proof = prove(&prover_only, &common, pw, &mut timing)?;
+        let proof =
+            prove(&prover_only, &common, pw, &mut timing).map_err(|_| ProofError::InvalidProof)?;
 
-        #[cfg(debug_assertions)]
         circuit_data.verify(proof.clone()).unwrap();
 
         Ok(proof)
@@ -122,7 +124,7 @@ impl MerkleSumTreeProver {
 }
 
 #[cfg(test)]
-pub mod test {
+pub mod tests {
     use log::Level;
     use plonky2::{
         iop::witness::PartialWitness,
@@ -160,16 +162,14 @@ pub mod test {
 
         let CircuitData { prover_only, common, verifier_only: _ } = &data;
 
-        println!("Started Proving");
-        let mut timing = TimingTree::new("prove", Level::Debug);
+        let mut timing = TimingTree::new("prove", Level::Info);
         let proof_res = prove(&prover_only, &common, pw.clone(), &mut timing);
         let proof = proof_res.expect("Proof failed");
 
-        println!("Verifying Proof");
-        // Verify proof
         let _proof_verification_res = data.verify(proof.clone()).unwrap();
     }
 
+    #[cfg(not(feature = "lightweight_test"))]
     #[test]
     pub fn test_get_proof() {
         let path = "../../test-data/batch0.json";
