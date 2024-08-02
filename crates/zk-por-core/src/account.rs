@@ -1,3 +1,5 @@
+use std::i32;
+
 use crate::types::F;
 use plonky2_field::types::Field;
 use rand::Rng;
@@ -29,7 +31,8 @@ pub fn gen_accounts_with_random_data(
             equities.push(F::from_canonical_u32(equity));
             debts.push(F::from_canonical_u32(debt));
         }
-        accounts.push(Account { id: "0".to_string(), equity: equities, debt: debts });
+        let account_id = rng.gen_range(0..i32::MAX).to_string();
+        accounts.push(Account { id: account_id, equity: equities, debt: debts });
     }
     (accounts, equity_sum, debt_sum)
 }

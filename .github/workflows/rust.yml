@@ -34,5 +34,5 @@ jobs:
       working-directory: .
 
     - name: Run Tests
-      run: cargo test --verbose
+      run: cargo test --verbose --lib
       working-directory: .

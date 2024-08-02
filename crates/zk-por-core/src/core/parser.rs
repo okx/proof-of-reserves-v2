@@ -5,7 +5,7 @@ use serde_json::Value;
 
 use crate::types::F;
 
-use super::account::Account;
+use crate::account::Account;
 
 /// Read a json file and return the vec of associated accounts.
 pub fn read_json_into_accounts_vec(path: &str) -> Vec<Account> {
@@ -40,7 +40,7 @@ fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>) -> Vec<Accou
                 account_id = value.as_str().unwrap();
             }
         }
-        accounts_data.push(Account { id: account_id.into(), assets: inner_vec, debt: Vec::new() });
+        accounts_data.push(Account { id: account_id.into(), equity: inner_vec, debt: Vec::new() });
     }
     accounts_data
 }

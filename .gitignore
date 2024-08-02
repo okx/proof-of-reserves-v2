@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 /target
-=======
 .vscode/
 target/
 logs/
->>>>>>> dev
 plonky2/

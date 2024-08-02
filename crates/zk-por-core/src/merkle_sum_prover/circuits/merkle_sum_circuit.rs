@@ -37,13 +37,13 @@ impl MerkleSumNodeTarget {
     }
 
     /// Given two children, generate the next MerkleSumNodeTarget
-    pub fn get_child_from_parents(
+    pub fn get_parent_from_children(
         builder: &mut CircuitBuilder<F, D>,
-        left_node: &MerkleSumNodeTarget,
+        left_child: &MerkleSumNodeTarget,
         right_node: &MerkleSumNodeTarget,
     ) -> MerkleSumNodeTarget {
-        let sum_equity = builder.add(left_node.sum_equity, right_node.sum_equity);
-        let sum_debt = builder.add(left_node.sum_debt, right_node.sum_debt);
+        let sum_equity = builder.add(left_child.sum_equity, right_node.sum_equity);
+        let sum_debt = builder.add(left_child.sum_debt, right_node.sum_debt);
 
         // Ensure the amount of equity at this node is greater than the total amount of debt
         let diff_between_equity_debt = builder.sub(sum_equity, sum_debt);
@@ -51,13 +51,13 @@ impl MerkleSumNodeTarget {
 
         // Ensure no overflow. We only need to check one child since in any overflow, the new value will be less than both the left and
         // right children.
-        let diff_between_equity_left_and_sum = builder.sub(sum_equity, left_node.sum_equity);
+        let diff_between_equity_left_and_sum = builder.sub(sum_equity, left_child.sum_equity);
         assert_non_negative_unsigned(builder, diff_between_equity_left_and_sum);
-        let diff_between_debt_left_and_sum = builder.sub(sum_debt, left_node.sum_debt);
+        let diff_between_debt_left_and_sum = builder.sub(sum_debt, left_child.sum_debt);
         assert_non_negative_unsigned(builder, diff_between_debt_left_and_sum);
 
         let hash_inputs =
-            vec![left_node.hash.elements.to_vec(), right_node.hash.elements.to_vec()].concat();
+            vec![left_child.hash.elements.to_vec(), right_node.hash.elements.to_vec()].concat();
 
         let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs);
         MerkleSumNodeTarget { sum_equity, sum_debt, hash }
@@ -131,7 +131,11 @@ pub fn build_merkle_sum_tree(
         let right_child_index = 2 * (i - num_leaves) + 1;
         let left_child = leaves.get(left_child_index).unwrap();
         let right_child = leaves.get(right_child_index).unwrap();
-        leaves.push(MerkleSumNodeTarget::get_child_from_parents(builder, left_child, right_child));
+        leaves.push(MerkleSumNodeTarget::get_parent_from_children(
+            builder,
+            left_child,
+            right_child,
+        ));
     }
 }
 
@@ -178,8 +182,6 @@ pub fn build_merkle_sum_tree_circuit(
 
 #[cfg(test)]
 pub mod test {
-    use rand::Rng;
-
     use crate::{
         merkle_sum_prover::circuits::{
             account_circuit::{AccountSumTargets, AccountTargets},
@@ -189,7 +191,6 @@ pub mod test {
     };
 
     use super::MerkleSumNodeTarget;
-    use crate::core::account::Account;
 
     #[test]
     pub fn test_merkle_sum_node() {
@@ -212,7 +213,7 @@ pub mod test {
             let merkle_sum_node_target_2 =
                 MerkleSumNodeTarget::get_node_from_account_targets(builder, &account_sum_target_2);
 
-            let merkle_sum_node_target_3 = MerkleSumNodeTarget::get_child_from_parents(
+            let merkle_sum_node_target_3 = MerkleSumNodeTarget::get_parent_from_children(
                 builder,
                 &merkle_sum_node_target_1,
                 &merkle_sum_node_target_2,

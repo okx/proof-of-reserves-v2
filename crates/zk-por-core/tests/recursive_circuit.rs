@@ -1,19 +1,15 @@
-use super::{
-    super::{
-        account::gen_accounts_with_random_data,
-        merkle_sum_prover::{
-            circuits::merkle_sum_circuit::build_merkle_sum_tree_circuit,
-            prover::MerkleSumTreeProver,
-        },
-        types::{C, F},
-    },
-    circuit::build_recursive_n_circuit,
+use zk_por_core::recursive::{circuit::build_recursive_n_circuit, prove::prove_n_subproofs};
+
+use zk_por_core::merkle_sum_prover::{
+    circuits::merkle_sum_circuit::build_merkle_sum_tree_circuit, prover::MerkleSumTreeProver,
 };
 
-use super::prove::prove_n_subproofs;
 use plonky2_field::types::Field;
+use zk_por_core::{
+    account::gen_accounts_with_random_data,
+    types::{C, F},
+};
 
-#[ignore]
 #[test]
 fn test() {
     let batch_size = 4;

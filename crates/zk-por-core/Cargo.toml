@@ -34,7 +34,6 @@ tracing={workspace=true}
 thiserror={workspace=true}
 
 [build-dependencies]
-bindgen = { version = "0.68.1" }
 zk-por-tracing={path="../zk-por-tracing"}
 plonky2={workspace=true}
 plonky2_field={workspace=true}
