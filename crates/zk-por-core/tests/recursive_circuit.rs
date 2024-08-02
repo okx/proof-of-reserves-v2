@@ -1,4 +1,4 @@
-use zk_por_core::recursive::{circuit::build_recursive_n_circuit, prove::prove_n_subproofs};
+use zk_por_core::recursive::{prover::prove_n_subproofs};
 
 use zk_por_core::merkle_sum_prover::prover::MerkleSumTreeProver;
 
