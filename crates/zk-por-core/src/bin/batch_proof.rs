@@ -10,10 +10,10 @@ use plonky2_field::goldilocks_field::GoldilocksField;
 use tracing::Level;
 use zk_por_core::{
     circuit_config::STANDARD_CONFIG,
+    config::ProverConfig,
     merkle_sum_prover::prover::MerkleSumTreeProver,
     parser::read_json_into_accounts_vec,
     types::{C, D, F},
-    config::ProverConfig,
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
 
@@ -25,7 +25,7 @@ fn main() {
         dir: cfg.log.dir,
         level: Level::from_str(&cfg.log.level).unwrap(),
         console: cfg.log.console,
-        flame: cfg.log.flame
+        flame: cfg.log.flame,
     };
     let guard = init_tracing(trace_cfg);
 

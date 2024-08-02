@@ -1,5 +1,5 @@
-use serde::Deserialize;
 use config::{Config, ConfigError, File};
+use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ConfigLog {
@@ -14,12 +14,12 @@ pub struct ConfigLog {
 pub struct ConfigProver {
     pub round_no: u32,
     pub batch_size: u32,
-    pub hyper_tree_size: u32
+    pub hyper_tree_size: u32,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ConfigDb {
-    pub level_db_path: String
+    pub level_db_path: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]

@@ -45,12 +45,11 @@ impl<K: db_key::Key> LevelDb<K> {
             Err(e) => {
                 warn!("Failed to read value: {:?}", e);
                 None
-            },
+            }
         }
-
     }
 
-    pub fn delete(&self, key: K)  {
+    pub fn delete(&self, key: K) {
         let write_opts = WriteOptions::new();
         match self.db.delete(write_opts, key) {
             Ok(_) => (),
@@ -66,7 +65,6 @@ mod test {
 
     use crate::LevelDb;
 
-
     #[test]
     fn test_db() {
         let tempdir = TempDir::new("example").unwrap();
@@ -74,12 +72,11 @@ mod test {
         db.put(1, b"hello");
         db.put(2, b"world");
         let ret = db.get(1).unwrap();
-       
+
         assert_eq!(ret, b"hello");
         db.delete(1);
         let ret = db.get(1);
         assert_eq!(ret, None);
         db.delete(2);
-     
     }
 }
