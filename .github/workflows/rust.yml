@@ -47,8 +47,8 @@ jobs:
 
     - name: Run tests with coverage
       run: |
-        LAST_LINE = $(cargo tarpaulin --lib --out Html --output-dir target/debug/tarpaulin/ -- --nocapture | tail -n 1)
-        export CODE_COV_VAL=$LAST_LINE
+        LAST_LINE=$(cargo tarpaulin --lib --out Html --output-dir target/debug/tarpaulin/ -- --nocapture | tail -n 1)
+        export CODE_COV_VAL="$LAST_LINE"
         echo "CODE_COV_VAL is $LAST_LINE"
 
     - name: Deploy to GitHub Pages
