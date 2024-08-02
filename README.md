@@ -1,4 +1,4 @@
-![Coverage](https://okx.github.io/proof-of-reserves-v2/coverage-badge.svg)
+![Coverage](https://raw.githubusercontent.com/okx/proof-of-reserves-v2/gh-pages/coverage-badge.svg)
 
 # proof-of-reserves-v2
 
