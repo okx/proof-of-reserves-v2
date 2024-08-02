@@ -49,8 +49,27 @@ jobs:
       run: |
         cargo tarpaulin --lib --out Html --output-dir target/debug/tarpaulin/ -- --nocapture > test.log
         LAST_LINE=$( tail -n 1 test.log)
-        export CODE_COV_VAL="$LAST_LINE"
-        echo "CODE_COV_VAL is $LAST_LINE"
+        CODE_COV=$(echo "$LAST_LINE" | cut -d '%' -f 1)
+        COLOR=$(
+          float=$(echo "$CODE_COV" | bc)
+          threshold=80.0
+          if (( $(echo "$float > $threshold" | bc -l) )); then
+              echo "brightgreen"
+          else
+              echo "yellow"
+          fi
+        )
+ 
+        SVG_CONTENT=$(cat <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <svg xmlns="http://www.w3.org/2000/svg" width="100" height="20">
+            <rect width="100" height="20" rx="3" fill="#555"/>
+            <rect x="40" width="60" height="20" rx="3" fill="${COLOR}"/>
+            <text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle" fill="#fff" font-size="11" font-family="Verdana">Coverage ${CODE_COV}%</text>
+          </svg>
+          EOF
+        )
+        echo "$SVG_CONTENT" > ./target/debug/tarpaulin/coverage-badge.svg
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
