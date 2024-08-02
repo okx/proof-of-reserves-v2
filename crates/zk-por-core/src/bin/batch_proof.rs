@@ -27,7 +27,6 @@ fn main() {
         console: cfg.log.console,
         flame: cfg.log.flame
     };
-    println!("trace_cfg: {:?}", trace_cfg);
     let guard = init_tracing(trace_cfg);
 
     let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
