@@ -12,6 +12,8 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CODE_COV_VAL: '0'
 
     steps:
     - name: Clone main repository
@@ -44,7 +46,10 @@ jobs:
       run: cargo install cargo-tarpaulin
 
     - name: Run tests with coverage
-      run: cargo tarpaulin --lib --out Html --output-dir target/debug/tarpaulin/ -- --nocapture
+      run: |
+        LAST_LINE = $(cargo tarpaulin --lib --out Html --output-dir target/debug/tarpaulin/ -- --nocapture | tail -n 1)
+        export CODE_COV_VAL=$LAST_LINE
+        echo "CODE_COV_VAL is $LAST_LINE"
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
