@@ -1,10 +1,7 @@
 use crate::{
     account::Account,
     circuit_config::STANDARD_CONFIG,
-    merkle_sum_prover::circuits::{
-        account_circuit::{AccountSumTargets, AccountTargets},
-        merkle_sum_circuit::build_merkle_sum_tree_from_account_targets,
-    },
+    merkle_sum_prover::circuits::account_circuit::{AccountSumTargets, AccountTargets},
     types::{C, D, F},
 };
 use log::Level;
@@ -18,6 +15,8 @@ use plonky2::{
 };
 
 use tracing::error;
+
+use super::circuits::merkle_sum_circuit::MerkleSumTreeTarget;
 
 /// A merkle sum tree prover with a batch id representing its index in the recursive proof tree and a Vec of accounts representing accounts in this batch.
 #[derive(Clone, Debug)]
@@ -51,7 +50,7 @@ impl MerkleSumTreeProver {
 
         // build merkle sum tree
         let _merkle_tree_targets =
-            build_merkle_sum_tree_from_account_targets(builder, &mut account_sum_targets);
+            MerkleSumTreeTarget::build_new_from_account_targets(builder, &mut account_sum_targets);
     }
 
     /// Get the merkle sum tree proof of this batch of accounts.

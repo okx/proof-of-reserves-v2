@@ -82,42 +82,46 @@ impl MerkleSumTreeTarget {
         builder.register_public_input(root.sum_debt);
         builder.register_public_inputs(&root.hash.elements);
     }
-}
 
-/// Builds a merkle sum tree of a given size (based on the number of leaves). It will build the merkle sum tree on top of the leaves vector
-/// in order to do the task in place. There is no return value as the input leaves vector is mutated.
-pub fn build_merkle_sum_tree(
-    builder: &mut CircuitBuilder<F, D>,
-    leaves: &mut Vec<MerkleSumNodeTarget>,
-) {
-    let num_leaves = leaves.len();
+    /// Builds a merkle sum tree of a given size (based on the number of leaves). It will build the merkle sum tree on top of the leaves vector
+    /// in order to do the task in place. There is no return value as the input leaves vector is mutated.
+    pub fn build_merkle_sum_tree(
+        builder: &mut CircuitBuilder<F, D>,
+        leaves: &mut Vec<MerkleSumNodeTarget>,
+    ) {
+        let num_leaves = leaves.len();
 
-    for i in num_leaves..(num_leaves * 2 - 1) {
-        let left_child_index = 2 * (i - num_leaves);
-        let right_child_index = 2 * (i - num_leaves) + 1;
-        let left_child = leaves.get(left_child_index).unwrap();
-        let right_child = leaves.get(right_child_index).unwrap();
-        leaves.push(MerkleSumNodeTarget::get_child_from_parents(builder, left_child, right_child));
+        for i in num_leaves..(num_leaves * 2 - 1) {
+            let left_child_index = 2 * (i - num_leaves);
+            let right_child_index = 2 * (i - num_leaves) + 1;
+            let left_child = leaves.get(left_child_index).unwrap();
+            let right_child = leaves.get(right_child_index).unwrap();
+            leaves.push(MerkleSumNodeTarget::get_child_from_parents(
+                builder,
+                left_child,
+                right_child,
+            ));
+        }
     }
-}
 
-/// Given a list of account targets, build the corresponding merkle sum tree.
-pub fn build_merkle_sum_tree_from_account_targets(
-    builder: &mut CircuitBuilder<F, D>,
-    accounts: &mut Vec<AccountSumTargets>,
-) -> MerkleSumTreeTarget {
-    let mut leaves: Vec<MerkleSumNodeTarget> = accounts
-        .iter()
-        .map(|x| MerkleSumNodeTarget::get_node_from_account_targets(builder, x))
-        .collect();
+    /// Given a list of account targets, build the corresponding merkle sum tree.
+    pub fn build_new_from_account_targets(
+        builder: &mut CircuitBuilder<F, D>,
+        accounts: &mut Vec<AccountSumTargets>,
+    ) -> MerkleSumTreeTarget {
+        let mut leaves: Vec<MerkleSumNodeTarget> = accounts
+            .iter()
+            .map(|x| MerkleSumNodeTarget::get_node_from_account_targets(builder, x))
+            .collect();
 
-    build_merkle_sum_tree(builder, &mut leaves);
+        MerkleSumTreeTarget::build_merkle_sum_tree(builder, &mut leaves);
 
-    let tree = MerkleSumTreeTarget { sum_tree: leaves };
+        let tree = MerkleSumTreeTarget { sum_tree: leaves };
 
-    tree.register_public_inputs(builder);
+        tree.register_public_inputs(builder);
 
-    return tree;
+        return tree;
+    }
 }
 
 #[cfg(test)]
