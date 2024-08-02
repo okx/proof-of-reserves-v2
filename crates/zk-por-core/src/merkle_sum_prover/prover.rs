@@ -91,8 +91,8 @@ impl MerkleSumTreeProver {
         }
     }
 
-     /// Get the merkle sum tree proof of this batch of accounts.
-     pub fn get_proof_with_cd(&self) -> (ProofWithPublicInputs<F, C, D>, CircuitData<F, C, D>) {
+    /// Get the merkle sum tree proof of this batch of accounts.
+    pub fn get_proof_with_cd(&self) -> (ProofWithPublicInputs<F, C, D>, CircuitData<F, C, D>) {
         let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
         let mut pw = PartialWitness::<F>::new();
 
