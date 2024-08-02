@@ -50,6 +50,7 @@ jobs:
         cargo tarpaulin --lib --out Html --output-dir target/debug/tarpaulin/ -- --nocapture > test.log
         LAST_LINE=$( tail -n 1 test.log)
         CODE_COV=$(echo "$LAST_LINE" | cut -d '%' -f 1)
+        echo "CODE_COV: $CODE_COV"
         COLOR=$(
           float=$(echo "$CODE_COV" | bc)
           threshold=80.0
@@ -59,7 +60,7 @@ jobs:
               echo "yellow"
           fi
         )
- 
+        echo "COLOR: $COLOR"
         SVG_CONTENT=$(cat <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <svg xmlns="http://www.w3.org/2000/svg" width="100" height="20">
