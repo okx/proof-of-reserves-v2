@@ -1831,6 +1831,7 @@ dependencies = [
  "jemallocator",
  "lazy_static",
  "log",
+ "once_cell",
  "plonky2",
  "plonky2_field",
  "rand",
