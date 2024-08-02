@@ -88,7 +88,12 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
                     &last_circuit_data.common,
                     &last_circuit_data.verifier_only,
                 );
-            tracing::info!("build recursive circuit at level {} in : {:?}, with vd {:?}", level, start.elapsed(), recursive_circuit.verifier_only.circuit_digest);
+            tracing::info!(
+                "build recursive circuit at level {} in : {:?}, with vd {:?}",
+                level,
+                start.elapsed(),
+                recursive_circuit.verifier_only.circuit_digest
+            );
 
             let start = std::time::Instant::now();
             let recursive_proof = prove_n_subproofs(
@@ -106,7 +111,10 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
             if recursive_circuit.verifier_only.circuit_digest
                 == last_circuit_data.verifier_only.circuit_digest
             {
-                tracing::info!("recursive circuit at level {} is the same as last level, early terminate. ", level);
+                tracing::info!(
+                    "recursive circuit at level {} is the same as last level, early terminate. ",
+                    level
+                );
                 break;
             }
 
@@ -116,8 +124,6 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
             last_circuit_data = &recursive_circuit_and_empty_proofs.last().unwrap().0 .0;
             last_empty_proof = recursive_proof;
         }
-
-
 
         tracing::info!(
             "finish init circuit registry with {} recursive levels in {:?}",
