@@ -6,3 +6,4 @@ pub mod merkle_sum_prover;
 pub mod parser;
 pub mod recursive;
 pub mod types;
+mod circuit_registry;
