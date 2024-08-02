@@ -1,3 +1,5 @@
+![Coverage](https://raw.githubusercontent.com/okx/proof-of-reserves-v2/gh-pages/coverage-badge.svg)
+
 # proof-of-reserves-v2
 
 ## Background
@@ -10,4 +12,7 @@ exceed the exchange's known liabilities to users, in order to confirm the solven
 ## Liabilities
 OKX's PoR uses zk Merkle Sum Tree technology to allow each user to independently review OKX's digital asset reserve on the
 basis of protecting user privacy. We used plonky2 to build the proofs of users' assets using merkle sum tree; A detailed documentation of the technical solution is to be given separately.
+
+## code coverage
+the code test coverage report is auto generated and hosted at [codecov_report](https://okx.github.io/proof-of-reserves-v2/tarpaulin-report.html) 
 
