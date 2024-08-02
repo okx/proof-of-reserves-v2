@@ -1,4 +1,6 @@
-use zk_por_core::recursive::{prover::prove_n_subproofs};
+use plonky2::plonk::proof::ProofWithPublicInputs;
+use zk_por_core::recursive::prover::RecursiveProver;
+use zk_por_core::types::D;
 
 use zk_por_core::merkle_sum_prover::prover::MerkleSumTreeProver;
 
@@ -14,51 +16,40 @@ fn test() {
     let asset_num = 2;
     const RECURSIVE_FACTOR: usize = 8;
 
-    let start = std::time::Instant::now();
-    let (merkle_sum_circuit, account_targets) =
-        build_merkle_sum_tree_circuit(batch_size, asset_num);
-    println!("build merkle sum tree circuit in : {:?}", start.elapsed());
+    let accounts = gen_accounts_with_random_data(batch_size, asset_num);
 
-    let (accounts, equity_sum, debt_sum) = gen_accounts_with_random_data(batch_size, asset_num);
+    let equity_sum = accounts.iter().fold(F::ZERO, |acc, x|{
+        acc + x.equity.iter().fold(F::ZERO, |acc_2, y|{
+            acc_2 + *y
+        })
+    });
+
+    let debt_sum = accounts.iter().fold(F::ZERO, |acc, x|{
+        acc + x.debt.iter().fold(F::ZERO, |acc_2, y|{
+            acc_2 + *y
+        })
+    });
+
     let prover = MerkleSumTreeProver { accounts };
 
-    let start = std::time::Instant::now();
-    let merkle_sum_proof = prover.prove_with_circuit(&merkle_sum_circuit, account_targets).unwrap();
-    println!("prove merkle sum tree in : {:?}", start.elapsed());
+    let (merkle_sum_proof, cd) = prover.get_proof_with_cd();
+    
+    let sub_proofs:[ProofWithPublicInputs<F, C, D>; RECURSIVE_FACTOR]  = std::array::from_fn(|_| merkle_sum_proof.clone());
 
-    let start = std::time::Instant::now();
-    let (recursive_circuit, recursive_account_targets) =
-        build_recursive_n_circuit::<C, RECURSIVE_FACTOR>(
-            &merkle_sum_circuit.common,
-            &merkle_sum_circuit.verifier_only,
-        );
-    println!("build recursive circuit in : {:?}", start.elapsed());
+    let recursive_prover = RecursiveProver{
+        sub_proofs,
+        merkle_sum_circuit: cd
+    };
 
-    let mut subproofs = Vec::new();
-    (0..RECURSIVE_FACTOR).for_each(|_| {
-        subproofs.push(merkle_sum_proof.clone());
-    });
-    let start = std::time::Instant::now();
-    let recursive_proof_result = prove_n_subproofs(
-        subproofs,
-        &merkle_sum_circuit.verifier_only,
-        &recursive_circuit,
-        recursive_account_targets,
-    );
-    println!("prove recursive subproofs in : {:?}", start.elapsed());
-
-    assert!(recursive_proof_result.is_ok());
-    let recursive_proof = recursive_proof_result.unwrap();
+    let recursive_proof_result = recursive_prover.get_proof();
 
     // print public inputs in recursive proof
     assert_eq!(
-        F::from_canonical_u32(equity_sum * (RECURSIVE_FACTOR as u32)),
-        recursive_proof.public_inputs[0]
+        equity_sum * F::from_canonical_u32(RECURSIVE_FACTOR as u32),
+        recursive_proof_result.public_inputs[0]
     );
     assert_eq!(
-        F::from_canonical_u32(debt_sum * (RECURSIVE_FACTOR as u32)),
-        recursive_proof.public_inputs[1]
+        debt_sum * F::from_canonical_u32(RECURSIVE_FACTOR as u32),
+        recursive_proof_result.public_inputs[1]
     );
-
-    assert!(recursive_circuit.verify(recursive_proof).is_ok());
 }

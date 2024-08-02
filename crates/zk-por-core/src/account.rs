@@ -61,7 +61,10 @@ pub fn gen_accounts_with_random_data(num_accounts: usize, num_assets: usize) -> 
             equities.push(F::from_canonical_u32(equity));
             debts.push(F::from_canonical_u32(debt));
         }
-        let account_id = rng.gen_range(0..i32::MAX).to_string();
+
+        let mut bytes = [0u8; 32]; // 32 bytes * 2 hex chars per byte = 64 hex chars
+        rng.fill(&mut bytes);
+        let account_id = bytes.iter().map(|byte| format!("{:02x}", byte)).collect::<String>();
         accounts.push(Account { id: account_id, equity: equities, debt: debts });
     }
     accounts

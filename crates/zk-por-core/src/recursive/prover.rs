@@ -1,3 +1,4 @@
+use log::Level;
 use plonky2::{
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
@@ -9,37 +10,84 @@ use plonky2::{
     },
     util::timing::TimingTree,
 };
+use tracing::error;
 
-use crate::types::{D, F};
+use crate::{
+    circuit_config::STANDARD_CONFIG,
+    types::{D, F},
+};
 use anyhow::Result;
 
 use super::recursive_circuit::{build_new_recursive_n_circuit_targets, RecursiveTargets};
 
-pub struct RecursiveProver<
-    C: GenericConfig<D, F = F>,
-    const N: usize,
-> {
-    pub batch_id: usize,
+pub struct RecursiveProver<C: GenericConfig<D, F = F>, const N: usize> {
+    // pub batch_id: usize,
     pub sub_proofs: [ProofWithPublicInputs<F, C, D>; N],
     pub merkle_sum_circuit: CircuitData<F, C, D>,
 }
 
-impl<C: GenericConfig<D, F = F>, const N: usize>
-    RecursiveProver<C, N>
-{
+impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
     pub fn build_and_set_recursive_targets(
         &self,
         builder: &mut CircuitBuilder<F, D>,
         pw: &mut PartialWitness<F>,
-    ) where <C as GenericConfig<2>>::Hasher: AlgebraicHasher<F>{
-
+    ) where
+        <C as GenericConfig<2>>::Hasher: AlgebraicHasher<F>,
+    {
         let recursive_targets: RecursiveTargets<N> = build_new_recursive_n_circuit_targets(
             &self.merkle_sum_circuit.common,
             &self.merkle_sum_circuit.verifier_only,
-            builder
+            builder,
         );
 
-        recursive_targets.set_targets(pw, self.sub_proofs.to_vec(), &self.merkle_sum_circuit.verifier_only)
+        recursive_targets.set_targets(
+            pw,
+            self.sub_proofs.to_vec(),
+            &self.merkle_sum_circuit.verifier_only,
+        )
+    }
+
+    pub fn get_proof(&self) -> ProofWithPublicInputs<F, C, D>
+    where
+        <C as GenericConfig<2>>::Hasher: AlgebraicHasher<F>,
+    {
+        let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
+        let mut pw = PartialWitness::<F>::new();
+
+        self.build_and_set_recursive_targets(&mut builder, &mut pw);
+
+        builder.print_gate_counts(0);
+
+        let mut timing = TimingTree::new("prove", Level::Debug);
+        let data = builder.build::<C>();
+
+        let CircuitData { prover_only, common, verifier_only: _ } = &data;
+
+        log::debug!("before prove");
+        let start = std::time::Instant::now();
+
+        let proof_res = prove(&prover_only, &common, pw.clone(), &mut timing);
+
+        log::debug!("time for {:?} proofs, {:?}", N, start.elapsed().as_millis());
+
+        match proof_res {
+            Ok(proof) => {
+                println!("Finished Proving");
+
+                let proof_verification_res = data.verify(proof.clone());
+                match proof_verification_res {
+                    Ok(_) => proof,
+                    Err(e) => {
+                        error!("Proof verification failed: {:?}", e);
+                        panic!("Proof verification failed!");
+                    }
+                }
+            }
+            Err(e) => {
+                error!("Proof generation failed: {:?}", e);
+                panic!("Proof generation failed!");
+            }
+        }
     }
 }
 

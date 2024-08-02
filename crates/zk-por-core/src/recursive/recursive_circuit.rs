@@ -69,10 +69,7 @@ impl<const N: usize> RecursiveTargets<N> {
 
 /// build recursive circuit that proves N subproofs and geneate parent merkle sum node targets
 /// This circuit hardcode the constraint that the verifier_circuit_target.circuit_digest must be equal to that inner_verifier_circuit_data.circuit_digest;
-pub fn build_new_recursive_n_circuit_targets<
-    C: GenericConfig<D, F = F>,
-    const N: usize,
->(
+pub fn build_new_recursive_n_circuit_targets<C: GenericConfig<D, F = F>, const N: usize>(
     inner_common_circuit_data: &CommonCircuitData<F, D>,
     inner_verifier_circuit_data: &VerifierOnlyCircuitData<C, D>,
     builder: &mut CircuitBuilder<F, D>,

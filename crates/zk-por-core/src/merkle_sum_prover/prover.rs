@@ -1,7 +1,6 @@
 use crate::{
     account::Account,
     circuit_config::STANDARD_CONFIG,
-    error::ProofError,
     merkle_sum_prover::circuits::account_circuit::{AccountSumTargets, AccountTargets},
     types::{C, D, F},
 };
@@ -92,32 +91,42 @@ impl MerkleSumTreeProver {
         }
     }
 
-    pub fn prove_with_circuit(
-        &self,
-        circuit_data: &CircuitData<F, C, D>,
-        account_targets: Vec<AccountTargets>,
-    ) -> Result<ProofWithPublicInputs<F, C, D>, ProofError> {
-        if account_targets.len() != self.accounts.len() {
-            return Err(ProofError::InvalidParameter(
-                "Account targets length does not match accounts length".to_string(),
-            ));
+     /// Get the merkle sum tree proof of this batch of accounts.
+     pub fn get_proof_with_cd(&self) -> (ProofWithPublicInputs<F, C, D>, CircuitData<F, C, D>) {
+        let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
+        let mut pw = PartialWitness::<F>::new();
+
+        self.build_and_set_merkle_tree_targets(&mut builder, &mut pw);
+
+        builder.print_gate_counts(0);
+
+        let mut timing = TimingTree::new("prove", Level::Debug);
+        let data = builder.build::<C>();
+
+        let CircuitData { prover_only, common, verifier_only: _ } = &data;
+
+        println!("Started Proving");
+
+        let proof_res = prove(&prover_only, &common, pw.clone(), &mut timing);
+
+        match proof_res {
+            Ok(proof) => {
+                println!("Finished Proving");
+
+                let proof_verification_res = data.verify(proof.clone());
+                match proof_verification_res {
+                    Ok(_) => (proof, data),
+                    Err(e) => {
+                        error!("Proof verification failed: {:?}", e);
+                        panic!("Proof verification failed!");
+                    }
+                }
+            }
+            Err(e) => {
+                error!("Proof generation failed: {:?}", e);
+                panic!("Proof generation failed!");
+            }
         }
-
-        let mut pw = PartialWitness::new();
-
-        let CircuitData { prover_only, common, verifier_only: _ } = circuit_data;
-
-        for i in 0..self.accounts.len() {
-            account_targets[i].set_account_targets(self.accounts.get(i).unwrap(), &mut pw);
-        }
-
-        let mut timing = TimingTree::new("prove_merkle_sum_tree", Level::Debug);
-        let proof =
-            prove(&prover_only, &common, pw, &mut timing).map_err(|_| ProofError::InvalidProof)?;
-
-        circuit_data.verify(proof.clone()).unwrap();
-
-        Ok(proof)
     }
 }
 
