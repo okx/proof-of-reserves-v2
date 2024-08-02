@@ -59,19 +59,19 @@ where
     });
 
     // for each pub_input target from proof_with_pub_input_targets, convert it to MerkleSumNodeTarget, contraint them to parent merkle sum node target, and then convert them back to pub_input target.
-    let mut merkle_sum_tree_node_targets = vec![];
+    let mut merkle_sum_tree_node_targets = [MerkleSumNodeTarget::default(); N];
     (0..N).for_each(|i| {
         let targets = std::mem::take(&mut proof_with_pub_input_targets[i].public_inputs);
-        merkle_sum_tree_node_targets.push(MerkleSumNodeTarget::from(targets));
+        merkle_sum_tree_node_targets[i] = MerkleSumNodeTarget::from(targets);
     });
 
-    let parent_merkle_sum_node_target = MerkleSumNodeTarget::get_parent_from_children(
+    let parent_merkle_sum_node_target = MerkleSumNodeTarget::get_parent_from_children::<N>(
         &mut builder,
-        merkle_sum_tree_node_targets.iter().collect(),
+        merkle_sum_tree_node_targets.iter().collect::<Vec<_>>().try_into().unwrap(),
     );
 
-    (0..N).rev().for_each(|i| {
-        let public_input_target = Vec::<Target>::from(merkle_sum_tree_node_targets.pop().unwrap());
+    (0..N).for_each(|i| {
+        let public_input_target = Vec::<Target>::from(merkle_sum_tree_node_targets[i]);
         proof_with_pub_input_targets[i].public_inputs = public_input_target;
     });
 

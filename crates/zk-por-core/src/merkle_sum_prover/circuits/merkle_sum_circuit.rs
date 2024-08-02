@@ -38,9 +38,9 @@ impl MerkleSumNodeTarget {
     }
 
     /// Given children nodes, generate the MerkleSumNodeTarget
-    pub fn get_parent_from_children(
+    pub fn get_parent_from_children<const N: usize>(
         builder: &mut CircuitBuilder<F, D>,
-        children: Vec<&MerkleSumNodeTarget>,
+        children: [&MerkleSumNodeTarget; N],
     ) -> MerkleSumNodeTarget {
         let mut sum_equity = builder.constant(F::ZERO);
         let mut sum_debt = builder.constant(F::ZERO);
@@ -142,7 +142,7 @@ pub fn build_merkle_sum_tree(
         let right_child = leaves.get(right_child_index).unwrap();
         leaves.push(MerkleSumNodeTarget::get_parent_from_children(
             builder,
-            vec![left_child, right_child],
+            [left_child, right_child],
         ));
     }
 }
@@ -223,7 +223,7 @@ pub mod test {
 
             let merkle_sum_node_target_3 = MerkleSumNodeTarget::get_parent_from_children(
                 builder,
-                vec![&merkle_sum_node_target_1, &merkle_sum_node_target_2],
+                [&merkle_sum_node_target_1, &merkle_sum_node_target_2],
             );
 
             let sum_equity =
