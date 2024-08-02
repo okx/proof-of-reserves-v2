@@ -20,6 +20,7 @@ use crate::types::{C, D, F};
 // use once_cell::sync::Lazy;
 
 pub struct CircuitRegistry<const RECURSIVE_FACTOR: usize> {
+    max_recursive_level: usize,
     batch_circuit: (CircuitData<F, C, D>, Vec<AccountTargets>),
     empty_batch_proof: ProofWithPublicInputs<F, C, D>,
     recursive_circuits_and_empty_proofs: Vec<(
@@ -51,7 +52,7 @@ fn gen_empty_accounts(num_accounts: usize, num_assets: usize) -> (Vec<Account>, 
 }
 
 impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
-    pub fn init(batch_size: usize, asset_num: usize) -> Self {
+    pub fn init(batch_size: usize, asset_num: usize, max_recursive_level: usize) -> Self {
         let init_start = std::time::Instant::now();
 
         let start = std::time::Instant::now();
@@ -78,22 +79,20 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
         let mut recursive_circuit_and_empty_proofs = Vec::new();
 
         let mut last_circuit_data = &batch_circuit_data;
+        let mut last_empty_proof = empty_batch_proof.clone();
 
-        let mut level = 0;
-
-        // keep building recursive circuits and proofs until the circuit is the same as the last level
-        loop {
+        for level in 0..max_recursive_level {
             let start = std::time::Instant::now();
             let (recursive_circuit, recursive_account_targets) =
                 build_recursive_n_circuit::<C, RECURSIVE_FACTOR>(
-                    &batch_circuit_data.common,
-                    &batch_circuit_data.verifier_only,
+                    &last_circuit_data.common,
+                    &last_circuit_data.verifier_only,
                 );
-            tracing::info!("build recursive circuit at level {} in : {:?}", level, start.elapsed());
+            tracing::info!("build recursive circuit at level {} in : {:?}, with vd {:?}", level, start.elapsed(), recursive_circuit.verifier_only.circuit_digest);
 
             let start = std::time::Instant::now();
             let recursive_proof = prove_n_subproofs(
-                vec![empty_batch_proof.clone(); RECURSIVE_FACTOR],
+                vec![last_empty_proof.clone(); RECURSIVE_FACTOR],
                 &last_circuit_data.verifier_only,
                 &recursive_circuit,
                 recursive_account_targets.clone(),
@@ -107,23 +106,27 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
             if recursive_circuit.verifier_only.circuit_digest
                 == last_circuit_data.verifier_only.circuit_digest
             {
+                tracing::info!("recursive circuit at level {} is the same as last level, early terminate. ", level);
                 break;
             }
 
             recursive_circuit_and_empty_proofs
-                .push(((recursive_circuit, recursive_account_targets), recursive_proof));
+                .push(((recursive_circuit, recursive_account_targets), recursive_proof.clone()));
 
-            level += 1;
             last_circuit_data = &recursive_circuit_and_empty_proofs.last().unwrap().0 .0;
+            last_empty_proof = recursive_proof;
         }
+
+
 
         tracing::info!(
             "finish init circuit registry with {} recursive levels in {:?}",
-            level,
+            max_recursive_level,
             init_start.elapsed()
         );
 
         Self {
+            max_recursive_level: max_recursive_level,
             batch_circuit: (batch_circuit_data, account_targets),
             empty_batch_proof: empty_batch_proof,
             recursive_circuits_and_empty_proofs: recursive_circuit_and_empty_proofs,
@@ -143,23 +146,33 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
     pub fn get_recursive_circuit(
         &self,
         level: usize,
-    ) -> (&CircuitData<F, C, D>, RecursiveTargets<RECURSIVE_FACTOR>) {
+    ) -> Option<(&CircuitData<F, C, D>, RecursiveTargets<RECURSIVE_FACTOR>)> {
+        if level > self.max_recursive_level {
+            return None;
+        }
+
         let mut circuit_and_empty_proof = self.recursive_circuits_and_empty_proofs.last().unwrap();
         if level < self.recursive_circuits_and_empty_proofs.len() {
+            // due to early terminate, we may not have proof for all levels
             circuit_and_empty_proof = self.recursive_circuits_and_empty_proofs.get(level).unwrap();
         }
-        (&circuit_and_empty_proof.0 .0, circuit_and_empty_proof.0 .1.clone())
+        Some((&circuit_and_empty_proof.0 .0, circuit_and_empty_proof.0 .1.clone()))
     }
 
     pub fn get_empty_recursive_circuit_proof(
         &self,
         level: usize,
-    ) -> ProofWithPublicInputs<F, C, D> {
+    ) -> Option<ProofWithPublicInputs<F, C, D>> {
+        if level > self.max_recursive_level {
+            return None;
+        }
+
         let mut circuit_and_empty_proof = self.recursive_circuits_and_empty_proofs.last().unwrap();
         if level < self.recursive_circuits_and_empty_proofs.len() {
+            // due to early terminate, we may not have proof for all levels
             circuit_and_empty_proof = self.recursive_circuits_and_empty_proofs.get(level).unwrap();
         }
-        circuit_and_empty_proof.1.clone()
+        Some(circuit_and_empty_proof.1.clone())
     }
 }
 
