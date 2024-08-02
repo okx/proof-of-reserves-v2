@@ -1,0 +1,12 @@
+[prover]
+round_no = 0
+batch_size = 1024
+hyper_tree_size = 32
+[db]
+level_db_path = "level_db_data"
+[log]
+file_name_prefix = "zkpor"
+dir = "logs/"
+level = "debug"
+console = false
+flame = false

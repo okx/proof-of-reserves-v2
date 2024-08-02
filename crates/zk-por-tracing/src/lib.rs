@@ -8,6 +8,7 @@ use tracing_flame::FlameLayer;
 use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::{fmt, prelude::*};
 
+#[derive(Debug)]
 pub struct TraceConfig {
     pub prefix: String,
     pub dir: String,

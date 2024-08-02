@@ -7,6 +7,8 @@ use plonky2::plonk::{
     proof::ProofWithPublicInputsTarget,
 };
 
+use plonky2::iop::target::Target;
+
 use crate::{
     circuit_config::STANDARD_CONFIG,
     merkle_sum_prover::circuits::merkle_sum_circuit::MerkleSumNodeTarget,
@@ -44,7 +46,6 @@ where
     let vd_digest_target = builder.constant_hash(vd_digest);
     builder.connect_hashes(verifier_circuit_target.circuit_digest, vd_digest_target);
 
-    // _inner_verifier_circuit_data.circuit_digest;
     let mut proof_with_pub_input_targets: Vec<ProofWithPublicInputsTarget<D>> = vec![];
     (0..N).for_each(|_| {
         let proof_with_pub_input_target =
@@ -57,18 +58,24 @@ where
         proof_with_pub_input_targets.push(proof_with_pub_input_target);
     });
 
-    let mut merkle_sum_node_targets: [MerkleSumNodeTarget; N] = [MerkleSumNodeTarget::default(); N];
-    // TODO: clone is NOT safe.
-    merkle_sum_node_targets[0] =
-        MerkleSumNodeTarget::from(proof_with_pub_input_targets[0].public_inputs.clone());
-    (1..N).for_each(|i| {
-        merkle_sum_node_targets[i] = MerkleSumNodeTarget::get_parent_from_children(
-            &mut builder,
-            &merkle_sum_node_targets[i - 1],
-            &MerkleSumNodeTarget::from(proof_with_pub_input_targets[i].public_inputs.clone()),
-        );
+    // for each pub_input target from proof_with_pub_input_targets, convert it to MerkleSumNodeTarget, contraint them to parent merkle sum node target, and then convert them back to pub_input target.
+    let mut merkle_sum_tree_node_targets = [MerkleSumNodeTarget::default(); N];
+    (0..N).for_each(|i| {
+        let targets = std::mem::take(&mut proof_with_pub_input_targets[i].public_inputs);
+        merkle_sum_tree_node_targets[i] = MerkleSumNodeTarget::from(targets);
     });
-    merkle_sum_node_targets[N - 1].registered_as_public_inputs(&mut builder);
+
+    let parent_merkle_sum_node_target = MerkleSumNodeTarget::get_parent_from_children::<N>(
+        &mut builder,
+        merkle_sum_tree_node_targets.iter().collect::<Vec<_>>().try_into().unwrap(),
+    );
+
+    (0..N).for_each(|i| {
+        let public_input_target = Vec::<Target>::from(merkle_sum_tree_node_targets[i]);
+        proof_with_pub_input_targets[i].public_inputs = public_input_target;
+    });
+
+    parent_merkle_sum_node_target.registered_as_public_inputs(&mut builder);
 
     #[cfg(debug_assertions)]
     builder.print_gate_counts(0);

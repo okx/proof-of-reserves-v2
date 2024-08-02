@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use plonky2::{
     iop::witness::PartialWitness,
     plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitData, prover::prove},
@@ -8,6 +10,7 @@ use plonky2_field::goldilocks_field::GoldilocksField;
 use tracing::Level;
 use zk_por_core::{
     circuit_config::STANDARD_CONFIG,
+    config::ProverConfig,
     merkle_sum_prover::prover::MerkleSumTreeProver,
     parser::read_json_into_accounts_vec,
     types::{C, D, F},
@@ -15,14 +18,16 @@ use zk_por_core::{
 use zk_por_tracing::{init_tracing, TraceConfig};
 
 fn main() {
-    let cfg = TraceConfig {
-        prefix: "zkpor".to_string(),
-        dir: "logs".to_string(),
-        level: Level::DEBUG,
-        console: false,
-        flame: false,
+    let cfg = ProverConfig::try_new().unwrap();
+
+    let trace_cfg = TraceConfig {
+        prefix: cfg.log.file_name_prefix,
+        dir: cfg.log.dir,
+        level: Level::from_str(&cfg.log.level).unwrap(),
+        console: cfg.log.console,
+        flame: cfg.log.flame,
     };
-    let guard = init_tracing(cfg);
+    let guard = init_tracing(trace_cfg);
 
     let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
     let mut pw = PartialWitness::<GoldilocksField>::new();
