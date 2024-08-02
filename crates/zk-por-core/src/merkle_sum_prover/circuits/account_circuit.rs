@@ -26,7 +26,7 @@ impl AccountTargets {
         account: &Account,
         builder: &mut CircuitBuilder<F, D>,
     ) -> AccountTargets {
-        let id = [builder.add_virtual_target(); 5];
+        let id: [Target; 5] = std::array::from_fn(|_| builder.add_virtual_target());
         let equity = builder.add_virtual_targets(account.equity.len());
         let debt = builder.add_virtual_targets(account.debt.len());
 
@@ -36,6 +36,8 @@ impl AccountTargets {
     pub fn set_account_targets(&self, account_info: &Account, pw: &mut PartialWitness<F>) {
         assert_eq!(self.equity.len(), account_info.equity.len());
         assert_eq!(self.debt.len(), account_info.debt.len());
+
+        println!("{:?}", account_info.get_user_id_in_field());
 
         pw.set_target_arr(self.equity.as_slice(), account_info.equity.as_slice());
         pw.set_target_arr(self.debt.as_slice(), account_info.debt.as_slice());

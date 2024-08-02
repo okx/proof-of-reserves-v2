@@ -1,5 +1,5 @@
 use plonky2::plonk::proof::ProofWithPublicInputs;
-use zk_por_core::recursive::prover::RecursiveProver;
+use zk_por_core::recursive_prover::prover::RecursiveProver;
 use zk_por_core::types::D;
 
 use zk_por_core::merkle_sum_prover::prover::MerkleSumTreeProver;
