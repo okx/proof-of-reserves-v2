@@ -1,5 +1,6 @@
 pub mod account;
 pub mod circuit_config;
+pub mod config;
 pub mod core;
 pub mod error;
 pub mod merkle_sum_prover;
