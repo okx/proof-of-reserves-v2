@@ -2,6 +2,7 @@
 members = [
     "crates/zk-por-core",
     "crates/zk-por-api",
+    "crates/zk-por-db",
     "crates/zk-por-tracing"
 ]
 resolver = "2"
@@ -39,6 +40,7 @@ plonky2_field = { git = "https://github.com/okx/plonky2"}
 rayon = "1.8"
 # data
 serde = "1.0.204"
+leveldb = "0.8.6"
 # misc
 thiserror = "1.0"
 tracing = "0.1"
