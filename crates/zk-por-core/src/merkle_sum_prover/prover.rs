@@ -53,6 +53,28 @@ impl MerkleSumTreeProver {
             MerkleSumTreeTarget::build_new_from_account_targets(builder, &mut account_sum_targets);
     }
 
+    pub fn get_prover_cd(&self, builder: &mut CircuitBuilder<F, D>) -> CircuitData<F, C, D> {
+        let mut account_targets: Vec<AccountTargets> = Vec::new();
+
+        for i in 0..self.accounts.len() {
+            // Build account targets
+            let account_target =
+                AccountTargets::new_from_account(self.accounts.get(i).unwrap(), builder);
+            account_targets.push(account_target);
+        }
+
+        let mut account_sum_targets: Vec<AccountSumTargets> = account_targets
+            .iter()
+            .map(|x| AccountSumTargets::from_account_target(x, builder))
+            .collect();
+
+        // build merkle sum tree
+        let _merkle_tree_targets =
+            MerkleSumTreeTarget::build_new_from_account_targets(builder, &mut account_sum_targets);
+
+        builder.clone().build::<C>()
+    }
+
     /// Get the merkle sum tree proof of this batch of accounts.
     pub fn get_proof(&self) -> ProofWithPublicInputs<F, C, D> {
         let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
