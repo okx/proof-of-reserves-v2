@@ -47,17 +47,18 @@ where
         );
     });
 
+    #[cfg(debug_assertions)]
     let mut timing = TimingTree::new("prove_N_subproofs", log::Level::Debug);
+    #[cfg(not(debug_assertions))]
+    let mut timing = TimingTree::new("prove_N_subproofs", log::Level::Info);    
+
     let start = std::time::Instant::now();
     tracing::debug!("before prove");
     let proof = prove(&recursive_circuit.prover_only, &recursive_circuit.common, pw, &mut timing)
         .map_err(|_| ProofError::InvalidProof)?;
     tracing::debug!("time for {:?} proofs, {:?}", N, start.elapsed().as_millis());
 
-    #[cfg(debug_assertions)]
-    {
-        recursive_circuit.verify(proof.clone()).map_err(|_| ProofError::InvalidProof)?;
-    }
+    recursive_circuit.verify(proof.clone()).map_err(|_| ProofError::InvalidProof)?;
 
     Ok(proof)
 }

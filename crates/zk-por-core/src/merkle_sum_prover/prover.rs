@@ -117,7 +117,6 @@ impl MerkleSumTreeProver {
         let proof =
             prove(&prover_only, &common, pw, &mut timing).map_err(|_| ProofError::InvalidProof)?;
 
-        #[cfg(debug_assertions)]
         circuit_data.verify(proof.clone()).unwrap();
 
         Ok(proof)
