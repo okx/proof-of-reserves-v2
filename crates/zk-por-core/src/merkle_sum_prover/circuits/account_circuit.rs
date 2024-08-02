@@ -16,7 +16,7 @@ use crate::{
 #[derive(Debug, Clone)]
 /// Targets representing a users account, where their equity and debt are split into individual tokens.
 pub struct AccountTargets {
-    pub id: Vec<Target>,
+    pub id: [Target; 5],
     pub equity: Vec<Target>,
     pub debt: Vec<Target>,
 }
@@ -26,7 +26,7 @@ impl AccountTargets {
         account: &Account,
         builder: &mut CircuitBuilder<F, D>,
     ) -> AccountTargets {
-        let id = builder.add_virtual_targets(5); // id is 5 targets
+        let id = [builder.add_virtual_target(); 5];
         let equity = builder.add_virtual_targets(account.equity.len());
         let debt = builder.add_virtual_targets(account.debt.len());
 
@@ -46,7 +46,7 @@ impl AccountTargets {
 #[derive(Debug, Clone)]
 /// Targets representing a users account, where their equity and liabilities are summed into 2 summed values.
 pub struct AccountSumTargets {
-    pub id: Vec<Target>,
+    pub id: [Target; 5],
     pub sum_equity: Target,
     pub sum_debt: Target,
 }
@@ -66,12 +66,12 @@ impl AccountSumTargets {
         // Ensure the equity is greater than the debt. This works as long as we constrict our equity to 62 bits.
         assert_non_negative_unsigned(builder, diff_between_equity_debt);
 
-        AccountSumTargets { id: account.id.clone(), sum_equity, sum_debt }
+        AccountSumTargets { id: account.id, sum_equity, sum_debt }
     }
 
     /// Get account hash targets
     pub fn get_account_hash_targets(&self, builder: &mut CircuitBuilder<F, D>) -> HashOutTarget {
-        let hash_inputs = vec![self.id.clone(), vec![self.sum_equity, self.sum_debt]].concat();
+        let hash_inputs = vec![self.id.to_vec(), vec![self.sum_equity, self.sum_debt]].concat();
 
         let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs);
         hash

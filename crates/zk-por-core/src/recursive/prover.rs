@@ -1,7 +1,7 @@
 use plonky2::{
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
-        circuit_data::{CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
+        circuit_data::{CircuitData, VerifierOnlyCircuitData},
         config::{AlgebraicHasher, GenericConfig},
         proof::ProofWithPublicInputs,
         prover::prove,
@@ -12,10 +12,7 @@ use plonky2::{
 use crate::types::{D, F};
 use anyhow::Result;
 
-use super::circuit::RecursiveTargets;
-
-pub type ProofTuple<F, C, const D: usize> =
-    (ProofWithPublicInputs<F, C, D>, VerifierOnlyCircuitData<C, D>, CommonCircuitData<F, D>);
+use super::recursive_circuit::RecursiveTargets;
 
 pub fn prove_n_subproofs<
     C: GenericConfig<D, F = F>,

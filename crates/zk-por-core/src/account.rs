@@ -5,6 +5,7 @@ use plonky2::{
 use plonky2_field::types::Field;
 
 use crate::types::F;
+use rand::Rng;
 
 /// A struct representing a users account. It represents their equity and debt as a Vector of goldilocks field elements.
 #[derive(Debug, Clone)]
@@ -45,4 +46,23 @@ impl Account {
             .map(|seg| F::from_canonical_u64(u64::from_str_radix(seg, 16).unwrap()))
             .collect::<Vec<F>>()
     }
+}
+
+/// Generates num_accounts number of accounts with num_assets of assets (with equity and debt being seperate vecs)
+pub fn gen_accounts_with_random_data(num_accounts: usize, num_assets: usize) -> Vec<Account> {
+    let mut accounts: Vec<Account> = Vec::new();
+    let mut rng = rand::thread_rng(); // Create a random number generator
+    for _ in 0..num_accounts {
+        let mut equities = Vec::new();
+        let mut debts = Vec::new();
+        for _ in 0..num_assets {
+            let equity = rng.gen_range(1..1000);
+            let debt = equity - 1; // such that debt is always less than equity
+            equities.push(F::from_canonical_u32(equity));
+            debts.push(F::from_canonical_u32(debt));
+        }
+        let account_id = rng.gen_range(0..i32::MAX).to_string();
+        accounts.push(Account { id: account_id, equity: equities, debt: debts });
+    }
+    accounts
 }

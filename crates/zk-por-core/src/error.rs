@@ -13,4 +13,7 @@ pub enum ProofError {
 
     #[error("Unknown error")]
     Unknown,
+
+    #[error("Invalid parameter: {0}")]
+    InvalidParameter(String),
 }

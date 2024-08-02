@@ -1,6 +1,7 @@
 use crate::{
     account::Account,
     circuit_config::STANDARD_CONFIG,
+    error::ProofError,
     merkle_sum_prover::circuits::account_circuit::{AccountSumTargets, AccountTargets},
     types::{C, D, F},
 };
@@ -90,6 +91,34 @@ impl MerkleSumTreeProver {
             }
         }
     }
+
+    pub fn prove_with_circuit(
+        &self,
+        circuit_data: &CircuitData<F, C, D>,
+        account_targets: Vec<AccountTargets>,
+    ) -> Result<ProofWithPublicInputs<F, C, D>, ProofError> {
+        if account_targets.len() != self.accounts.len() {
+            return Err(ProofError::InvalidParameter(
+                "Account targets length does not match accounts length".to_string(),
+            ));
+        }
+
+        let mut pw = PartialWitness::new();
+
+        let CircuitData { prover_only, common, verifier_only: _ } = circuit_data;
+
+        for i in 0..self.accounts.len() {
+            account_targets[i].set_account_targets(self.accounts.get(i).unwrap(), &mut pw);
+        }
+
+        let mut timing = TimingTree::new("prove_merkle_sum_tree", Level::Debug);
+        let proof =
+            prove(&prover_only, &common, pw, &mut timing).map_err(|_| ProofError::InvalidProof)?;
+
+        circuit_data.verify(proof.clone()).unwrap();
+
+        Ok(proof)
+    }
 }
 
 #[cfg(test)]
@@ -112,6 +141,7 @@ pub mod test {
         });
     }
 
+    #[cfg(not(feature = "lightweight_test"))]
     #[test]
     pub fn test_get_proof() {
         let path = "../../test-data/batch0.json";
