@@ -61,7 +61,7 @@ jobs:
           fi
         )
         echo "COLOR: $COLOR"
-        sh ./scripts/gen_svg.sh
+        sh ./scripts/gen_svg.sh $COLOR $CODE_COV
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
