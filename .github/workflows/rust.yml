@@ -1,4 +1,4 @@
-name: Rust Format and Test
+name: CI
 
 on:
   push:
@@ -33,6 +33,22 @@ jobs:
       run: cargo fmt --check
       working-directory: .
 
-    - name: Run Tests
-      run: cargo test --verbose --lib
-      working-directory: .
+    # - name: Run Tests
+    #   run: cargo test --verbose --lib
+    #   working-directory: .
+
+    - name: Install dependencies
+      run: sudo apt-get install -y musl-tools
+
+    - name: Install tarpaulin
+      run: cargo install cargo-tarpaulin
+
+    - name: Run tests with coverage
+      run: cargo tarpaulin --lib --out Html --output-dir target/debug/tarpaulin/ -- --nocapture
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./target/debug/tarpaulin/
+        publish_branch: gh-pages
