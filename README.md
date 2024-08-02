@@ -1,3 +1,5 @@
+![Coverage](https://okx.github.io/proof-of-reserves-v2/coverage-badge.svg)
+
 # proof-of-reserves-v2
 
 ## Background
