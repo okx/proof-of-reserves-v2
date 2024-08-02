@@ -3,3 +3,4 @@
 target/
 logs/
 plonky2/
+my_permanent_leveldb/
