@@ -47,7 +47,8 @@ jobs:
 
     - name: Run tests with coverage
       run: |
-        LAST_LINE=$(cargo tarpaulin --lib --out Html --output-dir target/debug/tarpaulin/ -- --nocapture | tail -n 1)
+        cargo tarpaulin --lib --out Html --output-dir target/debug/tarpaulin/ -- --nocapture > test.log
+        LAST_LINE=$( tail -n 1 test.log)
         export CODE_COV_VAL="$LAST_LINE"
         echo "CODE_COV_VAL is $LAST_LINE"
 
