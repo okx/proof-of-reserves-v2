@@ -14,6 +14,7 @@ use super::{
     circuit_utils::assert_non_negative_unsigned,
 };
 use crate::circuit_config::STANDARD_CONFIG;
+use plonky2_field::types::Field;
 
 /// A node in the merkle sum tree, contains the total amount of equity (in usd) and the total amount of debt (in usd) and the hash.
 ///
@@ -36,29 +37,31 @@ impl MerkleSumNodeTarget {
         }
     }
 
-    /// Given two children, generate the next MerkleSumNodeTarget
-    pub fn get_parent_from_children(
+    /// Given children nodes, generate the MerkleSumNodeTarget
+    pub fn get_parent_from_children<const N: usize>(
         builder: &mut CircuitBuilder<F, D>,
-        left_child: &MerkleSumNodeTarget,
-        right_node: &MerkleSumNodeTarget,
+        children: [&MerkleSumNodeTarget; N],
     ) -> MerkleSumNodeTarget {
-        let sum_equity = builder.add(left_child.sum_equity, right_node.sum_equity);
-        let sum_debt = builder.add(left_child.sum_debt, right_node.sum_debt);
+        let mut sum_equity = builder.constant(F::ZERO);
+        let mut sum_debt = builder.constant(F::ZERO);
+        let mut hash_inputs = Vec::new();
+        children.into_iter().for_each(|child| {
+            sum_equity = builder.add(sum_equity, child.sum_equity);
+            sum_debt = builder.add(sum_debt, child.sum_debt);
 
-        // Ensure the amount of equity at this node is greater than the total amount of debt
-        let diff_between_equity_debt = builder.sub(sum_equity, sum_debt);
-        assert_non_negative_unsigned(builder, diff_between_equity_debt);
+            // Ensure the amount of equity at this node is greater than the total amount of debt
+            let diff_between_equity_debt = builder.sub(sum_equity, sum_debt);
+            assert_non_negative_unsigned(builder, diff_between_equity_debt);
 
-        // Ensure no overflow. We only need to check one child since in any overflow, the new value will be less than both the left and
-        // right children.
-        let diff_between_equity_left_and_sum = builder.sub(sum_equity, left_child.sum_equity);
-        assert_non_negative_unsigned(builder, diff_between_equity_left_and_sum);
-        let diff_between_debt_left_and_sum = builder.sub(sum_debt, left_child.sum_debt);
-        assert_non_negative_unsigned(builder, diff_between_debt_left_and_sum);
+            // Ensure no overflow. We only need to check one child since in any overflow, the new value will be less than both the left and
+            // right children.
+            let diff_between_equity_child_and_sum = builder.sub(sum_equity, child.sum_equity);
+            assert_non_negative_unsigned(builder, diff_between_equity_child_and_sum);
+            let diff_between_debt_child_and_sum = builder.sub(sum_debt, child.sum_debt);
+            assert_non_negative_unsigned(builder, diff_between_debt_child_and_sum);
 
-        let hash_inputs =
-            vec![left_child.hash.elements.to_vec(), right_node.hash.elements.to_vec()].concat();
-
+            hash_inputs.extend(child.hash.elements.iter());
+        });
         let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs);
         MerkleSumNodeTarget { sum_equity, sum_debt, hash }
     }
@@ -81,6 +84,12 @@ impl MerkleSumNodeTarget {
         builder.register_public_input(self.sum_equity);
         builder.register_public_input(self.sum_debt);
         builder.register_public_inputs(self.hash.elements.as_slice());
+    }
+}
+
+impl From<MerkleSumNodeTarget> for Vec<Target> {
+    fn from(node: MerkleSumNodeTarget) -> Vec<Target> {
+        vec![vec![node.sum_equity, node.sum_debt], node.hash.elements.to_vec()].concat()
     }
 }
 
@@ -133,8 +142,7 @@ pub fn build_merkle_sum_tree(
         let right_child = leaves.get(right_child_index).unwrap();
         leaves.push(MerkleSumNodeTarget::get_parent_from_children(
             builder,
-            left_child,
-            right_child,
+            [left_child, right_child],
         ));
     }
 }
@@ -215,8 +223,7 @@ pub mod test {
 
             let merkle_sum_node_target_3 = MerkleSumNodeTarget::get_parent_from_children(
                 builder,
-                &merkle_sum_node_target_1,
-                &merkle_sum_node_target_2,
+                [&merkle_sum_node_target_1, &merkle_sum_node_target_2],
             );
 
             let sum_equity =

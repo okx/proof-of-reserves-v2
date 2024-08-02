@@ -50,7 +50,7 @@ where
     #[cfg(debug_assertions)]
     let mut timing = TimingTree::new("prove_N_subproofs", log::Level::Debug);
     #[cfg(not(debug_assertions))]
-    let mut timing = TimingTree::new("prove_N_subproofs", log::Level::Info);    
+    let mut timing = TimingTree::new("prove_N_subproofs", log::Level::Info);
 
     let start = std::time::Instant::now();
     tracing::debug!("before prove");
