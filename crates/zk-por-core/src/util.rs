@@ -42,12 +42,5 @@ mod test {
         assert_eq!(get_node_level(8, 0), 3);
         assert_eq!(get_node_level(8, 4), 3);
         assert_eq!(get_node_level(8, 7), 3);
-
-        let batch_size = 8;
-        let num_of_batches = 6;
-        let level_from_bottom = 3;
-        let ret = 2 * batch_size * num_of_batches
-            - 2 * batch_size * num_of_batches / (1 << level_from_bottom);
-        println!("ret: {:?}", ret);
     }
 }
