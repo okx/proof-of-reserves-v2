@@ -14,7 +14,7 @@ use plonky2::{
     util::timing::TimingTree,
 };
 
-use tracing::{error, trace};
+use tracing::{info, error};
 
 use super::circuits::merkle_sum_circuit::MerkleSumTreeTarget;
 
@@ -101,13 +101,13 @@ impl MerkleSumTreeProver {
 
         let CircuitData { prover_only, common, verifier_only: _ } = &data;
 
-        println!("Started Proving");
+        info!("Started Proving");
 
         let proof_res = prove(&prover_only, &common, pw, &mut timing);
 
         match proof_res {
             Ok(proof) => {
-                println!("Finished Proving");
+                info!("Finished Proving");
 
                 let proof_verification_res = data.verify(proof.clone());
                 match proof_verification_res {
