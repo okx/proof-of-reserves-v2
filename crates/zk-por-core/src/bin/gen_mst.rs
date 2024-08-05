@@ -61,6 +61,7 @@ fn main() {
                 std::process::exit(0);
             } else {
                 let batch_size = cfg.prover.batch_size;
+                #[allow(unused_assignments)]
                 let mut last_doc_account_num = 0;
                 for (doc_idx, file) in docs.clone().into_iter().enumerate() {
                     let mut accounts = read_json_into_accounts_vec(file.to_str().unwrap());
