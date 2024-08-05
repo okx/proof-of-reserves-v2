@@ -152,9 +152,7 @@ fn main() {
                                 let intra_tree_horizontal_offset = i- (2*batch_size - 2*batch_size.div(1 << level_from_bottom));
                                 debug!("chunk_idx: {:}, i: {:?}, global_tree_vertical_offset: {}, global_idx: {:?}, level_from_bottom: {:?}",  chunk_idx, i,
                                 global_tree_vertical_offset,
-                                global_tree_vertical_offset+global_inter_tree_horizontal_offset+intra_tree_horizontal_offset
-                            ,level_from_bottom
-                            );
+                                global_tree_vertical_offset+global_inter_tree_horizontal_offset+intra_tree_horizontal_offset,level_from_bottom);
                                 _g[global_tree_vertical_offset+global_inter_tree_horizontal_offset+intra_tree_horizontal_offset] = mst.merkle_sum_tree[i].hash;
                             }
                             drop(_g);

@@ -34,7 +34,7 @@ impl Account {
         Self {
             id: "0".repeat(64),
             equity: vec![F::default(); num_of_tokens],
-            debt: vec![F::default(); num_of_tokens]
+            debt: vec![F::default(); num_of_tokens],
         }
     }
 
