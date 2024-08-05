@@ -40,21 +40,6 @@ fn list_json_files(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
     Ok(json_files)
 }
 
-fn build_batch_mst() {}
-
-/// `accounts` accounts within one doc; the last
-/// `total_num_of_docs`: total number of docs;
-fn process_accounts(
-    accounts: &[Account],
-    doc_index: usize,
-    batch_size: u32,
-    batch_numbers_per_doc: usize,
-    num_of_tokens: usize,
-    total_num_of_docs: usize,
-) {
-    let empty_acct = Account::get_empty_account(num_of_tokens);
-}
-
 /// currently, we assume the first n-1 files contain users of number that is a multiple of batch_size;
 /// the last file might not be an exact multiple;
 /// we also assume the multiple is same for the first n-1 files
@@ -144,15 +129,15 @@ fn main() {
                                 let batch_tree_level = get_node_level(batch_size, i);
                                 let level_from_bottom = tree_depth - batch_tree_level;
 
-                                let global_tree_vertical_offset = 2 * batch_size * global_cfg.num_of_batches- 2 * batch_size* global_cfg.num_of_batches/(1 << level_from_bottom);
+                                let global_tree_vertical_offset = 2 * batch_size * global_cfg.num_of_batches- (2 * batch_size* global_cfg.num_of_batches).div(1 << level_from_bottom);
     
 
                                 let level_node_counts = batch_size.div(1<< level_from_bottom);
                                 let global_inter_tree_horizontal_offset = level_node_counts * chunk_idx;
                                 let intra_tree_horizontal_offset = i- (2*batch_size - 2*batch_size.div(1 << level_from_bottom));
-                                debug!("chunk_idx: {:}, i: {:?}, global_tree_vertical_offset: {}, global_idx: {:?}, level_from_bottom: {:?}",  chunk_idx, i,
-                                global_tree_vertical_offset,
-                                global_tree_vertical_offset+global_inter_tree_horizontal_offset+intra_tree_horizontal_offset,level_from_bottom);
+                                // debug!("chunk_idx: {:}, i: {:?}, global_tree_vertical_offset: {}, global_idx: {:?}, level_from_bottom: {:?}",  chunk_idx, i,
+                                // global_tree_vertical_offset,
+                                // global_tree_vertical_offset+global_inter_tree_horizontal_offset+intra_tree_horizontal_offset,level_from_bottom);
                                 _g[global_tree_vertical_offset+global_inter_tree_horizontal_offset+intra_tree_horizontal_offset] = mst.merkle_sum_tree[i].hash;
                             }
                             drop(_g);
