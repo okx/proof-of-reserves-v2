@@ -1,14 +1,13 @@
 use plonky2::{hash::hash_types::HashOut, util::log2_strict};
 use rayon::prelude::*;
-use serde_json::error;
+
 use std::{
     fs,
     ops::Div,
     path::{Path, PathBuf},
-    str::FromStr,
     sync::RwLock,
 };
-use tracing::{debug, error, info, warn, Level};
+use tracing::{debug, info, warn};
 use zk_por_core::{
     account::Account,
     config::ProverConfig,

@@ -22,7 +22,7 @@ pub fn get_node_level(batch_size: usize, node_idx: usize) -> usize {
 
 #[cfg(test)]
 mod test {
-    use plonky2::util::log2_strict;
+    
 
     use super::*;
 
