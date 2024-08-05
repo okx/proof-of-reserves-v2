@@ -24,7 +24,6 @@ pub fn get_node_level(batch_size: usize, node_idx: usize) -> usize {
 pub mod test_util {
     use crate::util::{get_node_level, get_recursive_hash_nums};
 
-
     #[test]
     fn test_get_recursive_hash_nums() {
         assert_eq!(get_recursive_hash_nums(2, 4), 1);
