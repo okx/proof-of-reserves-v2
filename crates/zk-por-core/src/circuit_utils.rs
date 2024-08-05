@@ -1,10 +1,7 @@
 use log::Level;
 use plonky2::{
-    hash::hash_types::{HashOutTarget, RichField},
-    iop::{
-        target::{BoolTarget, Target},
-        witness::PartialWitness,
-    },
+    hash::hash_types::RichField,
+    iop::{target::Target, witness::PartialWitness},
     plonk::{
         circuit_builder::CircuitBuilder, circuit_data::CircuitData, config::GenericConfig,
         prover::prove,
@@ -16,7 +13,7 @@ use std::panic;
 
 use crate::{
     circuit_config::STANDARD_CONFIG,
-    types::{C, MAX_POSITIVE_AMOUNT_LOG},
+    types::{C, D, F, MAX_POSITIVE_AMOUNT_LOG},
 };
 
 /// Test runner for ease of testing
@@ -38,30 +35,16 @@ where
     data.verify(proof).expect("Verify fail")
 }
 
-/// Computes `if b { h0 } else { h1 }`.
-pub fn select_hash<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    b: BoolTarget,
-    h0: HashOutTarget,
-    h1: HashOutTarget,
-) -> HashOutTarget {
-    HashOutTarget {
-        elements: core::array::from_fn(|i| builder.select(b, h0.elements[i], h1.elements[i])),
-    }
-}
-
 /// Assert 0 <= x <= MAX_POSITIVE_AMOUNT
 /// MAX_POSITIVE_AMOUNT =  (1 << MAX_POSITIVE_AMOUNT_LOG) - 1
-pub fn assert_non_negative_unsigned<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    x: Target,
-) {
+pub fn assert_non_negative_unsigned(builder: &mut CircuitBuilder<F, D>, x: Target) {
     builder.range_check(x, MAX_POSITIVE_AMOUNT_LOG);
 }
 
 #[cfg(test)]
 pub mod test {
     use crate::types::F;
+
     use plonky2_field::types::{Field, Field64};
 
     use super::{assert_non_negative_unsigned, run_circuit_test};
