@@ -113,11 +113,9 @@ fn main() {
 
                     let _: Vec<()> = chunks
                         .into_par_iter()
-
                         .enumerate()
                         .map(|(chunk_idx, chunk)| {
-
-                            debug!("chunk_idx: {:}, chunk data: {:?}",chunk_idx, chunk.len());
+                            debug!("chunk_idx: {:}, chunk data: {:?}", chunk_idx, chunk.len());
                             let mst =
                                 MerkleSumTree::new_tree_from_accounts(&chunk.to_vec(), batch_size);
                             let tree_depth = log2_strict(batch_size);
@@ -129,20 +127,24 @@ fn main() {
                                 let batch_tree_level = get_node_level(batch_size, i);
                                 let level_from_bottom = tree_depth - batch_tree_level;
 
-                                let global_tree_vertical_offset = 2 * batch_size * global_cfg.num_of_batches- (2 * batch_size* global_cfg.num_of_batches).div(1 << level_from_bottom);
-    
+                                let global_tree_vertical_offset =
+                                    2 * batch_size * global_cfg.num_of_batches
+                                        - (2 * batch_size * global_cfg.num_of_batches)
+                                            .div(1 << level_from_bottom);
 
-                                let level_node_counts = batch_size.div(1<< level_from_bottom);
-                                let global_inter_tree_horizontal_offset = level_node_counts * chunk_idx;
-                                let intra_tree_horizontal_offset = i- (2*batch_size - 2*batch_size.div(1 << level_from_bottom));
+                                let level_node_counts = batch_size.div(1 << level_from_bottom);
+                                let global_inter_tree_horizontal_offset =
+                                    level_node_counts * chunk_idx;
+                                let intra_tree_horizontal_offset = i
+                                    - (2 * batch_size - 2 * batch_size.div(1 << level_from_bottom));
                                 // debug!("chunk_idx: {:}, i: {:?}, global_tree_vertical_offset: {}, global_idx: {:?}, level_from_bottom: {:?}",  chunk_idx, i,
                                 // global_tree_vertical_offset,
                                 // global_tree_vertical_offset+global_inter_tree_horizontal_offset+intra_tree_horizontal_offset,level_from_bottom);
-                                _g[global_tree_vertical_offset+global_inter_tree_horizontal_offset+intra_tree_horizontal_offset] = mst.merkle_sum_tree[i].hash;
+                                _g[global_tree_vertical_offset
+                                    + global_inter_tree_horizontal_offset
+                                    + intra_tree_horizontal_offset] = mst.merkle_sum_tree[i].hash;
                             }
                             drop(_g);
-
-          
                         })
                         .collect();
                 }
