@@ -21,10 +21,9 @@ pub fn get_node_level(batch_size: usize, node_idx: usize) -> usize {
 }
 
 #[cfg(test)]
-pub mod test {
-    
+pub mod test_util {
+    use crate::util::{get_node_level, get_recursive_hash_nums};
 
-    use super::*;
 
     #[test]
     fn test_get_recursive_hash_nums() {
