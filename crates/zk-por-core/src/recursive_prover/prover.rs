@@ -26,7 +26,6 @@ pub struct RecursiveProver<C: GenericConfig<D, F = F>, const N: usize> {
 }
 
 impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
-
     /// build recursive circuit that proves N subproofs and geneate parent merkle sum node targets
     /// This circuit hardcode the constraint that the verifier_circuit_target.circuit_digest must be equal to that inner_verifier_circuit_data.circuit_digest;
     pub fn build_new_recursive_n_circuit_targets(
@@ -37,8 +36,11 @@ impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
         C::Hasher: AlgebraicHasher<F>,
     {
         // Verify n subproofs in circuit
-        let mut recursive_targets =
-            verify_n_subproof_circuit(builder, &self.merkle_sum_circuit.common, &self.merkle_sum_circuit.verifier_only);
+        let mut recursive_targets = verify_n_subproof_circuit(
+            builder,
+            &self.merkle_sum_circuit.common,
+            &self.merkle_sum_circuit.verifier_only,
+        );
 
         // Build the recursive merkle sum tree targets to get the next merkle sum tree root.
         recursive_targets.build_recursive_merkle_sum_tree_circuit(builder);
@@ -49,7 +51,6 @@ impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
         recursive_targets
     }
 
-
     pub fn build_and_set_recursive_targets(
         &self,
         builder: &mut CircuitBuilder<F, D>,
@@ -57,9 +58,8 @@ impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
     ) where
         <C as GenericConfig<2>>::Hasher: AlgebraicHasher<F>,
     {
-        let recursive_targets: RecursiveTargets<N> = self.build_new_recursive_n_circuit_targets(
-            builder,
-        );
+        let recursive_targets: RecursiveTargets<N> =
+            self.build_new_recursive_n_circuit_targets(builder);
 
         recursive_targets.set_targets(
             pw,
@@ -113,7 +113,11 @@ impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
     }
 
     /// Get proof with a pre-compiled merkle sum circuit and recursive targets. In this method we do not need to build the circuit as we use a pre-built circuit.
-    pub fn get_proof_with_circuit_data(&self, recursive_targets: &RecursiveTargets<N>, cd: &CircuitData<F, C, D>) -> ProofWithPublicInputs<F, C, D>
+    pub fn get_proof_with_circuit_data(
+        &self,
+        recursive_targets: &RecursiveTargets<N>,
+        cd: &CircuitData<F, C, D>,
+    ) -> ProofWithPublicInputs<F, C, D>
     where
         <C as GenericConfig<2>>::Hasher: AlgebraicHasher<F>,
     {
