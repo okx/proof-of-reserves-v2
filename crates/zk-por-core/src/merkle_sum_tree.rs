@@ -4,6 +4,7 @@ use crate::{
     account::Account,
     merkle_sum_prover::utils::hash_2_subhashes,
     types::{D, F},
+    EMPTY_ACCT, GLOBAL_CONFIG,
 };
 
 use plonky2_field::types::Field;
@@ -44,13 +45,21 @@ pub struct MerkleSumTree {
 impl MerkleSumTree {
     /// Create a new merkle sum tree from a set of accounts, note that this set must be a power of 2.
     /// In the future we can try to pad with empty accounts.
-    pub fn new_tree_from_accounts(accounts: &Vec<Account>) -> MerkleSumTree {
+    pub fn new_tree_from_accounts(accounts: &Vec<Account>, num_leaves: usize) -> MerkleSumTree {
+        let tree_depth = log2_strict(num_leaves);
         let mut merkle_sum_tree: Vec<MerkleSumNode> = Vec::new();
-        let num_leaves = accounts.len();
 
         for i in 0..num_leaves * 2 - 1 {
             if i < num_leaves {
-                let account = accounts.get(i).unwrap();
+                let account = if i < accounts.len() {
+                    accounts.get(i).unwrap()
+                } else {
+                    let empty_acct = EMPTY_ACCT.get_or_init(|| {
+                        let cfg = GLOBAL_CONFIG.get().unwrap();
+                        Account::get_empty_account(cfg.num_of_tokens)
+                    });
+                    empty_acct
+                };
                 merkle_sum_tree.push(MerkleSumNode::new_from_account(account));
             } else {
                 let left_child_index = 2 * (i - num_leaves);
@@ -62,7 +71,7 @@ impl MerkleSumTree {
             }
         }
 
-        MerkleSumTree { merkle_sum_tree, tree_depth: log2_strict(accounts.len()) }
+        MerkleSumTree { merkle_sum_tree, tree_depth }
     }
 
     pub fn get_root(&self) -> MerkleSumNode {
@@ -150,7 +159,7 @@ pub mod test {
             });
         }
 
-        let tree = MerkleSumTree::new_tree_from_accounts(&accounts);
+        let tree = MerkleSumTree::new_tree_from_accounts(&accounts, accounts.len());
 
         let root = tree.get_root();
         assert_eq!(root.sum_equity, sum_equity);
@@ -162,7 +171,7 @@ pub mod test {
         let path = "../../test-data/batch0.json";
         let accounts = read_json_into_accounts_vec(path);
 
-        let merkle_sum_tree = MerkleSumTree::new_tree_from_accounts(&accounts);
+        let merkle_sum_tree = MerkleSumTree::new_tree_from_accounts(&accounts, accounts.len());
 
         let mut siblings_calculated: Vec<MerkleSumNode> = Vec::new();
         siblings_calculated.push(*merkle_sum_tree.get_from_index(0).unwrap());

@@ -2,7 +2,11 @@ extern crate leveldb;
 extern crate tempdir;
 
 use leveldb::{
-    database::Database,
+    database::{
+        batch::{Batch, Writebatch},
+        Database,
+    },
+    iterator::Iterable,
     kv::KV,
     options::{Options, ReadOptions, WriteOptions},
 };
@@ -33,6 +37,21 @@ impl<K: db_key::Key> LevelDb<K> {
         match self.db.put(write_opts, key, val) {
             Ok(_) => (),
             Err(e) => panic!("Failed to write key-value pair: {:?}", e),
+        }
+    }
+
+    /// input is a vector of (k,v) tuple
+    pub fn batch_put(&self, batches: Vec<(K, &[u8])>) {
+        // Create a WriteBatch
+        let mut batch = Writebatch::<K>::new();
+        batches.into_iter().for_each(|(k, v)| {
+            batch.put(k, v);
+        });
+
+        // Write the batch to the database
+        match self.db.write(WriteOptions::new(), &batch) {
+            Ok(_) => (),
+            Err(e) => panic!("Batch write failed: {}", e),
         }
     }
 

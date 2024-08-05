@@ -30,6 +30,14 @@ impl Account {
         hash
     }
 
+    pub fn get_empty_account(num_of_tokens: usize) -> Account {
+        Self {
+            id: "0".repeat(64),
+            equity: vec![F::default(); num_of_tokens],
+            debt: vec![F::default(); num_of_tokens]
+        }
+    }
+
     /// Gets a user id as a vec of 5 GF elements.
     pub fn get_user_id_in_field(&self) -> Vec<F> {
         assert!(self.id.len() == 64);
