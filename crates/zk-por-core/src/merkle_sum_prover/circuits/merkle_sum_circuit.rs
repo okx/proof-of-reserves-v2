@@ -4,17 +4,17 @@ use plonky2::{
         poseidon::PoseidonHash,
     },
     iop::target::Target,
-    plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitData},
+    plonk::{circuit_builder::CircuitBuilder, circuit_data::{CircuitData, CircuitConfig}},
 };
 
-use crate::types::{C, D, F};
-
-use super::{
-    account_circuit::{AccountSumTargets, AccountTargets},
-    circuit_utils::assert_non_negative_unsigned,
-};
-use crate::circuit_config::STANDARD_CONFIG;
 use plonky2_field::types::Field;
+
+use crate::{
+    circuit_utils::assert_non_negative_unsigned,
+    types::{C, D, F},
+};
+
+use super::account_circuit::{AccountSumTargets, AccountTargets};
 
 /// A node in the merkle sum tree, contains the total amount of equity (in usd) and the total amount of debt (in usd) and the hash.
 ///
@@ -29,19 +29,12 @@ pub struct MerkleSumNodeTarget {
 }
 
 impl MerkleSumNodeTarget {
-    pub fn default() -> Self {
-        MerkleSumNodeTarget {
-            sum_equity: Target::default(),
-            sum_debt: Target::default(),
-            hash: [Target::default(); NUM_HASH_OUT_ELTS].into(),
-        }
-    }
-
     /// Given children nodes, generate the MerkleSumNodeTarget
     pub fn get_parent_from_children<const N: usize>(
         builder: &mut CircuitBuilder<F, D>,
-        children: [&MerkleSumNodeTarget; N],
+        children: &Vec<MerkleSumNodeTarget>,
     ) -> MerkleSumNodeTarget {
+        assert_eq!(N, children.len());
         let mut sum_equity = builder.constant(F::ZERO);
         let mut sum_debt = builder.constant(F::ZERO);
         let mut hash_inputs = Vec::new();
@@ -71,19 +64,19 @@ impl MerkleSumNodeTarget {
         builder: &mut CircuitBuilder<F, D>,
         account_targets: &AccountSumTargets,
     ) -> MerkleSumNodeTarget {
-        let hash_inputs = vec![account_targets.sum_equity, account_targets.sum_debt];
-
-        let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs);
+        let hash = account_targets.get_account_hash_targets(builder);
         MerkleSumNodeTarget {
             sum_equity: account_targets.sum_equity,
             sum_debt: account_targets.sum_debt,
             hash,
         }
     }
-    pub fn registered_as_public_inputs(&self, builder: &mut CircuitBuilder<F, D>) {
+
+    /// Register this node targets as a public input
+    pub fn register_as_public_input(&self, builder: &mut CircuitBuilder<F, D>) {
         builder.register_public_input(self.sum_equity);
         builder.register_public_input(self.sum_debt);
-        builder.register_public_inputs(self.hash.elements.as_slice());
+        builder.register_public_inputs(&self.hash.elements);
     }
 }
 
@@ -121,61 +114,62 @@ impl MerkleSumTreeTarget {
     /// Register the root hash, sum_equity and sum_debt as public inputs to be used in recursive proving.
     pub fn register_public_inputs(&self, builder: &mut CircuitBuilder<F, D>) {
         let root = self.get_root();
-        builder.register_public_input(root.sum_equity);
-        builder.register_public_input(root.sum_debt);
-        builder.register_public_inputs(&root.hash.elements);
+        root.register_as_public_input(builder);
+    }
+
+    /// Builds a merkle sum tree of a given size (based on the number of leaves). It will build the merkle sum tree on top of the leaves vector
+    /// in order to do the task in place. There is no return value as the input leaves vector is mutated.
+    pub fn build_merkle_sum_tree(
+        builder: &mut CircuitBuilder<F, D>,
+        leaves: &mut Vec<MerkleSumNodeTarget>,
+    ) {
+        let num_leaves = leaves.len();
+
+        for i in num_leaves..(num_leaves * 2 - 1) {
+            let left_child_index = 2 * (i - num_leaves);
+            let right_child_index = 2 * (i - num_leaves) + 1;
+            let left_child = leaves.get(left_child_index).unwrap();
+            let right_child = leaves.get(right_child_index).unwrap();
+            leaves.push(MerkleSumNodeTarget::get_parent_from_children::<2>(
+                builder,
+                &vec![*left_child, *right_child],
+            ));
+        }
+    }
+
+    /// Given a list of account targets, build the corresponding merkle sum tree.
+    pub fn build_new_from_account_targets(
+        builder: &mut CircuitBuilder<F, D>,
+        accounts: &mut Vec<AccountSumTargets>,
+    ) -> MerkleSumTreeTarget {
+        let mut leaves: Vec<MerkleSumNodeTarget> = accounts
+            .iter()
+            .map(|x| MerkleSumNodeTarget::get_node_from_account_targets(builder, x))
+            .collect();
+
+        MerkleSumTreeTarget::build_merkle_sum_tree(builder, &mut leaves);
+
+        let tree = MerkleSumTreeTarget { sum_tree: leaves };
+
+        tree.register_public_inputs(builder);
+
+        return tree;
     }
 }
 
-/// Builds a merkle sum tree of a given size (based on the number of leaves). It will build the merkle sum tree on top of the leaves vector
-/// in order to do the task in place. There is no return value as the input leaves vector is mutated.
-pub fn build_merkle_sum_tree(
-    builder: &mut CircuitBuilder<F, D>,
-    leaves: &mut Vec<MerkleSumNodeTarget>,
-) {
-    let num_leaves = leaves.len();
-
-    for i in num_leaves..(num_leaves * 2 - 1) {
-        let left_child_index = 2 * (i - num_leaves);
-        let right_child_index = 2 * (i - num_leaves) + 1;
-        let left_child = leaves.get(left_child_index).unwrap();
-        let right_child = leaves.get(right_child_index).unwrap();
-        leaves.push(MerkleSumNodeTarget::get_parent_from_children(
-            builder,
-            [left_child, right_child],
-        ));
-    }
-}
-
-/// Given a list of account targets, build the corresponding merkle sum tree.
-pub fn build_merkle_sum_tree_from_account_targets(
-    builder: &mut CircuitBuilder<F, D>,
-    accounts: &mut Vec<AccountSumTargets>,
-) -> MerkleSumTreeTarget {
-    let mut leaves: Vec<MerkleSumNodeTarget> = accounts
-        .iter()
-        .map(|x| MerkleSumNodeTarget::get_node_from_account_targets(builder, x))
-        .collect();
-
-    build_merkle_sum_tree(builder, &mut leaves);
-
-    let tree = MerkleSumTreeTarget { sum_tree: leaves };
-
-    tree.register_public_inputs(builder);
-
-    return tree;
-}
 
 pub fn build_merkle_sum_tree_circuit(
     num_of_leaves: usize,
     asset_num: usize,
+    config: CircuitConfig,
 ) -> (CircuitData<F, C, D>, Vec<AccountTargets>) {
-    let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
+    let mut builder = CircuitBuilder::<F, D>::new(config);
     let mut account_targets: Vec<AccountTargets> = Vec::new();
     (0..num_of_leaves).for_each(|_| {
+        let id: [Target; 5] = std::array::from_fn(|_| builder.add_virtual_target());
         let equity_targets = builder.add_virtual_targets(asset_num);
         let debt_targets = builder.add_virtual_targets(asset_num);
-        let account_target = AccountTargets { equity: equity_targets, debt: debt_targets };
+        let account_target = AccountTargets { id: id, equity: equity_targets, debt: debt_targets };
         account_targets.push(account_target);
     });
     let mut account_sum_targets: Vec<AccountSumTargets> = account_targets
@@ -183,7 +177,7 @@ pub fn build_merkle_sum_tree_circuit(
         .map(|x| AccountSumTargets::from_account_target(x, &mut builder))
         .collect();
 
-    _ = build_merkle_sum_tree_from_account_targets(&mut builder, &mut account_sum_targets);
+    _ = MerkleSumTreeTarget::build_new_from_account_targets(&mut builder, &mut account_sum_targets);
     let circuit_data = builder.build::<C>();
     (circuit_data, account_targets)
 }
@@ -191,10 +185,8 @@ pub fn build_merkle_sum_tree_circuit(
 #[cfg(test)]
 pub mod test {
     use crate::{
-        merkle_sum_prover::circuits::{
-            account_circuit::{AccountSumTargets, AccountTargets},
-            circuit_utils::run_circuit_test,
-        },
+        circuit_utils::run_circuit_test,
+        merkle_sum_prover::circuits::account_circuit::{AccountSumTargets, AccountTargets},
         parser::read_json_into_accounts_vec,
     };
 
@@ -221,9 +213,9 @@ pub mod test {
             let merkle_sum_node_target_2 =
                 MerkleSumNodeTarget::get_node_from_account_targets(builder, &account_sum_target_2);
 
-            let merkle_sum_node_target_3 = MerkleSumNodeTarget::get_parent_from_children(
+            let merkle_sum_node_target_3 = MerkleSumNodeTarget::get_parent_from_children::<2>(
                 builder,
-                [&merkle_sum_node_target_1, &merkle_sum_node_target_2],
+                &vec![merkle_sum_node_target_1, merkle_sum_node_target_2],
             );
 
             let sum_equity =
