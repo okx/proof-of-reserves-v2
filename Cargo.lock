@@ -1233,7 +1233,7 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 [[package]]
 name = "plonky2"
 version = "0.2.0"
-source = "git+https://github.com/okx/plonky2#140d97a8081cfae1d08e43199e13084c1acf1dae"
+source = "git+https://github.com/okx/plonky2?branch=clone-circuit#e07494fd2b52033fae5a7e0d65411266be34db60"
 dependencies = [
  "ahash 0.8.11",
  "anyhow",
@@ -1259,7 +1259,7 @@ dependencies = [
 [[package]]
 name = "plonky2_field"
 version = "0.2.0"
-source = "git+https://github.com/okx/plonky2#140d97a8081cfae1d08e43199e13084c1acf1dae"
+source = "git+https://github.com/okx/plonky2?branch=clone-circuit#e07494fd2b52033fae5a7e0d65411266be34db60"
 dependencies = [
  "anyhow",
  "itertools 0.11.0",
@@ -1278,7 +1278,7 @@ dependencies = [
 [[package]]
 name = "plonky2_maybe_rayon"
 version = "0.2.0"
-source = "git+https://github.com/okx/plonky2#140d97a8081cfae1d08e43199e13084c1acf1dae"
+source = "git+https://github.com/okx/plonky2?branch=clone-circuit#e07494fd2b52033fae5a7e0d65411266be34db60"
 dependencies = [
  "rayon",
 ]
@@ -1286,7 +1286,7 @@ dependencies = [
 [[package]]
 name = "plonky2_util"
 version = "0.2.0"
-source = "git+https://github.com/okx/plonky2#140d97a8081cfae1d08e43199e13084c1acf1dae"
+source = "git+https://github.com/okx/plonky2?branch=clone-circuit#e07494fd2b52033fae5a7e0d65411266be34db60"
 
 [[package]]
 name = "powerfmt"

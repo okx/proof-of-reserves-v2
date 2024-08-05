@@ -37,8 +37,6 @@ impl AccountTargets {
         assert_eq!(self.equity.len(), account_info.equity.len());
         assert_eq!(self.debt.len(), account_info.debt.len());
 
-        println!("{:?}", account_info.get_user_id_in_field());
-
         pw.set_target_arr(self.equity.as_slice(), account_info.equity.as_slice());
         pw.set_target_arr(self.debt.as_slice(), account_info.debt.as_slice());
         pw.set_target_arr(self.id.as_slice(), &account_info.get_user_id_in_field().as_slice());

@@ -1,17 +1,21 @@
 #![feature(test)]
-
+use plonky2::plonk::circuit_builder::CircuitBuilder;
 use zk_por_core::{
-    account::gen_accounts_with_random_data, merkle_sum_prover::prover::MerkleSumTreeProver,
+    account::gen_accounts_with_random_data, circuit_config::STANDARD_CONFIG, merkle_sum_prover::{circuits::account_circuit::AccountTargets, prover::MerkleSumTreeProver}, types::{C, D, F}
 };
 
 extern crate test;
 use test::Bencher;
 
 fn bench(b: &mut Bencher, batch_size: usize) {
+    let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
     let num_assets = 50;
     let accounts = gen_accounts_with_random_data(batch_size, num_assets);
     let prover = MerkleSumTreeProver { accounts };
-    b.iter(|| _ = prover.get_proof());
+    let account_targets: Vec<AccountTargets> = prover.build_merkle_tree_targets(&mut builder);
+    let data = &builder.build::<C>();
+
+    b.iter(|| _ = prover.get_proof_with_circuit_data(&account_targets, data));
 }
 
 #[bench]

@@ -1,9 +1,9 @@
 use log::Level;
 use plonky2::{
-    iop::witness::{PartialWitness, WitnessWrite},
+    iop::witness::PartialWitness,
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitData, VerifierOnlyCircuitData},
+        circuit_data::CircuitData,
         config::{AlgebraicHasher, GenericConfig},
         proof::ProofWithPublicInputs,
         prover::prove,
@@ -16,9 +16,8 @@ use crate::{
     circuit_config::STANDARD_CONFIG,
     types::{D, F},
 };
-use anyhow::Result;
 
-use super::recursive_circuit::{build_new_recursive_n_circuit_targets, RecursiveTargets};
+use super::recursive_circuit::{verify_n_subproof_circuit, RecursiveTargets};
 
 pub struct RecursiveProver<C: GenericConfig<D, F = F>, const N: usize> {
     // pub batch_id: usize,
@@ -27,6 +26,30 @@ pub struct RecursiveProver<C: GenericConfig<D, F = F>, const N: usize> {
 }
 
 impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
+
+    /// build recursive circuit that proves N subproofs and geneate parent merkle sum node targets
+    /// This circuit hardcode the constraint that the verifier_circuit_target.circuit_digest must be equal to that inner_verifier_circuit_data.circuit_digest;
+    pub fn build_new_recursive_n_circuit_targets(
+        &self,
+        builder: &mut CircuitBuilder<F, D>,
+    ) -> RecursiveTargets<N>
+    where
+        C::Hasher: AlgebraicHasher<F>,
+    {
+        // Verify n subproofs in circuit
+        let mut recursive_targets =
+            verify_n_subproof_circuit(builder, &self.merkle_sum_circuit.common, &self.merkle_sum_circuit.verifier_only);
+
+        // Build the recursive merkle sum tree targets to get the next merkle sum tree root.
+        recursive_targets.build_recursive_merkle_sum_tree_circuit(builder);
+
+        #[cfg(debug_assertions)]
+        builder.print_gate_counts(0);
+
+        recursive_targets
+    }
+
+
     pub fn build_and_set_recursive_targets(
         &self,
         builder: &mut CircuitBuilder<F, D>,
@@ -34,9 +57,7 @@ impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
     ) where
         <C as GenericConfig<2>>::Hasher: AlgebraicHasher<F>,
     {
-        let recursive_targets: RecursiveTargets<N> = build_new_recursive_n_circuit_targets(
-            &self.merkle_sum_circuit.common,
-            &self.merkle_sum_circuit.verifier_only,
+        let recursive_targets: RecursiveTargets<N> = self.build_new_recursive_n_circuit_targets(
             builder,
         );
 
@@ -47,6 +68,7 @@ impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
         )
     }
 
+    /// Gets the proof with pis of this batch of recursive proofs.
     pub fn get_proof(&self) -> ProofWithPublicInputs<F, C, D>
     where
         <C as GenericConfig<2>>::Hasher: AlgebraicHasher<F>,
@@ -58,7 +80,7 @@ impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
 
         builder.print_gate_counts(0);
 
-        let mut timing = TimingTree::new("prove", Level::Debug);
+        let mut timing = TimingTree::new("prove", Level::Info);
         let data = builder.build::<C>();
 
         let CircuitData { prover_only, common, verifier_only: _ } = &data;
@@ -89,56 +111,43 @@ impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
             }
         }
     }
-}
 
-pub fn prove_n_subproofs<
-    C: GenericConfig<D, F = F>,
-    InnerC: GenericConfig<D, F = F>,
-    const N: usize,
->(
-    sub_proofs: Vec<ProofWithPublicInputs<F, InnerC, D>>,
-    inner_circuit_vd: &VerifierOnlyCircuitData<InnerC, D>,
-    recursive_circuit: &CircuitData<F, C, D>,
-    recursive_targets: RecursiveTargets<N>,
-) -> Result<ProofWithPublicInputs<F, C, D>>
-where
-    InnerC::Hasher: AlgebraicHasher<F>,
-    // [(); C::Hasher::HASH_SIZE]:, // TODO: figure out how to make this work
-{
-    // tracing::debug!("before build recurisve {} circuit", N);
-    // let circuit_data = builder.build::<C>();
-    // tracing::debug!("after build recurisve {} circuit", N);
-    if sub_proofs.len() != N {
-        return Err(anyhow::anyhow!(format!(
-            "number of proofs [{}] is not consistent with N [{}]",
-            sub_proofs.len(),
-            N
-        )));
-    }
-
-    let mut pw = PartialWitness::new();
-    pw.set_verifier_data_target(&recursive_targets.verifier_circuit_target, inner_circuit_vd);
-
-    (0..N).for_each(|i| {
-        pw.set_proof_with_pis_target(
-            &recursive_targets.proof_with_pub_input_targets[i],
-            &sub_proofs[i],
-        );
-    });
-
-    let mut timing = TimingTree::new("prove_N_subproofs", log::Level::Debug);
-    #[cfg(not(debug_assertions))]
-    let mut timing = TimingTree::new("prove_N_subproofs", log::Level::Info);
-
-    let start = std::time::Instant::now();
-    log::debug!("before prove");
-    let proof = prove(&recursive_circuit.prover_only, &recursive_circuit.common, pw, &mut timing)?;
-    log::debug!("time for {:?} proofs, {:?}", N, start.elapsed().as_millis());
-
-    #[cfg(debug_assertions)]
+    /// Get proof with a pre-compiled merkle sum circuit and recursive targets. In this method we do not need to build the circuit as we use a pre-built circuit.
+    pub fn get_proof_with_circuit_data(&self, recursive_targets: &RecursiveTargets<N>, cd: &CircuitData<F, C, D>) -> ProofWithPublicInputs<F, C, D>
+    where
+        <C as GenericConfig<2>>::Hasher: AlgebraicHasher<F>,
     {
-        recursive_circuit.verify(proof.clone())?;
-    }
+        let mut pw = PartialWitness::<F>::new();
+        let CircuitData { prover_only, common, verifier_only } = &cd;
 
-    Ok(proof)
+        recursive_targets.set_targets(&mut pw, self.sub_proofs.to_vec(), verifier_only);
+
+        let mut timing = TimingTree::new("prove", Level::Info);
+
+        log::debug!("before prove");
+        let start = std::time::Instant::now();
+
+        let proof_res = prove(&prover_only, &common, pw.clone(), &mut timing);
+
+        log::debug!("time for {:?} proofs, {:?}", N, start.elapsed().as_millis());
+
+        match proof_res {
+            Ok(proof) => {
+                println!("Finished Proving");
+
+                let proof_verification_res = cd.verify(proof.clone());
+                match proof_verification_res {
+                    Ok(_) => proof,
+                    Err(e) => {
+                        error!("Proof verification failed: {:?}", e);
+                        panic!("Proof verification failed!");
+                    }
+                }
+            }
+            Err(e) => {
+                error!("Proof generation failed: {:?}", e);
+                panic!("Proof generation failed!");
+            }
+        }
+    }
 }

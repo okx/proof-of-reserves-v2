@@ -24,7 +24,7 @@ pub struct RecursiveTargets<const N: usize> {
 }
 
 impl<const N: usize> RecursiveTargets<N> {
-    /// Builds a N-ary merkle sum tree and sets its root as a public input.
+    /// Builds a N-ary merkle sum tree and sets its root as a public input. We use a N-ary merkle sum tree instead of the binary one since it requires less hash gates.
     pub fn build_recursive_merkle_sum_tree_circuit(&mut self, builder: &mut CircuitBuilder<F, D>) {
         let mut merkle_sum_node_targets: Vec<MerkleSumNodeTarget> = Vec::new();
         merkle_sum_node_targets.push(MerkleSumNodeTarget::from(
@@ -67,29 +67,8 @@ impl<const N: usize> RecursiveTargets<N> {
     }
 }
 
-/// build recursive circuit that proves N subproofs and geneate parent merkle sum node targets
-/// This circuit hardcode the constraint that the verifier_circuit_target.circuit_digest must be equal to that inner_verifier_circuit_data.circuit_digest;
-pub fn build_new_recursive_n_circuit_targets<C: GenericConfig<D, F = F>, const N: usize>(
-    inner_common_circuit_data: &CommonCircuitData<F, D>,
-    inner_verifier_circuit_data: &VerifierOnlyCircuitData<C, D>,
-    builder: &mut CircuitBuilder<F, D>,
-) -> RecursiveTargets<N>
-where
-    C::Hasher: AlgebraicHasher<F>,
-{
-    // Verify n subproofs in circuit
-    let mut recursive_targets =
-        verify_n_subproof_circuit(builder, inner_common_circuit_data, inner_verifier_circuit_data);
-
-    // Build the recursive merkle sum tree targets to get the next merkle sum tree root.
-    recursive_targets.build_recursive_merkle_sum_tree_circuit(builder);
-
-    #[cfg(debug_assertions)]
-    builder.print_gate_counts(0);
-
-    recursive_targets
-}
-
+/// We verify N subproofs in the circuit using the verifier CD. We also ensure the verifier data = constant vd_digest in the circuit to ensure the
+/// vd is embedded in circuit.
 pub fn verify_n_subproof_circuit<
     // C: GenericConfig<D, F = F>,
     InnerC: GenericConfig<D, F = F>,

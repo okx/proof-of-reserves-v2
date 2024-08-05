@@ -27,7 +27,7 @@ fn test() {
 
     let prover = MerkleSumTreeProver { accounts };
 
-    let (merkle_sum_proof, cd) = prover.get_proof_with_cd();
+    let (merkle_sum_proof, cd) = prover.get_proof_and_circuit_data();
 
     let sub_proofs: [ProofWithPublicInputs<F, C, D>; RECURSIVE_FACTOR] =
         std::array::from_fn(|_| merkle_sum_proof.clone());

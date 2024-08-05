@@ -17,7 +17,7 @@ fn bench<const SUBPROOF_NUM: usize>(b: &mut Bencher, batch_size: usize) {
     let accounts = gen_accounts_with_random_data(batch_size, asset_num);
     let prover = MerkleSumTreeProver { accounts };
 
-    let (merkle_sum_proof, merkle_sum_cd) = prover.get_proof_with_cd();
+    let (merkle_sum_proof, merkle_sum_cd) = prover.get_proof_and_circuit_data();
 
     let sub_proofs: [ProofWithPublicInputs<F, C, D>; SUBPROOF_NUM] =
         std::array::from_fn(|_| merkle_sum_proof.clone());
