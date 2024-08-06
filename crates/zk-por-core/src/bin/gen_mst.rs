@@ -45,7 +45,7 @@ fn main() {
         let num_cpus = num_cpus::get();
         let mut batch_accts = Vec::new();
         // TODO: we can read multile docs concurrently
-        for _ in (0..num_cpus) {
+        for _ in 0..num_cpus {
             if offset < parser.total_num_of_users {
                 let account = parser.read_n_accounts(offset, batch_size);
                 let acct_len = account.len();
