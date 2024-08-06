@@ -30,7 +30,7 @@ impl MerkleSumTreeProver {
     pub fn set_merkle_tree_targets(
         &self,
         pw: &mut PartialWitness<F>,
-        account_targets: &Vec<AccountTargets>
+        account_targets: &Vec<AccountTargets>,
     ) {
         for i in 0..self.accounts.len() {
             // Set account targets
@@ -39,7 +39,10 @@ impl MerkleSumTreeProver {
     }
 
     /// Builds a merkle sum tree targets and returns the account targets to be set with input values.
-    pub fn build_merkle_tree_targets( &self, builder: &mut CircuitBuilder<F, D>,)-> Vec<AccountTargets>{
+    pub fn build_merkle_tree_targets(
+        &self,
+        builder: &mut CircuitBuilder<F, D>,
+    ) -> Vec<AccountTargets> {
         let mut account_targets: Vec<AccountTargets> = Vec::new();
 
         for i in 0..self.accounts.len() {
@@ -63,7 +66,10 @@ impl MerkleSumTreeProver {
     }
 
     /// Builds the circuit for the merkle sum tree proof and returns the circuit data, useful in pre compiling the circuit data for a merkle sum circuit of a given length.
-    pub fn get_prover_circuit_data(&self, builder: &mut CircuitBuilder<F, D>) -> CircuitData<F, C, D> {
+    pub fn get_prover_circuit_data(
+        &self,
+        builder: &mut CircuitBuilder<F, D>,
+    ) -> CircuitData<F, C, D> {
         let mut account_targets: Vec<AccountTargets> = Vec::new();
 
         for i in 0..self.accounts.len() {
@@ -126,12 +132,15 @@ impl MerkleSumTreeProver {
     }
 
     /// Get proof with a pre-compiled merkle sum circuit and account targets. In this method we do not need to build the circuit as we use a pre-built circuit.
-    pub fn get_proof_with_circuit_data(&self, account_targets: &Vec<AccountTargets>, circuit_data: &CircuitData<F, C, D>)-> ProofWithPublicInputs<F, C, D>{
+    pub fn get_proof_with_circuit_data(
+        &self,
+        account_targets: &Vec<AccountTargets>,
+        circuit_data: &CircuitData<F, C, D>,
+    ) -> ProofWithPublicInputs<F, C, D> {
         let mut pw = PartialWitness::<F>::new();
         for i in 0..self.accounts.len() {
             // Build account targets
-            let account_target =
-                account_targets.get(i).unwrap();
+            let account_target = account_targets.get(i).unwrap();
             // Set account targets
             account_target.set_account_targets(self.accounts.get(i).unwrap(), &mut pw);
         }
@@ -164,8 +173,10 @@ impl MerkleSumTreeProver {
         }
     }
 
-    /// Get the merkle sum tree proof of this batch of accounts and the circuit data of the corresponding proof. 
-    pub fn get_proof_and_circuit_data(&self) -> (ProofWithPublicInputs<F, C, D>, CircuitData<F, C, D>) {
+    /// Get the merkle sum tree proof of this batch of accounts and the circuit data of the corresponding proof.
+    pub fn get_proof_and_circuit_data(
+        &self,
+    ) -> (ProofWithPublicInputs<F, C, D>, CircuitData<F, C, D>) {
         let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
         let mut pw = PartialWitness::<F>::new();
 
@@ -221,7 +232,7 @@ pub mod test {
                 accounts,
             };
 
-             // Build and set merkle tree targets
+            // Build and set merkle tree targets
             let account_targets = prover.build_merkle_tree_targets(builder);
             prover.set_merkle_tree_targets(pw, &account_targets);
         });
