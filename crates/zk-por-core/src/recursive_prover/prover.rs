@@ -1,4 +1,3 @@
-use log::Level;
 use plonky2::{
     iop::witness::PartialWitness,
     plonk::{
@@ -7,7 +6,6 @@ use plonky2::{
         proof::ProofWithPublicInputs,
         prover::prove,
     },
-    util::timing::TimingTree,
 };
 use tracing::error;
 

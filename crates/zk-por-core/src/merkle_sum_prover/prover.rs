@@ -5,7 +5,6 @@ use crate::{
     types::{C, D, F},
     circuit_utils::prove_timing,
 };
-use log::Level;
 use plonky2::{
     iop::witness::PartialWitness,
     plonk::{
