@@ -73,7 +73,6 @@ pub fn gen_accounts_with_random_data(num_accounts: usize, num_assets: usize) -> 
 
 pub fn gen_empty_accounts(batch_size: usize, num_assets: usize) -> Vec<Account> {
     let mut accounts: Vec<Account> = Vec::new();
-    let mut rng = rand::thread_rng(); // Create a random number generator
     for _ in 0..batch_size {
         let mut equities = Vec::new();
         let mut debts = Vec::new();
@@ -83,7 +82,7 @@ pub fn gen_empty_accounts(batch_size: usize, num_assets: usize) -> Vec<Account> 
             equities.push(F::from_canonical_u32(equity));
             debts.push(F::from_canonical_u32(debt));
         }
-        let mut bytes = [0u8; 32]; // 32 bytes * 2 hex chars per byte = 64 hex chars
+        let bytes = [0u8; 32]; // 32 bytes * 2 hex chars per byte = 64 hex chars
         let account_id = bytes.iter().map(|byte| format!("{:02x}", byte)).collect::<String>();
         accounts.push(Account { id: account_id, equity: equities, debt: debts });
     }

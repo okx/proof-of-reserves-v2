@@ -14,13 +14,8 @@ use crate::{
     },
     recursive_prover::prover::RecursiveProver,
     recursive_prover::recursive_circuit::{build_recursive_n_circuit, RecursiveTargets},
+    types::{F, C, D},
 };
-
-use plonky2_field::types::Field;
-use rand::Rng;
-
-use crate::types::{C, D, F};
-// use once_cell::sync::Lazy;
 
 pub struct CircuitRegistry<const RECURSIVE_FACTOR: usize> {
     batch_circuit: (CircuitData<F, C, D>, Vec<AccountTargets>),
