@@ -43,8 +43,6 @@ pub struct MerkleSumTree {
 }
 
 impl MerkleSumTree {
-    /// Create a new merkle sum tree from a set of accounts, note that this set must be a power of 2.
-    /// In the future we can try to pad with empty accounts.
     pub fn new_tree_from_accounts(accounts: &Vec<Account>, num_leaves: usize) -> MerkleSumTree {
         let tree_depth = log2_strict(num_leaves);
         let mut merkle_sum_tree: Vec<MerkleSumNode> = Vec::new();

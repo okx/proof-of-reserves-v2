@@ -19,10 +19,6 @@ use types::F;
 
 #[derive(Debug)]
 pub struct GlobalConfig {
-    pub batch_size: usize,
-    pub doc_num: usize,
-    pub num_of_batches_per_doc: usize,
-    pub total_num_of_users: usize,
     pub num_of_tokens: usize,
     pub num_of_batches: usize,
 }

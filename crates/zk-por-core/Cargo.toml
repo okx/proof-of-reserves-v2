@@ -34,7 +34,7 @@ tracing={workspace=true}
 thiserror={workspace=true}
 once_cell={workspace = true}
 config={workspace=true}
-once_cell={workspace=true}
+num_cpus={workspace=true}
 
 [build-dependencies]
 zk-por-tracing={path="../zk-por-tracing"}
