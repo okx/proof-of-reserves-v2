@@ -1,8 +1,5 @@
 #![feature(test)]
-use zk_por_core::{
-    account::gen_accounts_with_random_data,
-    merkle_sum_tree::MerkleSumTree,
-};
+use zk_por_core::{account::gen_accounts_with_random_data, merkle_sum_tree::MerkleSumTree};
 
 extern crate test;
 use test::Bencher;
