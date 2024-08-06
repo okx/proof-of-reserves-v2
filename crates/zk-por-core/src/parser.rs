@@ -111,11 +111,14 @@ impl FilesParser {
         self.log_state();
         // to make it simpler, we assume only read by a multiple of batch size;
         // if try to read cross multiple docs; simply can run this function multiple times;
-        assert!(n % self.cfg.batch_size == 0 && n <= self.num_of_batches_per_doc *self.cfg.batch_size);
+        assert!(
+            n % self.cfg.batch_size == 0 && n <= self.num_of_batches_per_doc * self.cfg.batch_size
+        );
         let min_offset: usize = self.file_idx * self.cfg.batch_size * self.num_of_batches_per_doc;
         assert!(offset >= min_offset);
 
-        let acct_len = if offset+n > self.total_num_of_users {self.total_num_of_users-offset} else {n};
+        let acct_len =
+            if offset + n > self.total_num_of_users { self.total_num_of_users - offset } else { n };
 
         let mut result = vec![Account::get_empty_account(self.cfg.num_of_tokens); acct_len];
         if (n + offset - min_offset) <= (self.buffered_accounts.len()) {
@@ -124,11 +127,16 @@ impl FilesParser {
             self.offset = self.offset + n;
         } else {
             if self.offset < self.buffered_accounts.len() {
-                let remain_len = self.buffered_accounts.len() - self.offset; 
+                let remain_len = self.buffered_accounts.len() - self.offset;
                 result[0..remain_len].clone_from_slice(&self.buffered_accounts[(self.offset)..]);
-            }     
-            let missing_len = result.len()- (self.buffered_accounts.len() - self.offset);
-            println!("result len: {:?}, self.offset: {:?}, missing_len: {:?}",result.len(), self.offset, missing_len);
+            }
+            let missing_len = result.len() - (self.buffered_accounts.len() - self.offset);
+            println!(
+                "result len: {:?}, self.offset: {:?}, missing_len: {:?}",
+                result.len(),
+                self.offset,
+                missing_len
+            );
             if self.file_idx < (self.num_of_docs - 1) {
                 // load the next file
                 self.file_idx = self.file_idx + 1;
