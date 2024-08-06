@@ -41,6 +41,7 @@ fn main() {
 
     // TODO: read path from args
     let account_paths = vec![PathBuf::from("../../test-data/batch0.json")];
+    // the path to dump the final generated proof
     let proof_path = PathBuf::from("../../test-data/proof.json");
 
     // Hardcode three levels of recursive circuits, each branching out 64 children, with the last level being a zk circuit.
@@ -110,11 +111,20 @@ fn main() {
     }
     let mut last_level_circuit_vd = batch_circuit.verifier_only.clone();
     let mut last_level_proofs = batch_proofs;
-    let mut last_empty_level_proof = circuit_registry.get_empty_batch_circuit_proof();
 
     for level in 0..recursive_levels {
+        let last_level_vd_digest = last_level_circuit_vd.circuit_digest;
+        let last_level_empty_proof =
+            circuit_registry.get_empty_proof(&last_level_vd_digest).expect(
+                format!(
+                    "fail to find empty proof at recursive level {} with inner circuit vd {:?}",
+                    level, last_level_vd_digest
+                )
+                .as_str(),
+            );
+
         let (recursive_circuit, recursive_targets) = circuit_registry
-            .get_recursive_circuit(level)
+            .get_recursive_circuit(&last_level_vd_digest)
             .expect(format!("No recursive circuit found for level {}", level).as_str());
         let subproof_len = last_level_proofs.len();
 
@@ -136,7 +146,7 @@ fn main() {
 
             // fill the last batch with empty subproofs so that it is of size RECURSION_FACTOR
             let empty_proofs =
-                vec![last_empty_level_proof.clone(); RECURSION_FACTOR - last_batch_size];
+                vec![last_level_empty_proof.clone(); RECURSION_FACTOR - last_batch_size];
             last_batch.extend(empty_proofs.into_iter());
         } else {
             panic!("No last proof batches found in the level {}", level);
@@ -179,9 +189,6 @@ fn main() {
 
         last_level_circuit_vd = recursive_circuit.verifier_only.clone();
         last_level_proofs = this_level_proofs;
-        last_empty_level_proof = circuit_registry.get_empty_recursive_circuit_proof(level).expect(
-            format!("fail to get empty recursive circuit proof for level {}", level).as_str(),
-        );
     }
 
     if last_level_proofs.len() != 1 {
@@ -194,6 +201,7 @@ fn main() {
         proof: last_level_proofs.pop().unwrap(),
     };
 
-    let mut file = File::create(proof_path).expect("fail to create proof file");
+    let mut file = File::create(proof_path.clone())
+        .expect(format!("fail to create proof file at {:#?}", proof_path).as_str());
     file.write_all(json!(proof).to_string().as_bytes()).expect("fail to write proof to file");
 }

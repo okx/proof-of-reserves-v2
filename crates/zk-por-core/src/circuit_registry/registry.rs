@@ -1,6 +1,9 @@
-use plonky2::plonk::{
-    circuit_data::{CircuitConfig, CircuitData},
-    proof::ProofWithPublicInputs,
+use plonky2::{
+    hash::hash_types::HashOut,
+    plonk::{
+        circuit_data::{CircuitConfig, CircuitData},
+        proof::ProofWithPublicInputs,
+    },
 };
 
 use crate::{
@@ -17,13 +20,15 @@ use crate::{
     types::{C, D, F},
 };
 
+use std::collections::HashMap;
+
 pub struct CircuitRegistry<const RECURSIVE_FACTOR: usize> {
     batch_circuit: (CircuitData<F, C, D>, Vec<AccountTargets>),
-    empty_batch_proof: ProofWithPublicInputs<F, C, D>,
-    recursive_circuits_and_empty_proofs: Vec<(
-        (CircuitData<F, C, D>, RecursiveTargets<RECURSIVE_FACTOR>),
-        ProofWithPublicInputs<F, C, D>,
-    )>,
+    // inner_vd => the verification circuit that verify the inner circuit
+    recurisve_circuits:
+        HashMap<HashOut<F>, (CircuitData<F, C, D>, RecursiveTargets<RECURSIVE_FACTOR>)>,
+    // circuit_vd -> empty proof
+    empty_proofs: HashMap<HashOut<F>, ProofWithPublicInputs<F, C, D>>,
 }
 
 impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
@@ -56,10 +61,14 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
             start.elapsed()
         );
 
-        let mut recursive_circuit_and_empty_proofs = Vec::new();
+        let mut empty_proofs = HashMap::new();
+        let mut recursive_circuits = HashMap::new();
+        let mut last_empty_proof = empty_batch_proof.clone();
 
         let mut last_circuit_data = &batch_circuit_data;
-        let mut last_empty_proof = empty_batch_proof.clone();
+
+        empty_proofs
+            .insert(last_circuit_data.verifier_only.circuit_digest, last_empty_proof.clone());
 
         for (level, circuit_config) in recursive_level_configs.into_iter().enumerate() {
             let start = std::time::Instant::now();
@@ -91,23 +100,26 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
                 start.elapsed()
             );
 
-            recursive_circuit_and_empty_proofs
-                .push(((recursive_circuit, recursive_targets), recursive_proof.clone()));
+            empty_proofs
+                .insert(recursive_circuit.verifier_only.circuit_digest, recursive_proof.clone());
 
-            last_circuit_data = &recursive_circuit_and_empty_proofs.last().unwrap().0 .0;
+            let last_circuit_digest = last_circuit_data.verifier_only.circuit_digest;
+            recursive_circuits.insert(last_circuit_digest, (recursive_circuit, recursive_targets));
+
+            last_circuit_data = &recursive_circuits[&last_circuit_digest].0;
             last_empty_proof = recursive_proof;
         }
 
         tracing::info!(
             "finish init circuit registry with {} recursive levels in {:?}",
-            recursive_circuit_and_empty_proofs.len(),
+            recursive_circuits.len(),
             init_start.elapsed()
         );
 
         Self {
             batch_circuit: (batch_circuit_data, account_targets),
-            empty_batch_proof: empty_batch_proof,
-            recursive_circuits_and_empty_proofs: recursive_circuit_and_empty_proofs,
+            empty_proofs: empty_proofs,
+            recurisve_circuits: recursive_circuits,
         }
     }
 
@@ -115,24 +127,20 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
         (&self.batch_circuit.0, self.batch_circuit.1.clone())
     }
 
-    pub fn get_empty_batch_circuit_proof(&self) -> ProofWithPublicInputs<F, C, D> {
-        self.empty_batch_proof.clone()
+    pub fn get_empty_proof(
+        &self,
+        circuit_vd: &HashOut<F>,
+    ) -> Option<ProofWithPublicInputs<F, C, D>> {
+        let p = self.empty_proofs.get(circuit_vd)?;
+        Some(p.clone())
     }
 
     /// leaf node at level 0
     pub fn get_recursive_circuit(
         &self,
-        level: usize,
-    ) -> Option<(&CircuitData<F, C, D>, RecursiveTargets<RECURSIVE_FACTOR>)> {
-        let circuit_and_empty_proof = self.recursive_circuits_and_empty_proofs.get(level)?;
-        Some((&circuit_and_empty_proof.0 .0, circuit_and_empty_proof.0 .1.clone()))
-    }
-
-    pub fn get_empty_recursive_circuit_proof(
-        &self,
-        level: usize,
-    ) -> Option<ProofWithPublicInputs<F, C, D>> {
-        let circuit_and_empty_proof = self.recursive_circuits_and_empty_proofs.get(level)?;
-        Some(circuit_and_empty_proof.1.clone())
+        inner_circuit_vd: &HashOut<F>,
+    ) -> Option<(&CircuitData<F, C, D>, &RecursiveTargets<RECURSIVE_FACTOR>)> {
+        let circuit_and_targets = self.recurisve_circuits.get(inner_circuit_vd)?;
+        Some((&circuit_and_targets.0, &circuit_and_targets.1))
     }
 }
