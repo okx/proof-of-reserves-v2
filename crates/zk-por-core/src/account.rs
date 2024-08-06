@@ -70,7 +70,6 @@ pub fn gen_accounts_with_random_data(num_accounts: usize, num_assets: usize) -> 
     accounts
 }
 
-
 pub fn gen_empty_accounts(batch_size: usize, num_assets: usize) -> Vec<Account> {
     let mut accounts: Vec<Account> = Vec::new();
     for _ in 0..batch_size {

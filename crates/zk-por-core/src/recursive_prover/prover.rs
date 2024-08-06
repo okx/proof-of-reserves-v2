@@ -1,4 +1,3 @@
-use log::Level;
 use plonky2::{
     iop::witness::PartialWitness,
     plonk::{
@@ -7,11 +6,13 @@ use plonky2::{
         proof::ProofWithPublicInputs,
         prover::prove,
     },
-    util::timing::TimingTree,
 };
 use tracing::error;
 
-use crate::types::{D, F};
+use crate::{
+    circuit_utils::prove_timing,
+    types::{D, F},
+};
 
 use super::recursive_circuit::RecursiveTargets;
 
@@ -36,14 +37,12 @@ impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
 
         recursive_targets.set_targets(&mut pw, self.sub_proofs.to_vec(), &self.sub_circuit_vd);
 
-        let mut timing = TimingTree::new("prove", Level::Info);
-
-        log::debug!("before prove");
+        tracing::debug!("before prove");
         let start = std::time::Instant::now();
+        let mut t = prove_timing();
+        let proof_res = prove(&prover_only, &common, pw, &mut t);
 
-        let proof_res = prove(&prover_only, &common, pw, &mut timing);
-
-        log::debug!("time for {:?} proofs, {:?}", N, start.elapsed().as_millis());
+        tracing::debug!("time for {:?} proofs, {:?}", N, start.elapsed().as_millis());
 
         match proof_res {
             Ok(proof) => {

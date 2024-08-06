@@ -3,139 +3,196 @@ use rayon::prelude::*;
 
 use std::path::PathBuf;
 use zk_por_core::{
-    account::{gen_empty_accounts, Account}, circuit_registry::registry::CircuitRegistry, config::ProverConfig, parser::read_json_into_accounts_vec
+    account::{gen_empty_accounts, Account},
+    circuit_registry::registry::CircuitRegistry,
+    config::ProverConfig,
+    parser::read_json_into_accounts_vec,
 };
 
 use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
-use zk_por_core::{
-    circuit_config::{STANDARD_CONFIG,STANDARD_ZK_CONFIG},
-	merkle_sum_prover::prover::MerkleSumTreeProver,
-	recursive_prover::prover::RecursiveProver,
-    types::{C, D, F},
-	
-};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::fs::File;
-use std::io::Write;
+use std::{fs::File, io::Write};
+use zk_por_core::{
+    circuit_config::{STANDARD_CONFIG, STANDARD_ZK_CONFIG},
+    merkle_sum_prover::prover::MerkleSumTreeProver,
+    recursive_prover::prover::RecursiveProver,
+    types::{C, D, F},
+};
 
 #[derive(Serialize, Deserialize)]
 struct Proof {
-	round_num : u32,
-	root_vd_digest: HashOut<F>, 
-	proof:  ProofWithPublicInputs<F, C, D>,
+    round_num: u32,
+    root_vd_digest: HashOut<F>,
+    proof: ProofWithPublicInputs<F, C, D>,
 }
 
 fn main() {
-	let cfg = ProverConfig::try_new().unwrap();
+    let cfg = ProverConfig::try_new().unwrap();
     // let trace_cfg: TraceConfig = cfg.log.into();
     // init_tracing(trace_cfg);
-	const RECURSION_FACTOR : usize = 64;
-	const PROVING_THREADS_NUM: usize = 4;
-	if cfg.prover.hyper_tree_size as usize != RECURSION_FACTOR {
-		panic!("The hyper_tree_size is not configured to be equal to 64 (Recursion_Factor)"); 
-	}
-	let batch_size = cfg.prover.batch_size as usize;
-	let asset_num = 4; // TODO: read from config
+    const RECURSION_FACTOR: usize = 64;
+    const PROVING_THREADS_NUM: usize = 4;
+    if cfg.prover.hyper_tree_size as usize != RECURSION_FACTOR {
+        panic!("The hyper_tree_size is not configured to be equal to 64 (Recursion_Factor)");
+    }
+    let batch_size = cfg.prover.batch_size as usize;
+    let asset_num = 4; // TODO: read from config
 
-	// TODO: read path from args
-	let account_paths = vec![PathBuf::from("../../test-data/batch0.json")];
-	let proof_path = PathBuf::from("../../test-data/proof.json");
+    // TODO: read path from args
+    let account_paths = vec![PathBuf::from("../../test-data/batch0.json")];
+    let proof_path = PathBuf::from("../../test-data/proof.json");
 
-	// Hardcode three levels of recursive circuits, each branching out 64 children, with the last level being a zk circuit. 
-	// Hence given batch_size=1024, the current setting can support 268M (1024*64^3) accounts, enough for the foreseeable future. (Currently we have 10M accounts)
-	let recursive_circuit_configs = vec![STANDARD_CONFIG, STANDARD_CONFIG, STANDARD_ZK_CONFIG]; 
-	let recursive_levels = recursive_circuit_configs.len();
+    // Hardcode three levels of recursive circuits, each branching out 64 children, with the last level being a zk circuit.
+    // Hence given batch_size=1024, the current setting can support 268M (1024*64^3) accounts, enough for the foreseeable future. (Currently we have 10M accounts)
+    let recursive_circuit_configs = vec![STANDARD_CONFIG, STANDARD_CONFIG, STANDARD_ZK_CONFIG];
+    let recursive_levels = recursive_circuit_configs.len();
 
-	let circuit_registry = CircuitRegistry::<RECURSION_FACTOR>::init(batch_size, asset_num, STANDARD_CONFIG, recursive_circuit_configs);
+    let circuit_registry = CircuitRegistry::<RECURSION_FACTOR>::init(
+        batch_size,
+        asset_num,
+        STANDARD_CONFIG,
+        recursive_circuit_configs,
+    );
 
-	let mut batch_proofs : Vec<ProofWithPublicInputs<F, C, D>> = Vec::new();
-	let (batch_circuit, account_targets) = circuit_registry.get_batch_circuit();
+    let mut batch_proofs: Vec<ProofWithPublicInputs<F, C, D>> = Vec::new();
+    let (batch_circuit, account_targets) = circuit_registry.get_batch_circuit();
 
-	for (file_idx, account_path) in account_paths.iter().enumerate() {
-		let accounts = read_json_into_accounts_vec(account_path.to_str().unwrap());
-		let num_accounts = accounts.len();
+    for (file_idx, account_path) in account_paths.iter().enumerate() {
+        let accounts = read_json_into_accounts_vec(account_path.to_str().unwrap());
+        let num_accounts = accounts.len();
 
-		// split accounts into vector of batch_size
-		let mut account_batches: Vec<Vec<Account>> = accounts.into_iter().chunks(batch_size).into_iter().map(|chunk| chunk.collect()).collect();
+        // split accounts into vector of batch_size
+        let mut account_batches: Vec<Vec<Account>> = accounts
+            .into_iter()
+            .chunks(batch_size)
+            .into_iter()
+            .map(|chunk| chunk.collect())
+            .collect();
 
-		tracing::info!("Number of accounts {}, number of batches {}, file_idx {}, file_path {}", account_batches.len(), num_accounts, file_idx, account_path.to_str().unwrap());
-		if let Some(last_batch) = account_batches.last_mut() {
-			let last_batch_size = last_batch.len();
+        tracing::info!(
+            "Number of accounts {}, number of batches {}, file_idx {}, file_path {}",
+            account_batches.len(),
+            num_accounts,
+            file_idx,
+            account_path.to_str().unwrap()
+        );
+        if let Some(last_batch) = account_batches.last_mut() {
+            let last_batch_size = last_batch.len();
 
-			// fill the last batch with empty accounts so that it is of size batch_size
-			let empty_accounts = gen_empty_accounts(batch_size - last_batch_size, asset_num);
-			last_batch.extend(empty_accounts.into_iter()); 
-		} else {
-			panic!("No account batches found in the file {}", account_path.to_str().unwrap());
-		}
+            // fill the last batch with empty accounts so that it is of size batch_size
+            let empty_accounts = gen_empty_accounts(batch_size - last_batch_size, asset_num);
+            last_batch.extend(empty_accounts.into_iter());
+        } else {
+            panic!("No account batches found in the file {}", account_path.to_str().unwrap());
+        }
 
-		// split account_batches into chunks of size PROVING_THREADS_NUM and then parallelize the proving in each chunk. 
-		account_batches.into_iter().chunks(PROVING_THREADS_NUM).into_iter().map(|chunk| chunk.collect()).for_each(|chunk : Vec<Vec<Account>>| {
-			let proofs: Vec<ProofWithPublicInputs<F, C, D>> = chunk.into_par_iter().map(|accounts| {
+        // split account_batches into chunks of size PROVING_THREADS_NUM and then parallelize the proving in each chunk.
+        account_batches
+            .into_iter()
+            .chunks(PROVING_THREADS_NUM)
+            .into_iter()
+            .map(|chunk| chunk.collect())
+            .for_each(|chunk: Vec<Vec<Account>>| {
+                let proofs: Vec<ProofWithPublicInputs<F, C, D>> = chunk
+                    .into_par_iter()
+                    .map(|accounts| {
+                        let prover = MerkleSumTreeProver { accounts };
+                        let proof = prover
+                            .get_proof_with_circuit_data(account_targets.clone(), &batch_circuit);
+                        proof
+                        // TODO: parse tree node from proof and check against the one generated by merkle sum tree.
+                    })
+                    .collect();
+                batch_proofs.extend(proofs.into_iter());
+                tracing::info!("finish proving {} batches", batch_proofs.len());
+            });
+    }
+    let mut last_level_circuit_vd = batch_circuit.verifier_only.clone();
+    let mut last_level_proofs = batch_proofs;
+    let mut last_empty_level_proof = circuit_registry.get_empty_batch_circuit_proof();
 
-				let prover = MerkleSumTreeProver { accounts };
-				let proof = prover.get_proof_with_circuit_data(account_targets.clone(), &batch_circuit);
-				proof
-				// TODO: parse tree node from proof and check against the one generated by merkle sum tree. 
-			}).collect();
-			batch_proofs.extend(proofs.into_iter());
-			tracing::info!("finish proving {} batches", batch_proofs.len());
-		});
-	}
-	let mut last_level_circuit_vd = batch_circuit.verifier_only.clone();
-	let mut last_level_proofs = batch_proofs;
-	let mut last_empty_level_proof = circuit_registry.get_empty_batch_circuit_proof();
+    for level in 0..recursive_levels {
+        let (recursive_circuit, recursive_targets) = circuit_registry
+            .get_recursive_circuit(level)
+            .expect(format!("No recursive circuit found for level {}", level).as_str());
+        let subproof_len = last_level_proofs.len();
 
-	for level in 0..recursive_levels {
+        let mut subproof_batches: Vec<Vec<ProofWithPublicInputs<F, C, D>>> = last_level_proofs
+            .into_iter()
+            .chunks(RECURSION_FACTOR)
+            .into_iter()
+            .map(|chunk| chunk.collect())
+            .collect();
 
-		let (recursive_circuit, recursive_targets) = circuit_registry.get_recursive_circuit(level).expect(format!("No recursive circuit found for level {}", level).as_str());
-		let subproof_len = last_level_proofs.len();
+        tracing::info!(
+            "Recursive Level {}, number of subproofs {}, number of batches {}",
+            level,
+            subproof_len,
+            subproof_batches.len()
+        );
+        if let Some(last_batch) = subproof_batches.last_mut() {
+            let last_batch_size = last_batch.len();
 
-		let mut subproof_batches: Vec<Vec<ProofWithPublicInputs<F, C, D>>> = last_level_proofs.into_iter().chunks(RECURSION_FACTOR).into_iter().map(|chunk| chunk.collect()).collect();
+            // fill the last batch with empty subproofs so that it is of size RECURSION_FACTOR
+            let empty_proofs =
+                vec![last_empty_level_proof.clone(); RECURSION_FACTOR - last_batch_size];
+            last_batch.extend(empty_proofs.into_iter());
+        } else {
+            panic!("No last proof batches found in the level {}", level);
+        }
 
-		tracing::info!("Recursive Level {}, number of subproofs {}, number of batches {}", level, subproof_len, subproof_batches.len());
-		if let Some(last_batch) = subproof_batches.last_mut() {
-			let last_batch_size = last_batch.len();
+        let mut this_level_proofs = vec![];
 
-			// fill the last batch with empty subproofs so that it is of size RECURSION_FACTOR
-			let empty_proofs = vec![last_empty_level_proof.clone();RECURSION_FACTOR - last_batch_size];
-			last_batch.extend(empty_proofs.into_iter()); 
-		} else {
-			panic!("No last proof batches found in the level {}", level);
-		}
+        subproof_batches
+            .into_iter()
+            .chunks(PROVING_THREADS_NUM)
+            .into_iter()
+            .map(|chunk| chunk.collect())
+            .for_each(|chunk: Vec<Vec<ProofWithPublicInputs<F, C, D>>>| {
+                let proofs: Vec<ProofWithPublicInputs<F, C, D>> = chunk
+                    .into_par_iter()
+                    .map(|subproofs| {
+                        let sub_proofs: [ProofWithPublicInputs<F, C, D>; RECURSION_FACTOR] =
+                            subproofs
+                                .try_into()
+                                .expect("subproofs length not equal to RECURSION_FACTOR");
+                        let recursive_prover = RecursiveProver {
+                            sub_proofs,
+                            sub_circuit_vd: last_level_circuit_vd.clone(),
+                        };
+                        let proof = recursive_prover.get_proof_with_circuit_data(
+                            recursive_targets.clone(),
+                            &recursive_circuit,
+                        );
+                        // TODO: consider valid proof and parse the tree node from the proof and check against the one generated by merkle sum tree.
+                        proof
+                    })
+                    .collect();
+                this_level_proofs.extend(proofs.into_iter());
+                tracing::info!(
+                    "finish proving {} subproofs at level {}",
+                    this_level_proofs.len(),
+                    level
+                );
+            });
 
-		let mut this_level_proofs = vec![];
+        last_level_circuit_vd = recursive_circuit.verifier_only.clone();
+        last_level_proofs = this_level_proofs;
+        last_empty_level_proof = circuit_registry.get_empty_recursive_circuit_proof(level).expect(
+            format!("fail to get empty recursive circuit proof for level {}", level).as_str(),
+        );
+    }
 
-		subproof_batches.into_iter().chunks(PROVING_THREADS_NUM).into_iter().map(|chunk| chunk.collect()).for_each(|chunk : Vec<Vec<ProofWithPublicInputs<F, C, D>>>| {
-			let proofs: Vec<ProofWithPublicInputs<F, C, D>> = chunk.into_par_iter().map(|subproofs| {
-				let sub_proofs: [ProofWithPublicInputs<F, C, D>; RECURSION_FACTOR] = subproofs.try_into().expect("subproofs length not equal to RECURSION_FACTOR");
-				let recursive_prover = RecursiveProver {
-					sub_proofs,
-					sub_circuit_vd: last_level_circuit_vd.clone(),
-				};
-				let proof = recursive_prover.get_proof_with_circuit_data(recursive_targets.clone(), &recursive_circuit);
-				// TODO: consider valid proof and parse the tree node from the proof and check against the one generated by merkle sum tree.
-				proof
-			}).collect();
-			this_level_proofs.extend(proofs.into_iter());
-			tracing::info!("finish proving {} subproofs at level {}", this_level_proofs.len(), level);
-		});
+    if last_level_proofs.len() != 1 {
+        panic!("The last level proofs should be of length 1, but got {}", last_level_proofs.len());
+    }
 
-		last_level_circuit_vd = recursive_circuit.verifier_only.clone();
-		last_level_proofs = this_level_proofs;
-		last_empty_level_proof = circuit_registry.get_empty_recursive_circuit_proof(level).expect(format!("fail to get empty recursive circuit proof for level {}", level).as_str());
-	}
-
-	if last_level_proofs.len() != 1 {
-		panic!("The last level proofs should be of length 1, but got {}", last_level_proofs.len());
-	}
-
-	let proof = Proof {
-		round_num: cfg.prover.round_no,
-		root_vd_digest: last_level_circuit_vd.circuit_digest,
-		proof: last_level_proofs.pop().unwrap(),
-	};
+    let proof = Proof {
+        round_num: cfg.prover.round_no,
+        root_vd_digest: last_level_circuit_vd.circuit_digest,
+        proof: last_level_proofs.pop().unwrap(),
+    };
 
     let mut file = File::create(proof_path).expect("fail to create proof file");
     file.write_all(json!(proof).to_string().as_bytes()).expect("fail to write proof to file");

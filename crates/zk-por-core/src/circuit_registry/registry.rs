@@ -14,7 +14,7 @@ use crate::{
     },
     recursive_prover::prover::RecursiveProver,
     recursive_prover::recursive_circuit::{build_recursive_n_circuit, RecursiveTargets},
-    types::{F, C, D},
+    types::{C, D, F},
 };
 
 pub struct CircuitRegistry<const RECURSIVE_FACTOR: usize> {
