@@ -1,9 +1,9 @@
 use crate::{
     account::Account,
     circuit_config::STANDARD_CONFIG,
+    circuit_utils::prove_timing,
     merkle_sum_prover::circuits::account_circuit::{AccountSumTargets, AccountTargets},
     types::{C, D, F},
-    circuit_utils::prove_timing,
 };
 use plonky2::{
     iop::witness::PartialWitness,
@@ -117,7 +117,6 @@ impl MerkleSumTreeProver {
             // Set account targets
             account_target.set_account_targets(self.accounts.get(i).unwrap(), &mut pw);
         }
-
 
         let CircuitData { prover_only, common, verifier_only: _ } = &circuit_data;
 

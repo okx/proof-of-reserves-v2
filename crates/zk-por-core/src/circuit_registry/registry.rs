@@ -26,7 +26,6 @@ pub struct CircuitRegistry<const RECURSIVE_FACTOR: usize> {
     )>,
 }
 
-
 impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
     pub fn init(
         batch_size: usize,

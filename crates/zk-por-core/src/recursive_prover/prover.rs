@@ -9,7 +9,10 @@ use plonky2::{
 };
 use tracing::error;
 
-use crate::{circuit_utils::prove_timing, types::{D, F}};
+use crate::{
+    circuit_utils::prove_timing,
+    types::{D, F},
+};
 
 use super::recursive_circuit::RecursiveTargets;
 
@@ -33,7 +36,6 @@ impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
         let CircuitData { prover_only, common, .. } = &cd;
 
         recursive_targets.set_targets(&mut pw, self.sub_proofs.to_vec(), &self.sub_circuit_vd);
-
 
         tracing::debug!("before prove");
         let start = std::time::Instant::now();

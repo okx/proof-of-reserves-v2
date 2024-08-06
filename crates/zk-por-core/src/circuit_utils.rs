@@ -20,7 +20,7 @@ pub fn prove_timing() -> TimingTree {
     let mut level = Level::Info;
     if cfg!(debug_assertions) {
         level = Level::Debug;
-    }    
+    }
 
     TimingTree::new("prove", level)
 }
