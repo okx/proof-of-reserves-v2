@@ -4,17 +4,20 @@ use plonky2::{
         poseidon::PoseidonHash,
     },
     iop::target::Target,
-    plonk::circuit_builder::CircuitBuilder,
+    plonk::{
+        circuit_builder::CircuitBuilder,
+        circuit_data::{CircuitConfig, CircuitData},
+    },
 };
 
 use plonky2_field::types::Field;
 
 use crate::{
     circuit_utils::assert_non_negative_unsigned,
-    types::{D, F},
+    types::{C, D, F},
 };
 
-use super::account_circuit::AccountSumTargets;
+use super::account_circuit::{AccountSumTargets, AccountTargets};
 
 /// A node in the merkle sum tree, contains the total amount of equity (in usd) and the total amount of debt (in usd) and the hash.
 ///
@@ -155,6 +158,33 @@ impl MerkleSumTreeTarget {
 
         return tree;
     }
+}
+
+pub fn build_merkle_sum_tree_circuit(
+    num_of_leaves: usize,
+    asset_num: usize,
+    config: CircuitConfig,
+) -> (CircuitData<F, C, D>, Vec<AccountTargets>) {
+    // assert num_of_leaves is a power of 2
+    assert!(num_of_leaves.is_power_of_two(), "num_of_leaves must be a power of 2.");
+
+    let mut builder = CircuitBuilder::<F, D>::new(config);
+    let mut account_targets: Vec<AccountTargets> = Vec::new();
+    (0..num_of_leaves).for_each(|_| {
+        let id: [Target; 5] = std::array::from_fn(|_| builder.add_virtual_target());
+        let equity_targets = builder.add_virtual_targets(asset_num);
+        let debt_targets = builder.add_virtual_targets(asset_num);
+        let account_target = AccountTargets { id: id, equity: equity_targets, debt: debt_targets };
+        account_targets.push(account_target);
+    });
+    let mut account_sum_targets: Vec<AccountSumTargets> = account_targets
+        .iter()
+        .map(|x| AccountSumTargets::from_account_target(x, &mut builder))
+        .collect();
+
+    _ = MerkleSumTreeTarget::build_new_from_account_targets(&mut builder, &mut account_sum_targets);
+    let circuit_data = builder.build::<C>();
+    (circuit_data, account_targets)
 }
 
 #[cfg(test)]

@@ -39,3 +39,7 @@ pub const HIGH_RATE_CONFIG: CircuitConfig = CircuitConfig {
         num_query_rounds: 12,
     },
 };
+
+pub const RECURSIVE_FACTOR: usize = 64;
+pub const BATCH_SIZE: usize = 1024;
+pub const ASSET_NUM: usize = 4;

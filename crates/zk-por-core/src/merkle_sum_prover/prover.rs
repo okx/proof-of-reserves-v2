@@ -1,17 +1,16 @@
 use crate::{
     account::Account,
     circuit_config::STANDARD_CONFIG,
+    circuit_utils::prove_timing,
     merkle_sum_prover::circuits::account_circuit::{AccountSumTargets, AccountTargets},
     types::{C, D, F},
 };
-use log::Level;
 use plonky2::{
     iop::witness::PartialWitness,
     plonk::{
         circuit_builder::CircuitBuilder, circuit_data::CircuitData, proof::ProofWithPublicInputs,
         prover::prove,
     },
-    util::timing::TimingTree,
 };
 
 use tracing::{error, info};
@@ -65,32 +64,6 @@ impl MerkleSumTreeProver {
         account_targets
     }
 
-    /// Builds the circuit for the merkle sum tree proof and returns the circuit data, useful in pre compiling the circuit data for a merkle sum circuit of a given length.
-    pub fn get_prover_circuit_data(
-        &self,
-        builder: &mut CircuitBuilder<F, D>,
-    ) -> CircuitData<F, C, D> {
-        let mut account_targets: Vec<AccountTargets> = Vec::new();
-
-        for i in 0..self.accounts.len() {
-            // Build account targets
-            let account_target =
-                AccountTargets::new_from_account(self.accounts.get(i).unwrap(), builder);
-            account_targets.push(account_target);
-        }
-
-        let mut account_sum_targets: Vec<AccountSumTargets> = account_targets
-            .iter()
-            .map(|x| AccountSumTargets::from_account_target(x, builder))
-            .collect();
-
-        // build merkle sum tree
-        let _merkle_tree_targets =
-            MerkleSumTreeTarget::build_new_from_account_targets(builder, &mut account_sum_targets);
-
-        builder.clone().build::<C>()
-    }
-
     /// Get the merkle sum tree proof of this batch of accounts.
     pub fn get_proof(&self) -> ProofWithPublicInputs<F, C, D> {
         let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
@@ -102,14 +75,14 @@ impl MerkleSumTreeProver {
 
         builder.print_gate_counts(0);
 
-        let mut timing = TimingTree::new("prove", Level::Debug);
+        let mut t = prove_timing();
         let data = builder.build::<C>();
 
         let CircuitData { prover_only, common, verifier_only: _ } = &data;
 
         info!("Started Proving");
 
-        let proof_res = prove(&prover_only, &common, pw, &mut timing);
+        let proof_res = prove(&prover_only, &common, pw, &mut t);
 
         match proof_res {
             Ok(proof) => {
@@ -134,7 +107,7 @@ impl MerkleSumTreeProver {
     /// Get proof with a pre-compiled merkle sum circuit and account targets. In this method we do not need to build the circuit as we use a pre-built circuit.
     pub fn get_proof_with_circuit_data(
         &self,
-        account_targets: &Vec<AccountTargets>,
+        account_targets: Vec<AccountTargets>,
         circuit_data: &CircuitData<F, C, D>,
     ) -> ProofWithPublicInputs<F, C, D> {
         let mut pw = PartialWitness::<F>::new();
@@ -145,17 +118,16 @@ impl MerkleSumTreeProver {
             account_target.set_account_targets(self.accounts.get(i).unwrap(), &mut pw);
         }
 
-        let mut timing = TimingTree::new("prove", Level::Info);
-
         let CircuitData { prover_only, common, verifier_only: _ } = &circuit_data;
 
-        log::debug!("Starting proving!");
+        tracing::debug!("Starting proving!");
 
-        let proof_res = prove(&prover_only, &common, pw, &mut timing);
+        let mut t = prove_timing();
+        let proof_res = prove(&prover_only, &common, pw, &mut t);
 
         match proof_res {
             Ok(proof) => {
-                log::debug!("Finished proving!");
+                tracing::debug!("Finished proving!");
 
                 let proof_verification_res = circuit_data.verify(proof.clone());
                 match proof_verification_res {
@@ -186,18 +158,18 @@ impl MerkleSumTreeProver {
 
         builder.print_gate_counts(0);
 
-        let mut timing = TimingTree::new("prove", Level::Debug);
         let data = builder.build::<C>();
 
         let CircuitData { prover_only, common, verifier_only: _ } = &data;
 
-        log::debug!("Starting proving!");
+        tracing::debug!("Starting proving!");
 
-        let proof_res = prove(&prover_only, &common, pw, &mut timing);
+        let mut t = prove_timing();
+        let proof_res = prove(&prover_only, &common, pw, &mut t);
 
         match proof_res {
             Ok(proof) => {
-                log::debug!("Finished proving!");
+                tracing::debug!("Finished proving!");
 
                 let proof_verification_res = data.verify(proof.clone());
                 match proof_verification_res {

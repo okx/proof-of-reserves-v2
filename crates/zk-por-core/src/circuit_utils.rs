@@ -16,6 +16,15 @@ use crate::{
     types::{C, D, F, MAX_POSITIVE_AMOUNT_LOG},
 };
 
+pub fn prove_timing() -> TimingTree {
+    let mut level = Level::Info;
+    if cfg!(debug_assertions) {
+        level = Level::Debug;
+    }
+
+    TimingTree::new("prove", level)
+}
+
 /// Test runner for ease of testing
 pub fn run_circuit_test<T, F, const D: usize>(test: T) -> ()
 where
