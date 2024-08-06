@@ -11,11 +11,9 @@ use plonky2::{
 };
 use tracing::error;
 
-use crate::{
-    types::{D, F},
-};
+use crate::types::{D, F};
 
-use super::recursive_circuit:: RecursiveTargets;
+use super::recursive_circuit::RecursiveTargets;
 
 pub struct RecursiveProver<C: GenericConfig<D, F = F>, const N: usize> {
     // pub batch_id: usize,

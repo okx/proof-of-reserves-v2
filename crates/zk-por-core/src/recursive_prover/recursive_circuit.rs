@@ -5,7 +5,10 @@ use plonky2::{
     },
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CommonCircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData, CircuitData, CircuitConfig},
+        circuit_data::{
+            CircuitConfig, CircuitData, CommonCircuitData, VerifierCircuitTarget,
+            VerifierOnlyCircuitData,
+        },
         config::{AlgebraicHasher, GenericConfig},
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
@@ -128,5 +131,5 @@ where
     );
     recursive_targets.build_recursive_merkle_sum_tree_circuit(&mut builder);
     let circuit_data = builder.build::<C>();
-    (circuit_data,  recursive_targets)
-}   
+    (circuit_data, recursive_targets)
+}

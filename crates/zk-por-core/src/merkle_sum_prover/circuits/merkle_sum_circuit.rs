@@ -4,7 +4,10 @@ use plonky2::{
         poseidon::PoseidonHash,
     },
     iop::target::Target,
-    plonk::{circuit_builder::CircuitBuilder, circuit_data::{CircuitData, CircuitConfig}},
+    plonk::{
+        circuit_builder::CircuitBuilder,
+        circuit_data::{CircuitConfig, CircuitData},
+    },
 };
 
 use plonky2_field::types::Field;
@@ -156,7 +159,6 @@ impl MerkleSumTreeTarget {
         return tree;
     }
 }
-
 
 pub fn build_merkle_sum_tree_circuit(
     num_of_leaves: usize,

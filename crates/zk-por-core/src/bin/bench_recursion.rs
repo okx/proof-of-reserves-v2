@@ -6,13 +6,10 @@ use plonky2::plonk::proof::ProofWithPublicInputs;
 
 use zk_por_core::{
     account::gen_accounts_with_random_data,
-    recursive_prover::recursive_circuit::build_recursive_n_circuit,
-    recursive_prover::prover::RecursiveProver,
     circuit_config::STANDARD_CONFIG,
+    recursive_prover::{prover::RecursiveProver, recursive_circuit::build_recursive_n_circuit},
     types::{C, D, F},
 };
-
-
 
 fn main() {
     const SUBPROOF_NUM: usize = 4; // configure this for bench.
@@ -26,7 +23,7 @@ fn main() {
     let accounts = gen_accounts_with_random_data(batch_size, asset_num);
     let prover = MerkleSumTreeProver { accounts };
 
-    let merkle_sum_proof = prover.get_proof_with_circuit_data(&account_targets, &merkle_sum_circuit);
+    let merkle_sum_proof = prover.get_proof_with_circuit_data(account_targets, &merkle_sum_circuit);
     println!("prove merkle sum tree");
 
     let (recursive_circuit, recursive_targets) = build_recursive_n_circuit::<C, SUBPROOF_NUM>(
@@ -36,11 +33,13 @@ fn main() {
     );
     println!("build recursive circuit");
 
-
     let subproofs: [ProofWithPublicInputs<F, C, D>; SUBPROOF_NUM] =
         std::array::from_fn(|_| merkle_sum_proof.clone());
 
-    let recursive_prover = RecursiveProver { sub_proofs: subproofs, sub_circuit_vd: merkle_sum_circuit.verifier_only.clone()};
+    let recursive_prover = RecursiveProver {
+        sub_proofs: subproofs,
+        sub_circuit_vd: merkle_sum_circuit.verifier_only.clone(),
+    };
 
     let start = std::time::Instant::now();
     recursive_prover.get_proof_with_circuit_data(recursive_targets, &recursive_circuit);

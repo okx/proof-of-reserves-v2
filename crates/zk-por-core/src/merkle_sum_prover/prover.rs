@@ -108,7 +108,7 @@ impl MerkleSumTreeProver {
     /// Get proof with a pre-compiled merkle sum circuit and account targets. In this method we do not need to build the circuit as we use a pre-built circuit.
     pub fn get_proof_with_circuit_data(
         &self,
-        account_targets: &Vec<AccountTargets>,
+        account_targets: Vec<AccountTargets>,
         circuit_data: &CircuitData<F, C, D>,
     ) -> ProofWithPublicInputs<F, C, D> {
         let mut pw = PartialWitness::<F>::new();
