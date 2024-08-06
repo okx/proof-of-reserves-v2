@@ -33,7 +33,7 @@ fn test() {
         .fold(F::ZERO, |acc, x| acc + x.debt.iter().fold(F::ZERO, |acc_2, y| acc_2 + *y));
 
     let start = std::time::Instant::now();
-    let (merkle_sum_circuit, mut account_targets) =
+    let (merkle_sum_circuit, account_targets) =
         build_merkle_sum_tree_circuit(batch_size, asset_num, STANDARD_CONFIG);
     println!("build merkle sum tree circuit in : {:?}", start.elapsed());
 
