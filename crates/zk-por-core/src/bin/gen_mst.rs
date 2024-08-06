@@ -1,4 +1,4 @@
-use plonky2::{hash::hash_types::HashOut, util::log2_strict};
+use plonky2::{hash::hash_types::HashOut};
 use rayon::prelude::*;
 
 use std::{ops::Div, str::FromStr, sync::RwLock};
