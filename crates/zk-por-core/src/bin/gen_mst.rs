@@ -1,12 +1,8 @@
 use plonky2::{hash::hash_types::HashOut, util::log2_strict};
 use rayon::prelude::*;
 
-use std::{
-    ops::Div,
-    str::FromStr,
-    sync::RwLock,
-};
-use tracing::{debug};
+use std::{ops::Div, str::FromStr, sync::RwLock};
+use tracing::debug;
 use zk_por_core::{
     config::ProverConfig,
     merkle_sum_tree::MerkleSumTree,
