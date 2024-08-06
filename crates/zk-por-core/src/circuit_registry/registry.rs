@@ -4,7 +4,7 @@ use plonky2::plonk::{
 };
 
 use crate::{
-    account::Account,
+    account::gen_empty_accounts,
     // circuit_config::{BATCH_SIZE, RECURSIVE_FACTOR, ASSET_NUM},
     merkle_sum_prover::{
         circuits::{
@@ -31,30 +31,6 @@ pub struct CircuitRegistry<const RECURSIVE_FACTOR: usize> {
     )>,
 }
 
-fn gen_empty_accounts(num_accounts: usize, num_assets: usize) -> (Vec<Account>, u32, u32) {
-    let mut accounts: Vec<Account> = Vec::new();
-    let mut rng = rand::thread_rng(); // Create a random number generator
-    let mut equity_sum = 0;
-    let mut debt_sum = 0;
-    for _ in 0..num_accounts {
-        let mut equities = Vec::new();
-        let mut debts = Vec::new();
-        for _ in 0..num_assets {
-            let equity = 0;
-            let debt = 0;
-            equity_sum += equity;
-            debt_sum += debt;
-            equities.push(F::from_canonical_u32(equity));
-            debts.push(F::from_canonical_u32(debt));
-        }
-        let mut bytes = [0u8; 32]; // 32 bytes * 2 hex chars per byte = 64 hex chars
-        rng.fill(&mut bytes);
-        let account_id = bytes.iter().map(|byte| format!("{:02x}", byte)).collect::<String>();
-        accounts.push(Account { id: account_id, equity: equities, debt: debts });
-    }
-    (accounts, equity_sum, debt_sum)
-}
-
 impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
     pub fn init(
         batch_size: usize,
@@ -73,7 +49,7 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
             start.elapsed()
         );
 
-        let accounts = gen_empty_accounts(batch_size, asset_num).0;
+        let accounts = gen_empty_accounts(batch_size, asset_num);
 
         let start = std::time::Instant::now();
         let prover = MerkleSumTreeProver { accounts: accounts };
