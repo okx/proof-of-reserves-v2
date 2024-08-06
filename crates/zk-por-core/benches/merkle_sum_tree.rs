@@ -1,11 +1,7 @@
 #![feature(test)]
-use plonky2::plonk::circuit_builder::CircuitBuilder;
 use zk_por_core::{
     account::gen_accounts_with_random_data,
-    circuit_config::STANDARD_CONFIG,
-    merkle_sum_prover::{circuits::account_circuit::AccountTargets, prover::MerkleSumTreeProver},
     merkle_sum_tree::MerkleSumTree,
-    types::{C, D, F},
 };
 
 extern crate test;
