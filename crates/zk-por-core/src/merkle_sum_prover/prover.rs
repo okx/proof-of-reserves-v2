@@ -3,6 +3,7 @@ use crate::{
     circuit_config::STANDARD_CONFIG,
     merkle_sum_prover::circuits::account_circuit::{AccountSumTargets, AccountTargets},
     types::{C, D, F},
+    circuit_utils::prove_timing,
 };
 use log::Level;
 use plonky2::{
@@ -11,7 +12,6 @@ use plonky2::{
         circuit_builder::CircuitBuilder, circuit_data::CircuitData, proof::ProofWithPublicInputs,
         prover::prove,
     },
-    util::timing::TimingTree,
 };
 
 use tracing::{error, info};
@@ -76,14 +76,14 @@ impl MerkleSumTreeProver {
 
         builder.print_gate_counts(0);
 
-        let mut timing = TimingTree::new("prove", Level::Debug);
+        let mut t = prove_timing();
         let data = builder.build::<C>();
 
         let CircuitData { prover_only, common, verifier_only: _ } = &data;
 
         info!("Started Proving");
 
-        let proof_res = prove(&prover_only, &common, pw, &mut timing);
+        let proof_res = prove(&prover_only, &common, pw, &mut t);
 
         match proof_res {
             Ok(proof) => {
@@ -119,17 +119,17 @@ impl MerkleSumTreeProver {
             account_target.set_account_targets(self.accounts.get(i).unwrap(), &mut pw);
         }
 
-        let mut timing = TimingTree::new("prove", Level::Info);
 
         let CircuitData { prover_only, common, verifier_only: _ } = &circuit_data;
 
-        log::debug!("Starting proving!");
+        tracing::debug!("Starting proving!");
 
-        let proof_res = prove(&prover_only, &common, pw, &mut timing);
+        let mut t = prove_timing();
+        let proof_res = prove(&prover_only, &common, pw, &mut t);
 
         match proof_res {
             Ok(proof) => {
-                log::debug!("Finished proving!");
+                tracing::debug!("Finished proving!");
 
                 let proof_verification_res = circuit_data.verify(proof.clone());
                 match proof_verification_res {
@@ -160,18 +160,18 @@ impl MerkleSumTreeProver {
 
         builder.print_gate_counts(0);
 
-        let mut timing = TimingTree::new("prove", Level::Debug);
         let data = builder.build::<C>();
 
         let CircuitData { prover_only, common, verifier_only: _ } = &data;
 
-        log::debug!("Starting proving!");
+        tracing::debug!("Starting proving!");
 
-        let proof_res = prove(&prover_only, &common, pw, &mut timing);
+        let mut t = prove_timing();
+        let proof_res = prove(&prover_only, &common, pw, &mut t);
 
         match proof_res {
             Ok(proof) => {
-                log::debug!("Finished proving!");
+                tracing::debug!("Finished proving!");
 
                 let proof_verification_res = data.verify(proof.clone());
                 match proof_verification_res {

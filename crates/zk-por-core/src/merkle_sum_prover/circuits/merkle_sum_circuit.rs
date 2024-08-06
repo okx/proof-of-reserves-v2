@@ -165,6 +165,9 @@ pub fn build_merkle_sum_tree_circuit(
     asset_num: usize,
     config: CircuitConfig,
 ) -> (CircuitData<F, C, D>, Vec<AccountTargets>) {
+    // assert num_of_leaves is a power of 2
+    assert!(num_of_leaves.is_power_of_two(), "num_of_leaves must be a power of 2.");
+
     let mut builder = CircuitBuilder::<F, D>::new(config);
     let mut account_targets: Vec<AccountTargets> = Vec::new();
     (0..num_of_leaves).for_each(|_| {
