@@ -59,7 +59,7 @@ fn main() {
             .map(|(chunk_idx, chunk)| {
                 debug!("chunk_idx: {:}, chunk data: {:?}", chunk_idx, chunk.len());
                 let mst = MerkleSumTree::new_tree_from_accounts(&chunk.to_vec(), batch_size);
-                let tree_depth = log2_strict(batch_size);
+                let tree_depth = mst.tree_depth;
 
                 let global_cfg = GLOBAL_CONFIG.get().unwrap();
                 let global_mst = GLOBAL_MST.get().unwrap();
