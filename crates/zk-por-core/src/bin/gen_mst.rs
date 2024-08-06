@@ -2,18 +2,15 @@ use plonky2::{hash::hash_types::HashOut, util::log2_strict};
 use rayon::prelude::*;
 
 use std::{
-    fs,
     ops::Div,
-    path::{Path, PathBuf},
     str::FromStr,
     sync::RwLock,
 };
-use tracing::{debug, info, warn};
+use tracing::{debug};
 use zk_por_core::{
-    account::Account,
     config::ProverConfig,
     merkle_sum_tree::MerkleSumTree,
-    parser::{read_json_into_accounts_vec, FilesCfg, FilesParser},
+    parser::{FilesCfg, FilesParser},
     util::{get_node_level, get_recursive_hash_nums},
     GlobalConfig, GLOBAL_CONFIG, GLOBAL_MST,
 };
@@ -90,10 +87,4 @@ fn main() {
             })
             .collect();
     }
-
-    // }
-    // let global_cfg = GLOBAL_CONFIG.get().unwrap();
-    // info!("global_cfg: {:?}", global_cfg);
-
-    // let chunks: Vec<&mut [Account]> = accounts.chunks_mut(batch_size).collect(); // Collect mutable slices into a Vec
 }

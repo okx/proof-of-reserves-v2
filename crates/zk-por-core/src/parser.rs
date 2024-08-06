@@ -32,10 +32,6 @@ pub struct FilesParser {
     docs: Vec<PathBuf>,
 }
 
-// if doc_idx > 0 && doc_idx < doc_len - 1 {
-//     assert_eq!(accounts_len, last_doc_account_num);
-// }
-
 impl FilesParser {
     pub fn new(cfg: FilesCfg) -> Self {
         let mut parser = Self {
@@ -131,14 +127,14 @@ impl FilesParser {
                 result[0..remain_len].clone_from_slice(&self.buffered_accounts[(self.offset)..]);
             }
             let missing_len = result.len() - (self.buffered_accounts.len() - self.offset);
-            println!(
+            debug!(
                 "result len: {:?}, self.offset: {:?}, missing_len: {:?}",
                 result.len(),
                 self.offset,
                 missing_len
             );
             if self.file_idx < (self.num_of_docs - 1) {
-                // load the next file
+                // load the next file; TODO: assert_eq!(accounts_len, last_doc_account_num);
                 self.file_idx = self.file_idx + 1;
                 self.buffered_accounts =
                     read_json_into_accounts_vec(self.docs[self.file_idx].to_str().unwrap());
