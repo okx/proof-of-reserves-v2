@@ -72,34 +72,6 @@ impl MerkleSumTree {
     pub fn get_from_index(&self, index: usize) -> Option<&MerkleSumNode> {
         return self.merkle_sum_tree.get(index);
     }
-
-    /// Get the siblings for the merkle proof of inclusion given a leaf index as Merkle Sum Nodes.
-    /// We get the parent index of a leaf using the formula: parent = index / 2 + num_leaves
-    pub fn get_siblings(&self, mut index: usize) -> Vec<MerkleSumNode> {
-        let mut siblings = Vec::new();
-        let num_leaves = 1 << self.tree_depth;
-        while index < self.merkle_sum_tree.len() - 1 {
-            if index % 2 == 1 {
-                let sibling_index = index - 1;
-                let sibling = self.merkle_sum_tree.get(sibling_index).unwrap();
-                siblings.push(*sibling);
-            } else {
-                let sibling_index = index + 1;
-                let sibling = self.merkle_sum_tree.get(sibling_index).unwrap();
-                siblings.push(*sibling);
-            }
-
-            let parent = index / 2 + num_leaves;
-            index = parent;
-        }
-        return siblings;
-    }
-
-    /// Get siblings as just the hashes of the merkle sum tree
-    pub fn get_siblings_hashes(&self, index: usize) -> Vec<HashOut<F>> {
-        let siblings = self.get_siblings(index);
-        siblings.iter().map(|x| x.hash).collect()
-    }
 }
 
 #[cfg(test)]
@@ -155,22 +127,5 @@ pub mod test {
         let root = tree.get_root();
         assert_eq!(root.sum_equity, sum_equity);
         assert_eq!(root.sum_debt, F::ZERO);
-    }
-
-    #[test]
-    fn test_get_siblings() {
-        let path = "../../test-data/batch0.json";
-        let accounts = read_json_into_accounts_vec(path);
-
-        let merkle_sum_tree = MerkleSumTree::new_tree_from_accounts(&accounts);
-
-        let mut siblings_calculated: Vec<MerkleSumNode> = Vec::new();
-        siblings_calculated.push(*merkle_sum_tree.get_from_index(0).unwrap());
-        siblings_calculated.push(*merkle_sum_tree.get_from_index(17).unwrap());
-        siblings_calculated.push(*merkle_sum_tree.get_from_index(25).unwrap());
-        siblings_calculated.push(*merkle_sum_tree.get_from_index(29).unwrap());
-
-        let siblings = merkle_sum_tree.get_siblings(1);
-        assert_eq!(siblings, siblings_calculated);
     }
 }
