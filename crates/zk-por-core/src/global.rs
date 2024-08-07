@@ -112,6 +112,13 @@ mod test {
         let total_len = gmst.get_tree_length();
         assert_eq!(total_len, 93);
 
+        assert_eq!(gmst.get_batch_tree_global_index(0, 1), 1); 
+        assert_eq!(gmst.get_batch_tree_global_index(0, 14), 84); 
+        assert_eq!(gmst.get_batch_tree_global_index(1, 1), 9); 
+        assert_eq!(gmst.get_batch_tree_global_index(1, 14), 85); 
+        assert_eq!(gmst.get_batch_tree_global_index(5, 7), 47); 
+        assert_eq!(gmst.get_batch_tree_global_index(5, 14), 89); 
+
         assert_eq!(gmst.get_recursive_global_index(1, 0), 90);
         assert_eq!(gmst.get_recursive_global_index(1, 1), 91);
         assert_eq!(gmst.get_recursive_global_index(2, 0), 92);
