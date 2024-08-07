@@ -16,8 +16,18 @@ use crate::{
     types::{C, D, F, MAX_POSITIVE_AMOUNT_LOG},
 };
 
+pub fn prove_timing() -> TimingTree {
+    let mut level = Level::Info;
+    if cfg!(debug_assertions) {
+        level = Level::Debug;
+    }
+
+    TimingTree::new("prove", level)
+}
+
 /// Test runner for ease of testing
-pub fn run_circuit_test<T, F, const D: usize>(test: T) -> ()
+#[allow(clippy::unused_unit)]
+pub fn run_circuit_test<T, F, const D: usize>(test: T)
 where
     T: FnOnce(&mut CircuitBuilder<F, D>, &mut PartialWitness<F>) -> () + panic::UnwindSafe,
     F: RichField + Extendable<D>,
@@ -30,7 +40,7 @@ where
     let mut timing = TimingTree::new("prove", Level::Debug);
     let data = builder.build::<C>();
     let CircuitData { prover_only, common, verifier_only: _ } = &data;
-    let proof = prove(&prover_only, &common, pw, &mut timing).expect("Prove fail");
+    let proof = prove(prover_only, common, pw, &mut timing).expect("Prove fail");
     timing.print();
     data.verify(proof).expect("Verify fail")
 }

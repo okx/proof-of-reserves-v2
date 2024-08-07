@@ -1,12 +1,14 @@
 [prover]
 round_no = 0
-batch_size = 1024
-hyper_tree_size = 32
+batch_size = 8
+hyper_tree_size = 4
+user_data_path = "/opt/data/zkpor/users/"
+num_of_tokens = 22
 [db]
 level_db_path = "level_db_data"
 [log]
 file_name_prefix = "zkpor"
 dir = "logs/"
 level = "debug"
-console = false
+console = true
 flame = false

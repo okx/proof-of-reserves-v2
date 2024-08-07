@@ -5,7 +5,10 @@ use plonky2::{
     },
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CommonCircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData},
+        circuit_data::{
+            CircuitConfig, CircuitData, CommonCircuitData, VerifierCircuitTarget,
+            VerifierOnlyCircuitData,
+        },
         config::{AlgebraicHasher, GenericConfig},
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
@@ -13,7 +16,7 @@ use plonky2::{
 
 use crate::merkle_sum_prover::circuits::merkle_sum_circuit::MerkleSumNodeTarget;
 
-use crate::types::{D, F};
+use crate::types::{C, D, F};
 
 /// Struct representing the targets of a recusive circuit. Since we have the same type of subproofs, we only need one type of verifier circuit as
 /// we can verify all the targets using the same circuit.
@@ -26,10 +29,6 @@ pub struct RecursiveTargets<const N: usize> {
 impl<const N: usize> RecursiveTargets<N> {
     /// Builds a N-ary merkle sum tree and sets its root as a public input. We use a N-ary merkle sum tree instead of the binary one since it requires less hash gates.
     pub fn build_recursive_merkle_sum_tree_circuit(&mut self, builder: &mut CircuitBuilder<F, D>) {
-        let mut merkle_sum_node_targets: Vec<MerkleSumNodeTarget> = Vec::new();
-        merkle_sum_node_targets.push(MerkleSumNodeTarget::from(
-            self.proof_with_pub_input_targets[0].public_inputs.clone(),
-        ));
         let mut merkle_sum_tree_node_targets: Vec<MerkleSumNodeTarget> = Vec::new();
 
         (0..N).for_each(|i| {
@@ -108,4 +107,29 @@ where
         verifier_circuit_target: verifier_circuit_targets,
         proof_with_pub_input_targets: proof_with_pis_targets,
     }
+}
+
+/// build recursive circuit that proves N subproofs and geneate parent merkle sum node targets
+// This circuit hardcode the constraint that the verifier_circuit_target.circuit_digest must be equal to that inner_verifier_circuit_data.circuit_digest;
+pub fn build_recursive_n_circuit<
+    // C: GenericConfig<D, F = F>,
+    InnerC: GenericConfig<D, F = F>,
+    const N: usize,
+>(
+    inner_common_circuit_data: &CommonCircuitData<F, D>,
+    inner_verifier_circuit_data: &VerifierOnlyCircuitData<InnerC, D>,
+    circuit_config: CircuitConfig,
+) -> (CircuitData<F, C, D>, RecursiveTargets<N>)
+where
+    InnerC::Hasher: AlgebraicHasher<F>,
+{
+    let mut builder = CircuitBuilder::<F, D>::new(circuit_config);
+    let mut recursive_targets = verify_n_subproof_circuit(
+        &mut builder,
+        inner_common_circuit_data,
+        inner_verifier_circuit_data,
+    );
+    recursive_targets.build_recursive_merkle_sum_tree_circuit(&mut builder);
+    let circuit_data = builder.build::<C>();
+    (circuit_data, recursive_targets)
 }

@@ -1,4 +1,4 @@
-name: Rust Format and Test
+name: CI
 
 on:
   push:
@@ -12,6 +12,8 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CODE_COV_VAL: '0'
 
     steps:
     - name: Clone main repository
@@ -33,6 +35,37 @@ jobs:
       run: cargo fmt --check
       working-directory: .
 
-    - name: Run Tests
-      run: cargo test --verbose --lib
+    - name: Run Clippy
+      run: rustup component add clippy && cargo clippy
       working-directory: .
+
+    - name: Install dependencies
+      run: sudo apt-get install -y musl-tools
+
+    - name: Install tarpaulin
+      run: cargo install cargo-tarpaulin
+
+    - name: Run tests with coverage
+      run: |
+        cargo tarpaulin --lib --out Html --output-dir target/debug/tarpaulin/ -- --nocapture > test.log
+        LAST_LINE=$( tail -n 1 test.log)
+        CODE_COV=$(echo "$LAST_LINE" | cut -d '%' -f 1)
+        echo "CODE_COV: $CODE_COV"
+        COLOR=$(
+          float=$(echo "$CODE_COV" | bc)
+          threshold=80.0
+          if (( $(echo "$float > $threshold" | bc -l) )); then
+              echo "brightgreen"
+          else
+              echo "yellow"
+          fi
+        )
+        echo "COLOR: $COLOR"
+        sh ./scripts/gen_svg.sh $COLOR $CODE_COV
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./target/debug/tarpaulin/
+        publish_branch: gh-pages

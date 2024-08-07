@@ -46,12 +46,10 @@ pub fn init_tracing(config: TraceConfig) -> Vec<WorkerGuard> {
         } else {
             layered.with(FlameLayer::new(folded_writer)).init()
         }
+    } else if console {
+        layered.with(fmt::Layer::default()).init();
     } else {
-        if console {
-            layered.with(fmt::Layer::default()).init();
-        } else {
-            layered.init()
-        }
+        layered.init()
     }
 
     guards
