@@ -28,7 +28,7 @@ pub const STANDARD_CONFIG: CircuitConfig = CircuitConfig {
 ```
 # be sure to change batch_size in bin/bench_batch.rs before running
 
-cargo run --package zk-por-core --bin bench_batch --release
+cargo bench --package zk-por-core -- batch_circuit
 ```
 | Batch Size  | Delay (sec) |
 |---|---|
@@ -43,7 +43,7 @@ cargo run --package zk-por-core --bin bench_batch --release
 ```
 # be sure to change # of SUBPROOF in bin/bench_recursion.rs before running
 
-cargo run --package zk-por-core --bin bench_recursion --release
+cargo bench --package zk-por-core -- recursive_circuit
 ```
 batch_size is fixed at 1024. 
 
