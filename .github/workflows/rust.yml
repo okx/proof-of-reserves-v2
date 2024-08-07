@@ -36,7 +36,7 @@ jobs:
       working-directory: .
 
     - name: Run Clippy
-      run: cargo clippy
+      run: rustup component add clippy && cargo clippy
       working-directory: .
 
     - name: Install dependencies
