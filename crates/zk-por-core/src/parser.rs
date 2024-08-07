@@ -51,7 +51,7 @@ impl FilesParser {
             panic!("dir: {:?} does not exist", user_data_path);
         }
 
-        let json_files = list_json_files(&user_data_path);
+        let json_files = list_json_files(user_data_path);
 
         match json_files {
             Ok(docs) => {
@@ -117,7 +117,7 @@ impl FilesParser {
         if (n + offset - min_offset) <= (self.buffered_accounts.len()) {
             // we have enough account in the buffer
             result.clone_from_slice(&self.buffered_accounts[self.offset..(self.offset + n)]);
-            self.offset = self.offset + n;
+            self.offset += n;
         } else {
             if self.offset < self.buffered_accounts.len() {
                 let remain_len = self.buffered_accounts.len() - self.offset;
@@ -132,13 +132,13 @@ impl FilesParser {
             );
             if self.file_idx < (self.num_of_docs - 1) {
                 // load the next file; TODO: assert_eq!(accounts_len, last_doc_account_num);
-                self.file_idx = self.file_idx + 1;
+                self.file_idx+= 1;
                 self.buffered_accounts =
                     read_json_into_accounts_vec(self.docs[self.file_idx].to_str().unwrap());
                 result.clone_from_slice(&self.buffered_accounts[0..missing_len]);
                 self.offset = missing_len;
             } else {
-                self.offset = self.offset + result.len();
+                self.offset += result.len();
             }
         }
         result

@@ -27,6 +27,7 @@
 //!     shutdown_tracer_provider(); // sending remaining spans
 //! }
 //! ```
+#![allow(clippy::needless_doctest_main)]
 use async_trait::async_trait;
 use opentelemetry::{
     global, sdk,

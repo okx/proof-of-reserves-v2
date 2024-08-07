@@ -41,6 +41,7 @@ impl Account {
     /// Gets a user id as a vec of 5 GF elements.
     pub fn get_user_id_in_field(&self) -> Vec<F> {
         assert!(self.id.len() == 64);
+        #[allow(clippy::useless_vec)]
         let segments = vec![
             self.id[0..14].to_string(),  // First 56 bits (14 hex chars)
             self.id[14..28].to_string(), // Second 56 bits
@@ -72,6 +73,7 @@ pub fn gen_accounts_with_random_data(num_accounts: usize, num_assets: usize) -> 
 
         let mut bytes = [0u8; 32]; // 32 bytes * 2 hex chars per byte = 64 hex chars
         rng.fill(&mut bytes);
+        #[allow(clippy::format_collect)]
         let account_id = bytes.iter().map(|byte| format!("{:02x}", byte)).collect::<String>();
         accounts.push(Account { id: account_id, equity: equities, debt: debts });
     }
