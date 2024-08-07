@@ -29,6 +29,7 @@ impl GlobalMst {
         Self { inner: mst_vec, cfg }
     }
 
+    #[allow(dead_code)]
     fn get_tree_length(&self) -> usize {
         self.inner.len()
     }
