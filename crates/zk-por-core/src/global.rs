@@ -25,7 +25,8 @@ impl GlobalMst {
     pub fn new(cfg: GlobalConfig) -> Self {
         let vec_size = cfg.num_of_batches * (2 * cfg.batch_size - 1)
             + get_recursive_hash_nums(cfg.num_of_batches, cfg.hyper_tree_size);
-        Self { inner: Vec::with_capacity(vec_size), cfg }
+        let mst_vec = vec![HashOut::default(); vec_size];
+        Self { inner: mst_vec, cfg }
     }
 
     /// `batch_idx`: index indicating the batch index
