@@ -20,6 +20,11 @@ RUN apt-get update && \
 # Set the working directory
 WORKDIR /workspace/por_v2
 
+# install rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# Set the environment variables for Rust
+ENV PATH="/root/.cargo/bin:${PATH}"
+
 # Copy the content of the current directory to /app
 COPY . /workspace/por_v2
 
