@@ -10,7 +10,7 @@ use tracing::debug;
 pub struct GlobalConfig {
     pub num_of_tokens: usize,
     pub num_of_batches: usize,
-    pub batch_size: usize,  // num of accounts witin one batch
+    pub batch_size: usize, // num of accounts witin one batch
     pub hyper_tree_size: usize,
 }
 
@@ -55,16 +55,18 @@ impl GlobalMst {
     }
 
     fn get_recursive_global_index(&self, recursive_level: u32, index: usize) -> usize {
-
         let mut recursive_offset = self.cfg.num_of_batches * (2 * self.cfg.batch_size - 1);
         if recursive_level > 1 {
-            let numerator = self.cfg.num_of_batches * (self.cfg.hyper_tree_size.pow(recursive_level) - self.cfg.hyper_tree_size) / self.cfg.hyper_tree_size;
-            let denominator = (self.cfg.hyper_tree_size-1) * self.cfg.hyper_tree_size.pow(recursive_level-1);
-            println!("numerator: {:?}, denominator: {:?}",numerator, denominator);
+            let numerator = self.cfg.num_of_batches
+                * (self.cfg.hyper_tree_size.pow(recursive_level) - self.cfg.hyper_tree_size)
+                / self.cfg.hyper_tree_size;
+            let denominator =
+                (self.cfg.hyper_tree_size - 1) * self.cfg.hyper_tree_size.pow(recursive_level - 1);
+            println!("numerator: {:?}, denominator: {:?}", numerator, denominator);
             recursive_offset += numerator.div_ceil(denominator);
         }
         println!("recursive_offset: {:?}", recursive_offset);
-        let global_recursive_index = recursive_offset+index;
+        let global_recursive_index = recursive_offset + index;
         global_recursive_index
     }
 
@@ -78,7 +80,7 @@ impl GlobalMst {
     pub fn get_batch_root_hash(&self, batch_idx: usize) -> HashOut<F> {
         debug!("get batch root hash, batch_idx: {:?}", batch_idx);
         assert!(batch_idx < self.cfg.num_of_batches);
-        let root_idx = self.get_batch_tree_global_index(batch_idx, 2*self.cfg.batch_size -2);
+        let root_idx = self.get_batch_tree_global_index(batch_idx, 2 * self.cfg.batch_size - 2);
         self.inner[root_idx]
     }
 
@@ -101,13 +103,17 @@ mod test {
 
     #[test]
     fn test_global_mst() {
-      let gmst=  GlobalMst::new(super::GlobalConfig { num_of_tokens: 22, num_of_batches: 6, batch_size: 8, hyper_tree_size: 4 });
-      let total_len = gmst.get_tree_length();
-      assert_eq!(total_len, 93);
-      
-      assert_eq!(gmst.get_recursive_global_index(1,0), 90);
-      assert_eq!(gmst.get_recursive_global_index(1,1), 91);
-      assert_eq!(gmst.get_recursive_global_index(2,0), 92);
+        let gmst = GlobalMst::new(super::GlobalConfig {
+            num_of_tokens: 22,
+            num_of_batches: 6,
+            batch_size: 8,
+            hyper_tree_size: 4,
+        });
+        let total_len = gmst.get_tree_length();
+        assert_eq!(total_len, 93);
 
+        assert_eq!(gmst.get_recursive_global_index(1, 0), 90);
+        assert_eq!(gmst.get_recursive_global_index(1, 1), 91);
+        assert_eq!(gmst.get_recursive_global_index(2, 0), 92);
     }
 }
