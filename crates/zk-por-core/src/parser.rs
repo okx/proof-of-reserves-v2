@@ -9,7 +9,7 @@ use std::{
     ops::Div,
     path::{Path, PathBuf},
 };
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 #[derive(Debug)]
 pub struct FilesCfg {
@@ -60,35 +60,32 @@ impl FilesParser {
                 parser.docs = docs;
                 parser.num_of_docs = doc_len;
                 if doc_len < 1 {
-                    warn!("no json files under the folder: {:?}", user_data_path);
-                    std::process::exit(0);
-                } else {
-                    let first_doc_accounts =
-                        read_json_into_accounts_vec(parser.docs[0].to_str().unwrap());
-                    let first_doc_accounts_len = first_doc_accounts.len();
-
-                    if doc_len > 1 {
-                        assert_eq!(first_doc_accounts_len % parser.cfg.batch_size, 0);
-                    }
-                    parser.num_of_batches_per_doc =
-                        first_doc_accounts_len.div(parser.cfg.batch_size);
-                    parser.buffered_accounts = first_doc_accounts;
-                    parser.file_idx = 0;
-
-                    if doc_len > 1 {
-                        let last_doc_accounts =
-                            read_json_into_accounts_vec(parser.docs[doc_len - 1].to_str().unwrap());
-                        assert!(last_doc_accounts.len() <= first_doc_accounts_len);
-                        parser.last_doc_accounts = last_doc_accounts;
-                    }
-
-                    let total_num_of_users =
-                        (doc_len - 1) * first_doc_accounts_len + parser.last_doc_accounts.len();
-
-                    let num_of_batches = total_num_of_users.div_ceil(parser.cfg.batch_size);
-                    parser.total_num_of_users = total_num_of_users;
-                    parser.total_num_of_batches = num_of_batches;
+                    panic!("no json files under the folder: {:?}", user_data_path);
                 }
+                let first_doc_accounts =
+                    read_json_into_accounts_vec(parser.docs[0].to_str().unwrap());
+                let first_doc_accounts_len = first_doc_accounts.len();
+
+                if doc_len > 1 {
+                    assert_eq!(first_doc_accounts_len % parser.cfg.batch_size, 0);
+                }
+                parser.num_of_batches_per_doc = first_doc_accounts_len.div(parser.cfg.batch_size);
+                parser.buffered_accounts = first_doc_accounts;
+                parser.file_idx = 0;
+
+                if doc_len > 1 {
+                    let last_doc_accounts =
+                        read_json_into_accounts_vec(parser.docs[doc_len - 1].to_str().unwrap());
+                    assert!(last_doc_accounts.len() <= first_doc_accounts_len);
+                    parser.last_doc_accounts = last_doc_accounts;
+                }
+
+                let total_num_of_users =
+                    (doc_len - 1) * first_doc_accounts_len + parser.last_doc_accounts.len();
+
+                let num_of_batches = total_num_of_users.div_ceil(parser.cfg.batch_size);
+                parser.total_num_of_users = total_num_of_users;
+                parser.total_num_of_batches = num_of_batches;
             }
             Err(e) => panic!("list json files err: {:?}", e),
         }

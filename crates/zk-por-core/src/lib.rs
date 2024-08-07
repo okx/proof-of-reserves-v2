@@ -10,19 +10,4 @@ pub mod parser;
 pub mod recursive_prover;
 pub mod types;
 pub mod util;
-
-use account::Account;
-use once_cell::sync::OnceCell;
-use plonky2::hash::hash_types::HashOut;
-use std::sync::RwLock;
-use types::F;
-
-#[derive(Debug)]
-pub struct GlobalConfig {
-    pub num_of_tokens: usize,
-    pub num_of_batches: usize,
-}
-
-pub static EMPTY_ACCT: OnceCell<Account> = OnceCell::new();
-pub static GLOBAL_CONFIG: OnceCell<GlobalConfig> = OnceCell::new();
-pub static GLOBAL_MST: OnceCell<RwLock<Vec<HashOut<F>>>> = OnceCell::new();
+pub mod global;

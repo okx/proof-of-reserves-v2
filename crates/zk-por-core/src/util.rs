@@ -1,3 +1,4 @@
+/// compute total number of hashes for recursive trees
 pub fn get_recursive_hash_nums(num_of_batches: usize, hyper_tree_leaf_size: usize) -> usize {
     assert!(num_of_batches > 0);
     if num_of_batches <= hyper_tree_leaf_size {

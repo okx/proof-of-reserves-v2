@@ -1,14 +1,13 @@
-use plonky2::hash::hash_types::HashOut;
 use rayon::prelude::*;
 
-use std::{ops::Div, str::FromStr, sync::RwLock};
-use tracing::debug;
+use std::{ str::FromStr, sync::RwLock};
+use tracing::{debug};
 use zk_por_core::{
+    account::Account,
     config::ProverConfig,
+    global::{GlobalConfig, GlobalMst, GLOBAL_MST},
     merkle_sum_tree::MerkleSumTree,
     parser::{FilesCfg, FilesParser},
-    util::{get_node_level, get_recursive_hash_nums},
-    GlobalConfig, GLOBAL_CONFIG, GLOBAL_MST,
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
 
@@ -27,16 +26,18 @@ fn main() {
     });
     parser.log_state();
 
-    GLOBAL_CONFIG
-        .set(GlobalConfig {
-            num_of_tokens: cfg.prover.num_of_tokens,
-            num_of_batches: parser.total_num_of_batches,
-        })
-        .unwrap();
-    let vec_size = parser.total_num_of_batches * (2 * parser.cfg.batch_size - 1)
-        + get_recursive_hash_nums(parser.total_num_of_batches, cfg.prover.hyper_tree_size);
-    debug!("global mst size: {:?}", vec_size);
-    GLOBAL_MST.set(RwLock::new(vec![HashOut::default(); vec_size])).unwrap();
+    let ret = GLOBAL_MST.set(RwLock::new(GlobalMst::new(GlobalConfig {
+        num_of_tokens: cfg.prover.num_of_tokens,
+        num_of_batches: parser.total_num_of_batches,
+        batch_size: parser.cfg.batch_size,
+        hyper_tree_size: cfg.prover.hyper_tree_size,
+    })));
+    match ret {
+        Ok(_) => (),
+        Err(_) => {
+            panic!("set global mst error");
+        }
+    }
 
     let batch_size = parser.cfg.batch_size;
 
@@ -55,30 +56,18 @@ fn main() {
         }
 
         let _: Vec<()> = batch_accts
-            .into_par_iter()
+            .par_iter_mut()
             .map(|(chunk_idx, chunk)| {
                 debug!("chunk_idx: {:}, chunk data: {:?}", chunk_idx, chunk.len());
-                let mst = MerkleSumTree::new_tree_from_accounts(&chunk.to_vec(), batch_size);
-                let tree_depth = mst.tree_depth;
-
-                let global_cfg = GLOBAL_CONFIG.get().unwrap();
+                if chunk.len() < batch_size {
+                    chunk.resize(batch_size, Account::get_empty_account(parser.cfg.num_of_tokens));
+                };
+                let mst = MerkleSumTree::new_tree_from_accounts(&chunk.to_vec());
+        
                 let global_mst = GLOBAL_MST.get().unwrap();
                 let mut _g = global_mst.write().expect("unable to get a lock");
                 for i in 0..batch_size * 2 - 1 {
-                    let batch_tree_level = get_node_level(batch_size, i);
-                    let level_from_bottom = tree_depth - batch_tree_level;
-
-                    let global_tree_vertical_offset = 2 * batch_size * global_cfg.num_of_batches
-                        - (2 * batch_size * global_cfg.num_of_batches).div(1 << level_from_bottom);
-
-                    let level_node_counts = batch_size.div(1 << level_from_bottom);
-                    let global_inter_tree_horizontal_offset = level_node_counts * chunk_idx;
-                    let intra_tree_horizontal_offset =
-                        i - (2 * batch_size - 2 * batch_size.div(1 << level_from_bottom));
-
-                    _g[global_tree_vertical_offset
-                        + global_inter_tree_horizontal_offset
-                        + intra_tree_horizontal_offset] = mst.merkle_sum_tree[i].hash;
+                  _g.set_batch_hash(*chunk_idx, i, mst.merkle_sum_tree[i].hash);
                 }
                 drop(_g);
             })

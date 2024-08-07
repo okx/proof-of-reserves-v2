@@ -4,7 +4,6 @@ use crate::{
     account::Account,
     merkle_sum_prover::utils::hash_2_subhashes,
     types::{D, F},
-    EMPTY_ACCT, GLOBAL_CONFIG,
 };
 
 use plonky2_field::types::Field;
@@ -43,22 +42,15 @@ pub struct MerkleSumTree {
 }
 
 impl MerkleSumTree {
-    pub fn new_tree_from_accounts(accounts: &Vec<Account>, num_leaves: usize) -> MerkleSumTree {
+    pub fn new_tree_from_accounts(accounts: &Vec<Account>) -> MerkleSumTree {
+        let num_leaves = accounts.len();
         let tree_depth = log2_strict(num_leaves);
         let mut merkle_sum_tree: Vec<MerkleSumNode> = Vec::new();
 
         for i in 0..num_leaves * 2 - 1 {
             if i < num_leaves {
-                let account = if i < accounts.len() {
-                    accounts.get(i).unwrap()
-                } else {
-                    let empty_acct = EMPTY_ACCT.get_or_init(|| {
-                        let cfg = GLOBAL_CONFIG.get().unwrap();
-                        Account::get_empty_account(cfg.num_of_tokens)
-                    });
-                    empty_acct
-                };
-                merkle_sum_tree.push(MerkleSumNode::new_from_account(account));
+                let acct = accounts.get(i).unwrap();
+                merkle_sum_tree.push(MerkleSumNode::new_from_account(acct));
             } else {
                 let left_child_index = 2 * (i - num_leaves);
                 let right_child_index = 2 * (i - num_leaves) + 1;
@@ -157,7 +149,7 @@ pub mod test {
             });
         }
 
-        let tree = MerkleSumTree::new_tree_from_accounts(&accounts, accounts.len());
+        let tree = MerkleSumTree::new_tree_from_accounts(&accounts);
 
         let root = tree.get_root();
         assert_eq!(root.sum_equity, sum_equity);
@@ -169,7 +161,7 @@ pub mod test {
         let path = "../../test-data/batch0.json";
         let accounts = read_json_into_accounts_vec(path);
 
-        let merkle_sum_tree = MerkleSumTree::new_tree_from_accounts(&accounts, accounts.len());
+        let merkle_sum_tree = MerkleSumTree::new_tree_from_accounts(&accounts);
 
         let mut siblings_calculated: Vec<MerkleSumNode> = Vec::new();
         siblings_calculated.push(*merkle_sum_tree.get_from_index(0).unwrap());
