@@ -47,9 +47,9 @@ fn main() {
         // TODO: we can read multile docs concurrently
         for _ in 0..num_cpus {
             if offset < parser.total_num_of_users {
-                let account = parser.read_n_accounts(offset, batch_size);
-                let acct_len = account.len();
-                batch_accts.push((offset / batch_size, account));
+                let accounts = parser.read_n_accounts(offset, batch_size);
+                let acct_len = accounts.len();
+                batch_accts.push((offset / batch_size, accounts));
                 offset = offset + acct_len;
             }
         }
