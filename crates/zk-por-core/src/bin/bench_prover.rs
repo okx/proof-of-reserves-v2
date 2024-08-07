@@ -1,5 +1,7 @@
 use zk_por_core::{
-    account::{gen_accounts_with_random_data, Account}, circuit_registry::registry::CircuitRegistry, config::ProverConfig,
+    account::{gen_accounts_with_random_data, Account},
+    circuit_registry::registry::CircuitRegistry,
+    config::ProverConfig,
 };
 
 use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
@@ -19,21 +21,23 @@ struct Proof {
     proof: ProofWithPublicInputs<F, C, D>,
 }
 
-/// this binary to benchmark e2e proving. 
-/// we donot use criterion because it will run the benchmark multiple times, which will be too slow. 
+/// this binary to benchmark e2e proving.
+/// we donot use criterion because it will run the benchmark multiple times, which will be too slow.
 fn main() {
-	let args: Vec<String> = env::args().collect();
-    let file_num: usize = args.get(1)
+    let args: Vec<String> = env::args().collect();
+    let file_num: usize = args
+        .get(1)
         .expect("Please provide the file number as the first argument")
         .parse()
         .expect("The provided file number must be a valid usize");
 
-    let per_file_batch_num: usize = args.get(2)
+    let per_file_batch_num: usize = args
+        .get(2)
         .expect("Please provide the per file batch number as the second argument")
         .parse()
         .expect("The provided number must be a valid usize");
 
-	let cfg = TraceConfig {
+    let cfg = TraceConfig {
         prefix: "zkpor-bench".to_string(),
         dir: "logs".to_string(),
         level: tracing::Level::INFO,
@@ -62,17 +66,22 @@ fn main() {
     );
 
     let (tx, rx) = mpsc::channel::<Vec<Account>>();
-	let start = Instant::now();
+    let start = Instant::now();
     let prover =
         thread::spawn(move || stream_prove(rx, &circuit_registry, batch_size, PROVING_THREADS_NUM));
 
     thread::spawn(move || {
-		(0..file_num).for_each(|_| {
-            let accounts = gen_accounts_with_random_data(per_file_batch_num * batch_size, asset_num);
+        (0..file_num).for_each(|_| {
+            let accounts =
+                gen_accounts_with_random_data(per_file_batch_num * batch_size, asset_num);
             tx.send(accounts).unwrap()
-		})
+        })
     });
 
     _ = prover.join().unwrap();
-	tracing::info!("finish e2e proving {} accounts in {:?}", batch_size * file_num * per_file_batch_num, start.elapsed());
+    tracing::info!(
+        "finish e2e proving {} accounts in {:?}",
+        batch_size * file_num * per_file_batch_num,
+        start.elapsed()
+    );
 }
