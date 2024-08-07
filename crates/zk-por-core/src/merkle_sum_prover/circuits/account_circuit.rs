@@ -39,7 +39,7 @@ impl AccountTargets {
 
         pw.set_target_arr(self.equity.as_slice(), account_info.equity.as_slice());
         pw.set_target_arr(self.debt.as_slice(), account_info.debt.as_slice());
-        pw.set_target_arr(self.id.as_slice(), &account_info.get_user_id_in_field().as_slice());
+        pw.set_target_arr(self.id.as_slice(), account_info.get_user_id_in_field().as_slice());
     }
 }
 
@@ -71,10 +71,9 @@ impl AccountSumTargets {
 
     /// Get account hash targets
     pub fn get_account_hash_targets(&self, builder: &mut CircuitBuilder<F, D>) -> HashOutTarget {
+        #[allow(clippy::useless_vec)]
         let hash_inputs = vec![self.id.to_vec(), vec![self.sum_equity, self.sum_debt]].concat();
-
-        let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs);
-        hash
+        builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs)
     }
 }
 

@@ -42,16 +42,15 @@ pub struct MerkleSumTree {
 }
 
 impl MerkleSumTree {
-    /// Create a new merkle sum tree from a set of accounts, note that this set must be a power of 2.
-    /// In the future we can try to pad with empty accounts.
-    pub fn new_tree_from_accounts(accounts: &Vec<Account>) -> MerkleSumTree {
-        let mut merkle_sum_tree: Vec<MerkleSumNode> = Vec::new();
+    pub fn new_tree_from_accounts(accounts: &[Account]) -> MerkleSumTree {
         let num_leaves = accounts.len();
+        let tree_depth = log2_strict(num_leaves);
+        let mut merkle_sum_tree: Vec<MerkleSumNode> = Vec::new();
 
         for i in 0..num_leaves * 2 - 1 {
             if i < num_leaves {
-                let account = accounts.get(i).unwrap();
-                merkle_sum_tree.push(MerkleSumNode::new_from_account(account));
+                let acct = accounts.get(i).unwrap();
+                merkle_sum_tree.push(MerkleSumNode::new_from_account(acct));
             } else {
                 let left_child_index = 2 * (i - num_leaves);
                 let right_child_index = 2 * (i - num_leaves) + 1;
@@ -62,7 +61,7 @@ impl MerkleSumTree {
             }
         }
 
-        MerkleSumTree { merkle_sum_tree, tree_depth: log2_strict(accounts.len()) }
+        MerkleSumTree { merkle_sum_tree, tree_depth }
     }
 
     pub fn get_root(&self) -> MerkleSumNode {
@@ -92,7 +91,7 @@ impl MerkleSumTree {
             let parent = index / 2 + num_leaves;
             index = parent;
         }
-        return siblings;
+        siblings
     }
 
     /// Get siblings as just the hashes of the merkle sum tree

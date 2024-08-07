@@ -24,15 +24,25 @@ impl Account {
 
         let id = self.get_user_id_in_field();
 
+        #[allow(clippy::useless_vec)]
         let hash =
             PoseidonHash::hash_no_pad(vec![id, vec![sum_equity, sum_debt]].concat().as_slice());
 
         hash
     }
 
+    pub fn get_empty_account(num_of_tokens: usize) -> Account {
+        Self {
+            id: "0".repeat(64),
+            equity: vec![F::default(); num_of_tokens],
+            debt: vec![F::default(); num_of_tokens],
+        }
+    }
+
     /// Gets a user id as a vec of 5 GF elements.
     pub fn get_user_id_in_field(&self) -> Vec<F> {
         assert!(self.id.len() == 64);
+        #[allow(clippy::useless_vec)]
         let segments = vec![
             self.id[0..14].to_string(),  // First 56 bits (14 hex chars)
             self.id[14..28].to_string(), // Second 56 bits
@@ -64,6 +74,7 @@ pub fn gen_accounts_with_random_data(num_accounts: usize, num_assets: usize) -> 
 
         let mut bytes = [0u8; 32]; // 32 bytes * 2 hex chars per byte = 64 hex chars
         rng.fill(&mut bytes);
+        #[allow(clippy::format_collect)]
         let account_id = bytes.iter().map(|byte| format!("{:02x}", byte)).collect::<String>();
         accounts.push(Account { id: account_id, equity: equities, debt: debts });
     }
@@ -71,19 +82,6 @@ pub fn gen_accounts_with_random_data(num_accounts: usize, num_assets: usize) -> 
 }
 
 pub fn gen_empty_accounts(batch_size: usize, num_assets: usize) -> Vec<Account> {
-    let mut accounts: Vec<Account> = Vec::new();
-    for _ in 0..batch_size {
-        let mut equities = Vec::new();
-        let mut debts = Vec::new();
-        for _ in 0..num_assets {
-            let equity = 0;
-            let debt = 0;
-            equities.push(F::from_canonical_u32(equity));
-            debts.push(F::from_canonical_u32(debt));
-        }
-        let bytes = [0u8; 32]; // 32 bytes * 2 hex chars per byte = 64 hex chars
-        let account_id = bytes.iter().map(|byte| format!("{:02x}", byte)).collect::<String>();
-        accounts.push(Account { id: account_id, equity: equities, debt: debts });
-    }
+    let accounts = vec![Account::get_empty_account(num_assets); batch_size];
     accounts
 }

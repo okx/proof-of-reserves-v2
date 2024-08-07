@@ -2206,6 +2206,7 @@ dependencies = [
  "jemallocator",
  "lazy_static",
  "log",
+ "num_cpus",
  "once_cell",
  "plonky2",
  "plonky2_field",

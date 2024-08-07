@@ -38,7 +38,7 @@ impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
         recursive_targets.set_targets(&mut pw, self.sub_proofs.to_vec(), &self.sub_circuit_vd);
 
         let mut t = prove_timing();
-        let proof_res = prove(&prover_only, &common, pw, &mut t);
+        let proof_res = prove(prover_only, common, pw, &mut t);
 
         match proof_res {
             Ok(proof) => {

@@ -35,13 +35,13 @@ impl MerkleSumNodeTarget {
     /// Given children nodes, generate the MerkleSumNodeTarget
     pub fn get_parent_from_children<const N: usize>(
         builder: &mut CircuitBuilder<F, D>,
-        children: &Vec<MerkleSumNodeTarget>,
+        children: &[MerkleSumNodeTarget],
     ) -> MerkleSumNodeTarget {
         assert_eq!(N, children.len());
         let mut sum_equity = builder.constant(F::ZERO);
         let mut sum_debt = builder.constant(F::ZERO);
         let mut hash_inputs = Vec::new();
-        children.into_iter().for_each(|child| {
+        children.iter().for_each(|child| {
             sum_equity = builder.add(sum_equity, child.sum_equity);
             sum_debt = builder.add(sum_debt, child.sum_debt);
 
@@ -85,6 +85,7 @@ impl MerkleSumNodeTarget {
 
 impl From<MerkleSumNodeTarget> for Vec<Target> {
     fn from(node: MerkleSumNodeTarget) -> Vec<Target> {
+        #[allow(clippy::useless_vec)]
         vec![vec![node.sum_equity, node.sum_debt], node.hash.elements.to_vec()].concat()
     }
 }
@@ -143,7 +144,7 @@ impl MerkleSumTreeTarget {
     /// Given a list of account targets, build the corresponding merkle sum tree.
     pub fn build_new_from_account_targets(
         builder: &mut CircuitBuilder<F, D>,
-        accounts: &mut Vec<AccountSumTargets>,
+        accounts: &mut [AccountSumTargets],
     ) -> MerkleSumTreeTarget {
         let mut leaves: Vec<MerkleSumNodeTarget> = accounts
             .iter()
@@ -156,7 +157,7 @@ impl MerkleSumTreeTarget {
 
         tree.register_public_inputs(builder);
 
-        return tree;
+        tree
     }
 }
 
@@ -174,7 +175,7 @@ pub fn build_merkle_sum_tree_circuit(
         let id: [Target; 5] = std::array::from_fn(|_| builder.add_virtual_target());
         let equity_targets = builder.add_virtual_targets(asset_num);
         let debt_targets = builder.add_virtual_targets(asset_num);
-        let account_target = AccountTargets { id: id, equity: equity_targets, debt: debt_targets };
+        let account_target = AccountTargets { id, equity: equity_targets, debt: debt_targets };
         account_targets.push(account_target);
     });
     let mut account_sum_targets: Vec<AccountSumTargets> = account_targets

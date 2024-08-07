@@ -15,7 +15,7 @@ use zk_por_core::{
 
 #[derive(Serialize, Deserialize)]
 struct Proof {
-    round_num: u32,
+    round_num: usize,
     root_vd_digest: HashOut<F>,
     proof: ProofWithPublicInputs<F, C, D>,
 }

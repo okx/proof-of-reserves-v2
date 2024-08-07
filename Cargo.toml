@@ -45,6 +45,7 @@ leveldb = "0.8.6"
 thiserror = "1.0"
 tracing = "0.1"
 opentelemetry = { version = "0.17", features = ["serialize"]}
+num_cpus = "1.15"
 
 [profile.dev]
 opt-level = 0

@@ -16,3 +16,8 @@ basis of protecting user privacy. We used plonky2 to build the proofs of users' 
 ## code coverage
 the code test coverage report is auto generated and hosted at [codecov_report](https://okx.github.io/proof-of-reserves-v2/tarpaulin-report.html) 
 
+## docker
+```
+docker build -t okx_por_v2 -f docker/Dockerfile .
+```
+
