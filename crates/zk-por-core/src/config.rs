@@ -1,5 +1,9 @@
+use std::str::FromStr;
+
 use config::{Config, ConfigError, File};
 use serde::Deserialize;
+use tracing::Level;
+use zk_por_tracing::TraceConfig;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ConfigLog {
@@ -10,11 +14,25 @@ pub struct ConfigLog {
     pub console: bool,
 }
 
+impl From<ConfigLog> for TraceConfig {
+    fn from(log_cfg: ConfigLog) -> Self {
+        TraceConfig {
+            prefix: log_cfg.file_name_prefix,
+            dir: log_cfg.dir,
+            level: Level::from_str(&log_cfg.level).unwrap(),
+            console: log_cfg.console,
+            flame: log_cfg.flame,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct ConfigProver {
-    pub round_no: u32,
-    pub batch_size: u32,
-    pub hyper_tree_size: u32,
+    pub round_no: usize,
+    pub batch_size: usize,
+    pub hyper_tree_size: usize,
+    pub num_of_tokens: usize,
+    pub user_data_path: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]

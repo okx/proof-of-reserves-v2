@@ -40,7 +40,7 @@ impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
         tracing::debug!("before prove");
         let start = std::time::Instant::now();
         let mut t = prove_timing();
-        let proof_res = prove(&prover_only, &common, pw, &mut t);
+        let proof_res = prove(prover_only, common, pw, &mut t);
 
         tracing::debug!("time for {:?} proofs, {:?}", N, start.elapsed().as_millis());
 

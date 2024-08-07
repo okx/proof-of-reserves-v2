@@ -29,7 +29,7 @@ impl MerkleSumTreeProver {
     pub fn set_merkle_tree_targets(
         &self,
         pw: &mut PartialWitness<F>,
-        account_targets: &Vec<AccountTargets>,
+        account_targets: &[AccountTargets],
     ) {
         for i in 0..self.accounts.len() {
             // Set account targets
@@ -82,7 +82,7 @@ impl MerkleSumTreeProver {
 
         info!("Started Proving");
 
-        let proof_res = prove(&prover_only, &common, pw, &mut t);
+        let proof_res = prove(prover_only, common, pw, &mut t);
 
         match proof_res {
             Ok(proof) => {
@@ -123,7 +123,7 @@ impl MerkleSumTreeProver {
         tracing::debug!("Starting proving!");
 
         let mut t = prove_timing();
-        let proof_res = prove(&prover_only, &common, pw, &mut t);
+        let proof_res = prove(prover_only, common, pw, &mut t);
 
         match proof_res {
             Ok(proof) => {
@@ -165,7 +165,7 @@ impl MerkleSumTreeProver {
         tracing::debug!("Starting proving!");
 
         let mut t = prove_timing();
-        let proof_res = prove(&prover_only, &common, pw, &mut t);
+        let proof_res = prove(prover_only, common, pw, &mut t);
 
         match proof_res {
             Ok(proof) => {

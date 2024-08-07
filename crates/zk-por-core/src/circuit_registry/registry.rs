@@ -17,6 +17,7 @@ use crate::{
     types::{C, D, F},
 };
 
+#[allow(clippy::type_complexity)]
 pub struct CircuitRegistry<const RECURSIVE_FACTOR: usize> {
     batch_circuit: (CircuitData<F, C, D>, Vec<AccountTargets>),
     empty_batch_proof: ProofWithPublicInputs<F, C, D>,
@@ -47,7 +48,7 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
         let accounts = gen_empty_accounts(batch_size, asset_num);
 
         let start = std::time::Instant::now();
-        let prover = MerkleSumTreeProver { accounts: accounts };
+        let prover = MerkleSumTreeProver { accounts };
         let empty_batch_proof =
             prover.get_proof_with_circuit_data(account_targets.clone(), &batch_circuit_data);
         tracing::info!(
@@ -79,7 +80,7 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
                 std::array::from_fn(|_| last_empty_proof.clone());
             let start = std::time::Instant::now();
             let recursive_prover = RecursiveProver {
-                sub_proofs: sub_proofs,
+                sub_proofs,
                 sub_circuit_vd: last_circuit_data.verifier_only.clone(),
             };
             let recursive_proof = recursive_prover
@@ -106,7 +107,7 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
 
         Self {
             batch_circuit: (batch_circuit_data, account_targets),
-            empty_batch_proof: empty_batch_proof,
+            empty_batch_proof,
             recursive_circuits_and_empty_proofs: recursive_circuit_and_empty_proofs,
         }
     }

@@ -2,7 +2,10 @@ extern crate leveldb;
 extern crate tempdir;
 
 use leveldb::{
-    database::Database,
+    database::{
+        batch::{Batch, Writebatch},
+        Database,
+    },
     kv::KV,
     options::{Options, ReadOptions, WriteOptions},
 };
@@ -14,7 +17,6 @@ pub struct LevelDb<K: db_key::Key> {
 
 impl<K: db_key::Key> LevelDb<K> {
     pub fn new(db_path: &std::path::Path) -> Self {
-        // Create options for opening the database
         let mut options = Options::new();
         options.create_if_missing = true;
 
@@ -36,10 +38,21 @@ impl<K: db_key::Key> LevelDb<K> {
         }
     }
 
+    /// input is a vector of (k,v) tuple
+    pub fn batch_put(&self, batches: Vec<(K, &[u8])>) {
+        let mut batch = Writebatch::<K>::new();
+        batches.into_iter().for_each(|(k, v)| {
+            batch.put(k, v);
+        });
+
+        match self.db.write(WriteOptions::new(), &batch) {
+            Ok(_) => (),
+            Err(e) => panic!("Batch write failed: {}", e),
+        }
+    }
+
     pub fn get(&self, key: K) -> Option<Vec<u8>> {
-        // Define the read options
         let read_opts = ReadOptions::new();
-        // Read the data back
         match self.db.get(read_opts, key) {
             Ok(val) => val,
             Err(e) => {
