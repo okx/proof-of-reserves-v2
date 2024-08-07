@@ -1,0 +1,68 @@
+use plonky2_field::types::Field;
+use std::{sync::mpsc, thread};
+use zk_por_core::{
+    account::{gen_accounts_with_random_data, Account},
+    circuit_config::STANDARD_CONFIG,
+    circuit_registry::registry::CircuitRegistry,
+    e2e::stream_prove,
+    types::F,
+};
+
+use zk_por_tracing::{init_tracing, TraceConfig};
+
+#[test]
+fn test_stream_prove() {
+    let cfg = TraceConfig {
+        prefix: "zkpor".to_string(),
+        dir: "logs".to_string(),
+        level: tracing::Level::DEBUG,
+        console: true,
+        flame: false,
+    };
+
+    {
+        init_tracing(cfg)
+    };
+
+    const RECURSION_FACTOR: usize = 4;
+    let batch_size = 8;
+    let asset_num = 4;
+
+    let circuit_registry = CircuitRegistry::<RECURSION_FACTOR>::init(
+        batch_size,
+        asset_num,
+        STANDARD_CONFIG,
+        vec![STANDARD_CONFIG; 2],
+    );
+
+    let (tx, rx) = mpsc::channel::<Vec<Account>>();
+    let proving_thread_num = 2;
+
+    let prover =
+        thread::spawn(move || stream_prove(rx, &circuit_registry, batch_size, proving_thread_num));
+
+    let sender = thread::spawn(move || {
+        let mut equity_sum = 0;
+        let mut debt_sum = 0;
+        // a total of 9 batches (3x3) to test for padding in each level.
+        (0..3).for_each(|_| {
+            let accounts = gen_accounts_with_random_data(batch_size * 3, 4);
+            equity_sum += accounts
+                .iter()
+                .map(|account| account.equity.iter().map(|e| e.0).sum::<u64>())
+                .sum::<u64>();
+            debt_sum += accounts
+                .iter()
+                .map(|account| account.debt.iter().map(|e| e.0).sum::<u64>())
+                .sum::<u64>();
+            tx.send(accounts).unwrap()
+        });
+        (equity_sum, debt_sum)
+    });
+
+    let (equity_sum, debt_sum) = sender.join().unwrap();
+    let root_proof = prover.join().unwrap();
+    tracing::debug!("equity_sum: {}, debt_sum: {}", equity_sum, debt_sum);
+    assert_eq!(F::from_canonical_u64(equity_sum), root_proof.public_inputs[0],);
+    assert_eq!(F::from_canonical_u64(debt_sum), root_proof.public_inputs[1],);
+}

@@ -86,8 +86,6 @@ impl MerkleSumTreeProver {
 
         match proof_res {
             Ok(proof) => {
-                info!("Finished Proving");
-
                 let proof_verification_res = data.verify(proof.clone());
                 match proof_verification_res {
                     Ok(_) => proof,
@@ -120,15 +118,11 @@ impl MerkleSumTreeProver {
 
         let CircuitData { prover_only, common, verifier_only: _ } = &circuit_data;
 
-        tracing::debug!("Starting proving!");
-
         let mut t = prove_timing();
         let proof_res = prove(&prover_only, &common, pw, &mut t);
 
         match proof_res {
             Ok(proof) => {
-                tracing::debug!("Finished proving!");
-
                 let proof_verification_res = circuit_data.verify(proof.clone());
                 match proof_verification_res {
                     Ok(_) => proof,
@@ -169,8 +163,6 @@ impl MerkleSumTreeProver {
 
         match proof_res {
             Ok(proof) => {
-                tracing::debug!("Finished proving!");
-
                 let proof_verification_res = data.verify(proof.clone());
                 match proof_verification_res {
                     Ok(_) => (proof, data),

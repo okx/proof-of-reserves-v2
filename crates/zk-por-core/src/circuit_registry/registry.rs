@@ -20,7 +20,7 @@ use crate::{
     types::{C, D, F},
 };
 
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 
 pub struct CircuitRegistry<const RECURSIVE_FACTOR: usize> {
     batch_circuit: (CircuitData<F, C, D>, Vec<AccountTargets>),
@@ -29,6 +29,7 @@ pub struct CircuitRegistry<const RECURSIVE_FACTOR: usize> {
         HashMap<HashOut<F>, (CircuitData<F, C, D>, RecursiveTargets<RECURSIVE_FACTOR>)>,
     // circuit_vd -> empty proof
     empty_proofs: HashMap<HashOut<F>, ProofWithPublicInputs<F, C, D>>,
+    last_inner_circuit_vd: HashOut<F>,
 }
 
 impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
@@ -66,7 +67,7 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
         let mut last_empty_proof = empty_batch_proof.clone();
 
         let mut last_circuit_data = &batch_circuit_data;
-
+        let mut last_circuit_vd = last_circuit_data.verifier_only.circuit_digest;
         empty_proofs
             .insert(last_circuit_data.verifier_only.circuit_digest, last_empty_proof.clone());
 
@@ -103,10 +104,10 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
             empty_proofs
                 .insert(recursive_circuit.verifier_only.circuit_digest, recursive_proof.clone());
 
-            let last_circuit_digest = last_circuit_data.verifier_only.circuit_digest;
-            recursive_circuits.insert(last_circuit_digest, (recursive_circuit, recursive_targets));
+            last_circuit_vd = last_circuit_data.verifier_only.circuit_digest;
+            recursive_circuits.insert(last_circuit_vd, (recursive_circuit, recursive_targets));
 
-            last_circuit_data = &recursive_circuits[&last_circuit_digest].0;
+            last_circuit_data = &recursive_circuits[&last_circuit_vd].0;
             last_empty_proof = recursive_proof;
         }
 
@@ -120,6 +121,7 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
             batch_circuit: (batch_circuit_data, account_targets),
             empty_proofs: empty_proofs,
             recurisve_circuits: recursive_circuits,
+            last_inner_circuit_vd: last_circuit_vd,
         }
     }
 
@@ -142,5 +144,13 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
     ) -> Option<(&CircuitData<F, C, D>, &RecursiveTargets<RECURSIVE_FACTOR>)> {
         let circuit_and_targets = self.recurisve_circuits.get(inner_circuit_vd)?;
         Some((&circuit_and_targets.0, &circuit_and_targets.1))
+    }
+
+    pub fn get_recursive_levels(&self) -> usize {
+        self.recurisve_circuits.len()
+    }
+
+    pub fn get_root_circuit(&self) -> &CircuitData<F, C, D> {
+        &self.recurisve_circuits[&self.last_inner_circuit_vd].0
     }
 }
