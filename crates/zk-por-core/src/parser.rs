@@ -132,7 +132,7 @@ impl FilesParser {
             );
             if self.file_idx < (self.num_of_docs - 1) {
                 // load the next file; TODO: assert_eq!(accounts_len, last_doc_account_num);
-                self.file_idx+= 1;
+                self.file_idx += 1;
                 self.buffered_accounts =
                     read_json_into_accounts_vec(self.docs[self.file_idx].to_str().unwrap());
                 result.clone_from_slice(&self.buffered_accounts[0..missing_len]);
