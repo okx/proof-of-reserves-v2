@@ -17,6 +17,7 @@ use crate::{
     types::{C, D, F},
 };
 
+#[allow(clippy::type_complexity)]
 pub struct CircuitRegistry<const RECURSIVE_FACTOR: usize> {
     batch_circuit: (CircuitData<F, C, D>, Vec<AccountTargets>),
     empty_batch_proof: ProofWithPublicInputs<F, C, D>,

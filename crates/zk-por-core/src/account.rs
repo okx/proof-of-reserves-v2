@@ -24,6 +24,7 @@ impl Account {
 
         let id = self.get_user_id_in_field();
 
+        #[allow(clippy::useless_vec)]
         let hash =
             PoseidonHash::hash_no_pad(vec![id, vec![sum_equity, sum_debt]].concat().as_slice());
 

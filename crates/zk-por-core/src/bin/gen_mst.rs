@@ -51,7 +51,7 @@ fn main() {
                 let accounts = parser.read_n_accounts(offset, batch_size);
                 let acct_len = accounts.len();
                 batch_accts.push((offset / batch_size, accounts));
-                offset = offset + acct_len;
+                offset += acct_len;
             }
         }
 

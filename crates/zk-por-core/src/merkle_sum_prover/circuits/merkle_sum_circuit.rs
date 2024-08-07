@@ -35,13 +35,13 @@ impl MerkleSumNodeTarget {
     /// Given children nodes, generate the MerkleSumNodeTarget
     pub fn get_parent_from_children<const N: usize>(
         builder: &mut CircuitBuilder<F, D>,
-        children: &Vec<MerkleSumNodeTarget>,
+        children: &[MerkleSumNodeTarget],
     ) -> MerkleSumNodeTarget {
         assert_eq!(N, children.len());
         let mut sum_equity = builder.constant(F::ZERO);
         let mut sum_debt = builder.constant(F::ZERO);
         let mut hash_inputs = Vec::new();
-        children.into_iter().for_each(|child| {
+        children.iter().for_each(|child| {
             sum_equity = builder.add(sum_equity, child.sum_equity);
             sum_debt = builder.add(sum_debt, child.sum_debt);
 

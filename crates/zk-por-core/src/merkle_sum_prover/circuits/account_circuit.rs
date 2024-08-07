@@ -73,9 +73,7 @@ impl AccountSumTargets {
     pub fn get_account_hash_targets(&self, builder: &mut CircuitBuilder<F, D>) -> HashOutTarget {
         #[allow(clippy::useless_vec)]
         let hash_inputs = vec![self.id.to_vec(), vec![self.sum_equity, self.sum_debt]].concat();
-
-        let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs);
-        hash
+        builder.hash_n_to_hash_no_pad::<PoseidonHash>(hash_inputs)
     }
 }
 

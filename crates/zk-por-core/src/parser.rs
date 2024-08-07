@@ -169,8 +169,7 @@ fn list_json_files(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
 /// Read a json file and return the vec of associated accounts.
 pub fn read_json_into_accounts_vec(path: &str) -> Vec<Account> {
     let parsed_data = read_json_file_into_map(path);
-    let accounts_data = parse_exchange_state(&parsed_data);
-    accounts_data
+    parse_exchange_state(&parsed_data)
 }
 
 /// Reads a json file into a json string.
