@@ -12,7 +12,7 @@ use zk_por_core::{
 use plonky2::plonk::proof::ProofWithPublicInputs;
 
 pub fn bench_batch_circuit(c: &mut BenchmarkGroup<WallTime>, batch_size: usize) {
-	let num_assets = 5;
+	let num_assets = 200;
     let (circuit_data, account_targets) =
         build_merkle_sum_tree_circuit(batch_size, num_assets, STANDARD_CONFIG);
     let accounts = gen_accounts_with_random_data(batch_size, num_assets);

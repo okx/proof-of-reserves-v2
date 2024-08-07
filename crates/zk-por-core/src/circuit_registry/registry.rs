@@ -20,7 +20,7 @@ use crate::{
     types::{C, D, F},
 };
 
-use std::{collections::HashMap, hash::Hash};
+use std::collections::HashMap;
 
 pub struct CircuitRegistry<const RECURSIVE_FACTOR: usize> {
     batch_circuit: (CircuitData<F, C, D>, Vec<AccountTargets>),

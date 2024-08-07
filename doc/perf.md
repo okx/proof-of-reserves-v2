@@ -30,14 +30,16 @@ pub const STANDARD_CONFIG: CircuitConfig = CircuitConfig {
 
 cargo bench --package zk-por-core -- batch_circuit
 ```
+## Setting
+asset_num = 200
+## Result
 | Batch Size  | Delay (sec) |
 |---|---|
-| 4  | 0.016 |
-| 16  | 0.022|
-| 64 | 0.044|
-| 256 |0.139|
-| 512 |0.288|
-| 1024 |0.642|
+| 16  | 0.031|
+| 64 | 0.087|
+| 256 |0.300|
+| 512 |0.712|
+| 1024 |1.254|
 
 # Recursive Circuit
 ```
@@ -55,3 +57,35 @@ batch_size is fixed at 1024.
 | 32 | 15.58 |
 | 64 | 35.16 |
 | 128 | 125.36 |
+
+# E2E
+## Cmd
+```
+file_num=25
+per_file_batch_num=40
+cargo run --release --package zk-por-core --bin bench_prover ${file_num} ${per_file_batch_num}
+```
+
+## Setting
+* batch_size = 1024
+* recursion_factor = 64
+* proving_threads = 4
+* num_accounts = file_num * per_file_batch_num * batch_size
+
+## Test Bench and Date
+* Pingcheng Local Arm Macpro
+* Date: 08/08/2024
+
+## Result
+building circuit: 3min. 
+
+| # of accounts  | Batch Proving Delay | E2E Delay |
+|---|---|---|
+| 10^3 | 1.52s  | 123s|
+| 10^4 | 10s | 121s |
+| 10^5 |104s| 256s| 
+| 10^6 | ||
+
+NOTE:
+* E2E Delay excludes the circuit pre-building time. 
+* Batch proving delay measures the time to prove account batches, without recursive layers. 
