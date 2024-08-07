@@ -1,7 +1,7 @@
 use rayon::prelude::*;
 
-use std::{ str::FromStr, sync::RwLock};
-use tracing::{debug};
+use std::{str::FromStr, sync::RwLock};
+use tracing::debug;
 use zk_por_core::{
     account::Account,
     config::ProverConfig,
@@ -63,11 +63,11 @@ fn main() {
                     chunk.resize(batch_size, Account::get_empty_account(parser.cfg.num_of_tokens));
                 };
                 let mst = MerkleSumTree::new_tree_from_accounts(&chunk.to_vec());
-        
+
                 let global_mst = GLOBAL_MST.get().unwrap();
                 let mut _g = global_mst.write().expect("unable to get a lock");
                 for i in 0..batch_size * 2 - 1 {
-                  _g.set_batch_hash(*chunk_idx, i, mst.merkle_sum_tree[i].hash);
+                    _g.set_batch_hash(*chunk_idx, i, mst.merkle_sum_tree[i].hash);
                 }
                 drop(_g);
             })
