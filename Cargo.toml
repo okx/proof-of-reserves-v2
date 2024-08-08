@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "crates/zk-por-core",
-    "crates/zk-por-api",
+    "crates/zk-por-cli",
     "crates/zk-por-db",
     "crates/zk-por-tracing"
 ]

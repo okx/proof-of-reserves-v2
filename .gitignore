@@ -3,4 +3,6 @@
 target/
 logs/
 plonky2/
+config/local.toml
+test-data/user-data/
 my_permanent_leveldb/
