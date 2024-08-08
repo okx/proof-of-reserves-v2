@@ -13,6 +13,16 @@ exceed the exchange's known liabilities to users, in order to confirm the solven
 OKX's PoR uses zk Merkle Sum Tree technology to allow each user to independently review OKX's digital asset reserve on the
 basis of protecting user privacy. We used plonky2 to build the proofs of users' assets using merkle sum tree; A detailed documentation of the technical solution is to be given separately.
 
+## run
+- gen test data
+```
+python3 scripts/gen_test_data.py 10 2048
+```
+- gen mst
+```
+ENV=local cargo run -p zk-por-core --release --bin gen_mst
+```
+
 ## code coverage
 the code test coverage report is auto generated and hosted at [codecov_report](https://okx.github.io/proof-of-reserves-v2/tarpaulin-report.html) 
 

@@ -2185,7 +2185,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "zk-por-api"
+name = "zk-por-cli"
 version = "0.1.0"
 dependencies = [
  "criterion",

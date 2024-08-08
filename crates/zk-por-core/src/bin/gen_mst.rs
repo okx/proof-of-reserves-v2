@@ -16,8 +16,10 @@ use zk_por_tracing::{init_tracing, TraceConfig};
 /// we also assume the multiple is same for the first n-1 files
 fn main() {
     let cfg = ProverConfig::try_new().unwrap();
+    println!("config: {:?}", cfg);
     let trace_cfg: TraceConfig = cfg.log.into();
-    init_tracing(trace_cfg);
+    println!("trace_cfg: {:?}", trace_cfg);
+    let _g = init_tracing(trace_cfg);
 
     let mut parser = FilesParser::new(FilesCfg {
         dir: std::path::PathBuf::from_str(&cfg.prover.user_data_path).unwrap(),
@@ -73,4 +75,5 @@ fn main() {
             })
             .collect();
     }
+    drop(_g)
 }
