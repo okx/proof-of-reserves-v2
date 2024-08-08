@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, fs::File, io::BufReader};
 
-use super::account::Account;
+use super::account::{Account, gen_accounts_with_random_data};
 use crate::types::F;
 use plonky2_field::types::Field;
 use serde_json::Value;
@@ -16,6 +16,11 @@ pub struct FilesCfg {
     pub dir: PathBuf,
     pub batch_size: usize,
     pub num_of_tokens: usize,
+}
+
+pub trait AccountParser {
+    fn read_n_accounts(&mut self, offset: usize, n: usize) -> Vec<Account>;
+    fn total_num_of_users(&self) -> usize;
 }
 
 #[derive(Debug)]
@@ -97,9 +102,14 @@ impl FilesParser {
         info!("cfg: {:?},\n num_of_files: {:?},\n num_of_batches_per_doc: {:?},\n file_idx: {:?},\n offset: {:?},\n total_num_of_users: {:?},\n total_num_of_batches: {:?}", 
         self.cfg, self.num_of_docs, self.num_of_batches_per_doc, self.file_idx, self.offset, self.total_num_of_users, self.total_num_of_batches);
     }
+}
 
+impl AccountParser for FilesParser {
+    fn total_num_of_users(&self) -> usize {
+        self.total_num_of_users
+    }
     /// `offset` is to the global user vectors;
-    pub fn read_n_accounts(&mut self, offset: usize, n: usize) -> Vec<Account> {
+    fn read_n_accounts(&mut self, offset: usize, n: usize) -> Vec<Account> {
         debug!("read with offset: {:?}, account_num: {:?}", offset, n);
         self.log_state();
         // to make it simpler, we assume only read by a multiple of batch size;
@@ -143,6 +153,8 @@ impl FilesParser {
         }
         result
     }
+
+
 }
 
 fn list_json_files(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
@@ -265,5 +277,30 @@ mod test {
         let id_1 = "47db1d296a7c146eab653591583a9a4873c626d8de47ae11393edd153e40f1ed";
         let account_1 = accounts.get(1).unwrap();
         assert_eq!(id_1, account_1.id);
+    }
+}
+
+pub struct RandomAccountParser {
+    pub total_num_of_users: usize,
+    pub num_of_tokens: usize,
+
+}
+impl RandomAccountParser {
+    pub fn new(total_num_of_users: usize, num_of_tokens : usize)->Self {
+        RandomAccountParser {
+            total_num_of_users: total_num_of_users, 
+            num_of_tokens: num_of_tokens, 
+        }
+    }
+}
+
+impl AccountParser for RandomAccountParser {
+    fn total_num_of_users(&self) -> usize {
+        self.total_num_of_users
+    }
+    /// `offset` is to the global user vectors;
+    fn read_n_accounts(&mut self, offset: usize, n: usize) -> Vec<Account> {
+        let n = std::cmp::min(n, self.total_num_of_users - offset);
+        gen_accounts_with_random_data(n, self.num_of_tokens)
     }
 }

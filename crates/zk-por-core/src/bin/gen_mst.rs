@@ -7,7 +7,7 @@ use zk_por_core::{
     config::ProverConfig,
     global::{GlobalConfig, GlobalMst, GLOBAL_MST},
     merkle_sum_tree::MerkleSumTree,
-    parser::{FilesCfg, FilesParser},
+    parser::{FilesCfg, FilesParser, AccountParser},
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
 
@@ -41,7 +41,7 @@ fn main() {
 
     let batch_size = parser.cfg.batch_size;
 
-    let mut offset = 0;
+    let mut offset: usize = 0;
     while offset < parser.total_num_of_users {
         let num_cpus = num_cpus::get();
         let mut batch_accts = Vec::new();
