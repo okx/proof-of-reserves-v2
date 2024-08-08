@@ -123,12 +123,6 @@ batch_size is fixed at 1024.
 
 # E2E
 ## Cmd
-```
-file_num=25
-per_file_batch_num=40
-cargo run --release --package zk-por-core --bin bench_prover ${file_num} ${per_file_batch_num}
-```
-
 ## Setting
 * batch_size = 1024
 * recursion_factor = 64
