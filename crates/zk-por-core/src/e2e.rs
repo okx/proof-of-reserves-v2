@@ -12,22 +12,20 @@ use crate::{
 
 pub fn batch_prove_accounts<const RECURSION_FACTOR: usize>(
     circuit_registry: &CircuitRegistry<RECURSION_FACTOR>,
-    account_batches: Vec<Vec<Account>>,
+    account_batches: Vec<Account>,
     parallism: usize,
+    batch_size: usize,
 ) -> Vec<ProofWithPublicInputs<F, C, D>> {
     let mut batch_proofs: Vec<ProofWithPublicInputs<F, C, D>> = Vec::new();
     let (batch_circuit, account_targets) = circuit_registry.get_batch_circuit();
 
-    account_batches
-        .into_iter()
-        .chunks(parallism)
-        .into_iter()
-        .map(|chunk| chunk.collect())
-        .for_each(|chunk: Vec<Vec<Account>>| {
+    let _ = account_batches
+        .chunks(parallism * batch_size)
+        .map(|chunk| {
             let proofs: Vec<ProofWithPublicInputs<F, C, D>> = chunk
-                .into_par_iter()
+                .par_chunks(batch_size)
                 .map(|accounts| {
-                    let prover = MerkleSumTreeProver { accounts };
+                    let prover = MerkleSumTreeProver { accounts: accounts.to_owned() };
                     let proof =
                         prover.get_proof_with_circuit_data(account_targets.clone(), &batch_circuit);
                     proof
@@ -35,7 +33,7 @@ pub fn batch_prove_accounts<const RECURSION_FACTOR: usize>(
                 })
                 .collect();
             batch_proofs.extend(proofs.into_iter());
-        });
+        }).collect::<Vec<_>>();
 
     batch_proofs
 }
