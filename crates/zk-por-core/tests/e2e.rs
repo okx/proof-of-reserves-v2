@@ -1,7 +1,6 @@
-use itertools::Itertools;
 use plonky2_field::types::Field;
 use zk_por_core::{
-    account::{gen_accounts_with_random_data, Account},
+    account::gen_accounts_with_random_data,
     circuit_config::STANDARD_CONFIG,
     circuit_registry::registry::CircuitRegistry,
     e2e::{batch_prove_accounts, recursive_prove_subproofs},
@@ -24,11 +23,11 @@ fn test_prove() {
         init_tracing(cfg)
     };
 
-    const RECURSION_FACTOR: usize = 4;
+    const RECURSION_BRANCHOUT_NUM: usize = 4;
     let batch_size = 8;
     let asset_num = 4;
 
-    let circuit_registry = CircuitRegistry::<RECURSION_FACTOR>::init(
+    let circuit_registry = CircuitRegistry::<RECURSION_BRANCHOUT_NUM>::init(
         batch_size,
         asset_num,
         STANDARD_CONFIG,
@@ -53,14 +52,8 @@ fn test_prove() {
             .map(|account| account.debt.iter().map(|e| e.0).sum::<u64>())
             .sum::<u64>();
 
-        let account_batches: Vec<Vec<Account>> = accounts
-            .into_iter()
-            .chunks(batch_size)
-            .into_iter()
-            .map(|chunk| chunk.collect())
-            .collect();
-
-        let proofs = batch_prove_accounts(&circuit_registry, account_batches, proving_thread_num);
+        let proofs =
+            batch_prove_accounts(&circuit_registry, accounts, proving_thread_num, batch_size);
         batch_proofs.extend(proofs.into_iter());
     }
 

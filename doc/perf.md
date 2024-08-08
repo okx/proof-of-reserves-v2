@@ -125,7 +125,7 @@ batch_size is fixed at 1024.
 ## Cmd
 ## Setting
 * batch_size = 1024
-* recursion_factor = 64
+* RECURSION_BRANCHOUT_NUM = 64
 * batch_proving_threads = 4
 * recursive_proving_threads = 2
 * num_accounts = file_num * per_file_batch_num * batch_size
