@@ -274,7 +274,7 @@ mod test {
 
     #[test]
     pub fn test_mock() {
-        use mockall::{*};
+        use mockall::*;
         mock! {
           pub TestFileParser {}
 
