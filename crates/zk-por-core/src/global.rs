@@ -34,7 +34,7 @@ impl GlobalMst {
         self.inner.len()
     }
 
-    fn get_batch_tree_global_index(&self, batch_idx: usize, i: usize) -> usize {
+    pub fn get_batch_tree_global_index(&self, batch_idx: usize, i: usize) -> usize {
         let batch_size = self.cfg.batch_size;
         let tree_depth = log2_strict(batch_size);
         let batch_tree_level = get_node_level(batch_size, i);
@@ -54,7 +54,7 @@ impl GlobalMst {
         index
     }
 
-    fn get_recursive_global_index(&self, recursive_level: u32, index: usize) -> usize {
+    pub fn get_recursive_global_index(&self, recursive_level: u32, index: usize) -> usize {
         let mut recursive_offset = self.cfg.num_of_batches * (2 * self.cfg.batch_size - 1);
         if recursive_level > 1 {
             let numerator = self.cfg.num_of_batches
@@ -62,10 +62,8 @@ impl GlobalMst {
                 / self.cfg.hyper_tree_size;
             let denominator =
                 (self.cfg.hyper_tree_size - 1) * self.cfg.hyper_tree_size.pow(recursive_level - 1);
-            println!("numerator: {:?}, denominator: {:?}", numerator, denominator);
             recursive_offset += numerator.div_ceil(denominator);
         }
-        println!("recursive_offset: {:?}", recursive_offset);
         let global_recursive_index = recursive_offset + index;
         global_recursive_index
     }

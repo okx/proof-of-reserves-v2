@@ -16,7 +16,7 @@ fn main() {
     let accounts = gen_accounts_with_random_data(num_accounts, num_assets);
     let start = std::time::Instant::now();
     let prover = MerkleSumTreeProver { accounts };
-    _ = prover.get_proof_with_circuit_data(account_targets, &circuit_data);
+    _ = prover.get_proof_with_circuit_data(&account_targets, &circuit_data);
 
     println!("prove {} accounts in batch in : {:?}", num_accounts, start.elapsed());
 }
