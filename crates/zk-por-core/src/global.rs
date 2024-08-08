@@ -62,7 +62,6 @@ impl GlobalMst {
                 / self.cfg.hyper_tree_size;
             let denominator =
                 (self.cfg.hyper_tree_size - 1) * self.cfg.hyper_tree_size.pow(recursive_level - 1);
-            println!("numerator: {:?}, denominator: {:?}", numerator, denominator);
             recursive_offset += numerator.div_ceil(denominator);
         }
         let global_recursive_index = recursive_offset + index;
