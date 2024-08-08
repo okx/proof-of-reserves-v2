@@ -16,6 +16,7 @@ use zk_por_tracing::{init_tracing, TraceConfig};
 /// we also assume the multiple is same for the first n-1 files
 fn main() {
     let cfg = ProverConfig::try_new().unwrap();
+    println!("config: {:?}", cfg);
     let trace_cfg: TraceConfig = cfg.log.into();
     init_tracing(trace_cfg);
 
