@@ -7,7 +7,7 @@ use zk_por_core::{
     config::ProverConfig,
     global::{GlobalConfig, GlobalMst, GLOBAL_MST},
     merkle_sum_tree::MerkleSumTree,
-    parser::{FilesCfg, FilesParser, AccountParser},
+    parser::{AccountParser, FilesCfg, FilesParser},
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
 

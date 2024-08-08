@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, fs::File, io::BufReader};
 
-use super::account::{Account, gen_accounts_with_random_data};
+use super::account::{gen_accounts_with_random_data, Account};
 use crate::types::F;
 use plonky2_field::types::Field;
 use serde_json::Value;
@@ -153,8 +153,6 @@ impl AccountParser for FilesParser {
         }
         result
     }
-
-
 }
 
 fn list_json_files(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
@@ -283,14 +281,10 @@ mod test {
 pub struct RandomAccountParser {
     pub total_num_of_users: usize,
     pub num_of_tokens: usize,
-
 }
 impl RandomAccountParser {
-    pub fn new(total_num_of_users: usize, num_of_tokens : usize)->Self {
-        RandomAccountParser {
-            total_num_of_users: total_num_of_users, 
-            num_of_tokens: num_of_tokens, 
-        }
+    pub fn new(total_num_of_users: usize, num_of_tokens: usize) -> Self {
+        RandomAccountParser { total_num_of_users: total_num_of_users, num_of_tokens: num_of_tokens }
     }
 }
 

@@ -54,11 +54,11 @@ fn test_prove() {
             .sum::<u64>();
 
         let account_batches: Vec<Vec<Account>> = accounts
-        .into_iter()
-        .chunks(batch_size)
-        .into_iter()
-        .map(|chunk| chunk.collect())
-        .collect();
+            .into_iter()
+            .chunks(batch_size)
+            .into_iter()
+            .map(|chunk| chunk.collect())
+            .collect();
 
         let proofs = batch_prove_accounts(&circuit_registry, account_batches, proving_thread_num);
         batch_proofs.extend(proofs.into_iter());

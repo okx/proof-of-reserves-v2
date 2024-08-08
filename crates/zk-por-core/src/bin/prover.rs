@@ -1,10 +1,16 @@
-use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
 use itertools::Itertools;
+use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{fs::File, io::Write, path::PathBuf, str::FromStr, env};
+use std::{env, fs::File, io::Write, path::PathBuf, str::FromStr};
 use zk_por_core::{
-    account::Account, circuit_config::{STANDARD_CONFIG, STANDARD_ZK_CONFIG}, circuit_registry::registry::CircuitRegistry, config::ProverConfig, e2e::{batch_prove_accounts, recursive_prove_subproofs}, parser::{self, AccountParser, FilesCfg, FilesParser}, types::{C, D, F}
+    account::Account,
+    circuit_config::{STANDARD_CONFIG, STANDARD_ZK_CONFIG},
+    circuit_registry::registry::CircuitRegistry,
+    config::ProverConfig,
+    e2e::{batch_prove_accounts, recursive_prove_subproofs},
+    parser::{self, AccountParser, FilesCfg, FilesParser},
+    types::{C, D, F},
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
 
@@ -33,15 +39,17 @@ fn main() {
     // the path to dump the final generated proof
     let mut bench_mode = true;
     let args: Vec<String> = env::args().collect();
-    let arg1 = args.get(1)
-        .expect("Please provide the first argument, either proof path or '--bench' for benchmark mode");
-    let mut account_reader : Box<dyn AccountParser>;
+    let arg1 = args.get(1).expect(
+        "Please provide the first argument, either proof path or '--bench' for benchmark mode",
+    );
+    let mut account_reader: Box<dyn AccountParser>;
     if arg1 == "--bench" {
         bench_mode = true;
-        let account_num = args.get(2)
-        .expect("Please provide the account number as the second argument in benchmark mode")
-        .parse::<usize>()
-        .expect("The provided account number must be a valid usize");
+        let account_num = args
+            .get(2)
+            .expect("Please provide the account number as the second argument in benchmark mode")
+            .parse::<usize>()
+            .expect("The provided account number must be a valid usize");
 
         if account_num % batch_size != 0 {
             panic!("The account number must be a multiple of batch size");
@@ -54,7 +62,7 @@ fn main() {
             num_of_tokens: cfg.prover.num_of_tokens,
         });
         parser.log_state();
-       account_reader = Box::new(parser); 
+        account_reader = Box::new(parser);
     }
 
     // Hardcode three levels of recursive circuits, each branching out 64 children, with the last level with zk enabled.
@@ -68,7 +76,12 @@ fn main() {
         recursive_circuit_configs,
     );
 
-    tracing::info!("start to prove {} accounts with {} tokens, {} batch size", account_reader.total_num_of_users(), asset_num, batch_size);
+    tracing::info!(
+        "start to prove {} accounts with {} tokens, {} batch size",
+        account_reader.total_num_of_users(),
+        asset_num,
+        batch_size
+    );
 
     let start = std::time::Instant::now();
     let mut offset = 0;
@@ -95,17 +108,33 @@ fn main() {
             account_batches.len(),
         );
 
-        let proofs = batch_prove_accounts(&circuit_registry, account_batches, BATCH_PROVING_THREADS_NUM);
+        let proofs =
+            batch_prove_accounts(&circuit_registry, account_batches, BATCH_PROVING_THREADS_NUM);
         offset += batch_size;
         batch_proofs.extend(proofs.into_iter());
-        tracing::info!("finish {} batches in {} parse, since start {:?}", batch_proofs.len(), parse_num, start.elapsed());
+        tracing::info!(
+            "finish {} batches in {} parse, since start {:?}",
+            batch_proofs.len(),
+            parse_num,
+            start.elapsed()
+        );
     }
 
-    tracing::info!("finish batch proving {} accounts, generating {} proofs in {:?}", account_reader.total_num_of_users(), batch_proofs.len(), start.elapsed());
+    tracing::info!(
+        "finish batch proving {} accounts, generating {} proofs in {:?}",
+        account_reader.total_num_of_users(),
+        batch_proofs.len(),
+        start.elapsed()
+    );
 
-    let batch_proof_num = batch_proofs.len();  
-    let root_proof = recursive_prove_subproofs(batch_proofs, &circuit_registry, RECURSIVE_PROVING_THREADS_NUM);
-    tracing::info!("finish recursive proving {} subproofs in {:?}", batch_proof_num, start.elapsed());
+    let batch_proof_num = batch_proofs.len();
+    let root_proof =
+        recursive_prove_subproofs(batch_proofs, &circuit_registry, RECURSIVE_PROVING_THREADS_NUM);
+    tracing::info!(
+        "finish recursive proving {} subproofs in {:?}",
+        batch_proof_num,
+        start.elapsed()
+    );
 
     let root_circuit_digest = circuit_registry.get_root_circuit().verifier_only.circuit_digest;
 

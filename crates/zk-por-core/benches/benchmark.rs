@@ -1,6 +1,5 @@
 use criterion::{
-    criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion,
-    SamplingMode,
+    criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion, SamplingMode,
 };
 use zk_por_core::{
     account::gen_accounts_with_random_data,
@@ -13,17 +12,21 @@ use zk_por_core::{
 };
 
 use plonky2::plonk::proof::ProofWithPublicInputs;
-use rayon::iter::IntoParallelIterator;
-use rayon::iter::ParallelIterator;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 /// Benchmark the batch proving of the accounts. There are {parallism} threads, each thread proving the batch_size accounts.
-pub fn bench_batch_circuit(c: &mut BenchmarkGroup<WallTime>, batch_size: usize, num_assets: usize, parallism: usize) {
+pub fn bench_batch_circuit(
+    c: &mut BenchmarkGroup<WallTime>,
+    batch_size: usize,
+    num_assets: usize,
+    parallism: usize,
+) {
     let accounts = gen_accounts_with_random_data(batch_size, num_assets);
-    let bench_id = format!("batch_circuit_{}_asset_num_{}_parallism_{}", batch_size, num_assets, parallism);
+    let bench_id =
+        format!("batch_circuit_{}_asset_num_{}_parallism_{}", batch_size, num_assets, parallism);
     let (circuit_data, account_targets) =
         build_merkle_sum_tree_circuit(batch_size, num_assets, STANDARD_CONFIG);
     c.bench_function(bench_id.as_str(), |b| {
-
         b.iter(|| {
             (0..parallism).into_par_iter().for_each(|_| {
                 let prover = MerkleSumTreeProver { accounts: accounts.clone() };
@@ -67,7 +70,10 @@ pub fn batch_circuit_for_parallism(c: &mut Criterion) {
     group.finish();
 }
 
-pub fn bench_recursive_circuit<const SUBPROOF_NUM: usize>(g: &mut BenchmarkGroup<WallTime>, parallism : usize) {
+pub fn bench_recursive_circuit<const SUBPROOF_NUM: usize>(
+    g: &mut BenchmarkGroup<WallTime>,
+    parallism: usize,
+) {
     let batch_size = 1024;
     let asset_num = 4;
     let (merkle_sum_circuit, account_targets) =
@@ -96,7 +102,7 @@ pub fn bench_recursive_circuit<const SUBPROOF_NUM: usize>(g: &mut BenchmarkGroup
                 };
                 recursive_prover
                     .get_proof_with_circuit_data(recursive_targets.clone(), &recursive_circuit);
-                });
+            });
         })
     });
 }
@@ -124,5 +130,12 @@ pub fn recursive_circuit_for_parallism(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, batch_circuit_for_asset_num, batch_circuit_for_batch_size, batch_circuit_for_parallism, recursive_circuit_for_branchout, recursive_circuit_for_parallism);
+criterion_group!(
+    benches,
+    batch_circuit_for_asset_num,
+    batch_circuit_for_batch_size,
+    batch_circuit_for_parallism,
+    recursive_circuit_for_branchout,
+    recursive_circuit_for_parallism
+);
 criterion_main!(benches);
