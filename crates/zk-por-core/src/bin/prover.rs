@@ -90,26 +90,19 @@ fn main() {
     let mut batch_proofs = vec![];
     while offset < account_reader.total_num_of_users() {
         parse_num += 1;
-        let accounts = account_reader.read_n_accounts(offset, per_parse_account_num);
+        let accounts: Vec<Account> = account_reader.read_n_accounts(offset, per_parse_account_num);
         let account_num = accounts.len();
         assert_eq!(account_num % batch_size, 0);
-
-        let account_batches: Vec<Vec<Account>> = accounts
-            .into_iter()
-            .chunks(batch_size)
-            .into_iter()
-            .map(|chunk| chunk.collect())
-            .collect();
 
         tracing::info!(
             "parse {} times, with number of accounts {}, number of batches {}",
             parse_num,
             account_num,
-            account_batches.len(),
+            10,
         );
 
         let proofs =
-            batch_prove_accounts(&circuit_registry, account_batches, BATCH_PROVING_THREADS_NUM);
+            batch_prove_accounts(&circuit_registry, accounts, BATCH_PROVING_THREADS_NUM, batch_size);
         offset += batch_size;
         batch_proofs.extend(proofs.into_iter());
         tracing::info!(
