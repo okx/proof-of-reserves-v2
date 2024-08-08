@@ -274,7 +274,7 @@ mod test {
 
     #[test]
     pub fn test_mock() {
-        use mockall::{predicate::*, *};
+        use mockall::{*};
         mock! {
           pub TestFileParser {}
 
@@ -289,6 +289,6 @@ mod test {
             accounts
         });
         let ret = mock.read_n_accounts(0, 2);
-        println!("ret: {:?}", ret);
+        assert_eq!(ret.len(), 2);
     }
 }
