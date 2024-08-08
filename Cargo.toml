@@ -46,6 +46,7 @@ thiserror = "1.0"
 tracing = "0.1"
 opentelemetry = { version = "0.17", features = ["serialize"]}
 num_cpus = "1.15"
+mockall = "0.13.0"
 
 [profile.dev]
 opt-level = 0

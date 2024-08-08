@@ -32,6 +32,10 @@ pub struct FilesParser {
     docs: Vec<PathBuf>,
 }
 
+pub trait AccountReader {
+    fn read_n_accounts(&mut self, offset: usize, n: usize) -> Vec<Account>;
+}
+
 impl FilesParser {
     pub fn new(cfg: FilesCfg) -> Self {
         let mut parser = Self {
@@ -97,9 +101,11 @@ impl FilesParser {
         info!("cfg: {:?},\n num_of_files: {:?},\n num_of_batches_per_doc: {:?},\n file_idx: {:?},\n offset: {:?},\n total_num_of_users: {:?},\n total_num_of_batches: {:?}", 
         self.cfg, self.num_of_docs, self.num_of_batches_per_doc, self.file_idx, self.offset, self.total_num_of_users, self.total_num_of_batches);
     }
+}
 
+impl AccountReader for FilesParser {
     /// `offset` is to the global user vectors;
-    pub fn read_n_accounts(&mut self, offset: usize, n: usize) -> Vec<Account> {
+    fn read_n_accounts(&mut self, offset: usize, n: usize) -> Vec<Account> {
         debug!("read with offset: {:?}, account_num: {:?}", offset, n);
         self.log_state();
         // to make it simpler, we assume only read by a multiple of batch size;
@@ -144,7 +150,6 @@ impl FilesParser {
         result
     }
 }
-
 fn list_json_files(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
     let mut json_files = Vec::new();
     if dir.is_dir() {
@@ -220,9 +225,9 @@ fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>) -> Vec<Accou
 #[cfg(test)]
 mod test {
 
-    use crate::parser::read_json_into_accounts_vec;
+    use crate::{account::Account, parser::read_json_into_accounts_vec};
 
-    use super::{parse_exchange_state, read_json_file_into_map};
+    use super::{parse_exchange_state, read_json_file_into_map, AccountReader};
 
     #[test]
     pub fn test_read_json_file_into_map() {
@@ -265,5 +270,25 @@ mod test {
         let id_1 = "47db1d296a7c146eab653591583a9a4873c626d8de47ae11393edd153e40f1ed";
         let account_1 = accounts.get(1).unwrap();
         assert_eq!(id_1, account_1.id);
+    }
+
+    #[test]
+    pub fn test_mock() {
+        use mockall::{predicate::*, *};
+        mock! {
+          pub TestFileParser {}
+
+          impl AccountReader for TestFileParser {
+              fn read_n_accounts(&mut self, offset: usize, n: usize) -> Vec<Account>;
+          }
+        }
+
+        let mut mock = MockTestFileParser::new();
+        mock.expect_read_n_accounts().returning(|_, n| {
+            let accounts = vec![Account::get_empty_account(20); n];
+            accounts
+        });
+        let ret = mock.read_n_accounts(0, 2);
+        println!("ret: {:?}", ret);
     }
 }
