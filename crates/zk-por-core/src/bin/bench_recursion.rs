@@ -23,7 +23,8 @@ fn main() {
     let accounts = gen_accounts_with_random_data(batch_size, asset_num);
     let prover = MerkleSumTreeProver { accounts };
 
-    let merkle_sum_proof = prover.get_proof_with_circuit_data(&account_targets, &merkle_sum_circuit);
+    let merkle_sum_proof =
+        prover.get_proof_with_circuit_data(&account_targets, &merkle_sum_circuit);
     println!("prove merkle sum tree");
 
     let (recursive_circuit, recursive_targets) = build_recursive_n_circuit::<C, SUBPROOF_NUM>(
