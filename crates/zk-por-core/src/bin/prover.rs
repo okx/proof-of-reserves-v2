@@ -106,7 +106,7 @@ fn main() {
             "parse {} times, with number of accounts {}, number of batches {}",
             parse_num,
             account_num,
-            10,
+            account_num / batch_size
         );
 
         let proofs = batch_prove_accounts(
