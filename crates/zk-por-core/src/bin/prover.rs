@@ -115,7 +115,7 @@ fn main() {
             BATCH_PROVING_THREADS_NUM,
             batch_size,
         );
-        offset += batch_size;
+        offset += per_parse_account_num;
         batch_proofs.extend(proofs.into_iter());
         tracing::info!(
             "finish {} batches in {} parse, since start {:?}",
