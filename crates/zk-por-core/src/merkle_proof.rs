@@ -102,24 +102,38 @@ pub mod test{
     pub fn test_get_siblings_index(){
         let gmst = GlobalMst::new(GlobalConfig {
             num_of_tokens: 100,
-            num_of_batches: 64,
-            batch_size: 4,
+            num_of_batches: 4,
+            batch_size: 8,
             hyper_tree_size: 4,
         });
 
 
-        let global_index = 173;
+        let global_index = 0;
 
 
         let siblings = get_mst_siblings_index( global_index, &gmst);
-        println!("{:?}", siblings);
+        assert_eq!(siblings, vec![1, 33, 49]);
+
+        let gmst = GlobalMst::new(GlobalConfig {
+            num_of_tokens: 100,
+            num_of_batches: 8,
+            batch_size: 8,
+            hyper_tree_size: 4,
+        });
+
+
+        let global_index = 0;
+
+
+        let siblings = get_mst_siblings_index( global_index, &gmst);
+        assert_eq!(siblings, vec![1, 65, 97]);
     }
 
     #[test]
     pub fn test_get_recursive_siblings_index(){
         let gmst = GlobalMst::new(GlobalConfig {
             num_of_tokens: 100,
-            num_of_batches: 64,
+            num_of_batches: 16,
             batch_size: 4,
             hyper_tree_size: 4,
         });
@@ -128,6 +142,6 @@ pub mod test{
 
 
         let siblings = get_recursive_siblings_index( global_index, &gmst);
-        println!("{:?}", siblings);
+        assert_eq!(siblings, vec![vec![97, 98, 99], vec![113, 114, 115]]);
     }
 }
