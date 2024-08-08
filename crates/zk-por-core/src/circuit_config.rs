@@ -40,7 +40,7 @@ pub const HIGH_RATE_CONFIG: CircuitConfig = CircuitConfig {
     },
 };
 
-pub const RECURSIVE_FACTOR: usize = 64;
+pub const RECURSION_BRANCHOUT_NUM: usize = 64;
 pub const BATCH_SIZE: usize = 1024;
 pub const ASSET_NUM: usize = 4;
 

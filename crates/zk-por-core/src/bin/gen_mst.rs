@@ -32,7 +32,7 @@ fn main() {
         num_of_tokens: cfg.prover.num_of_tokens,
         num_of_batches: parser.total_num_of_batches,
         batch_size: parser.cfg.batch_size,
-        hyper_tree_size: cfg.prover.hyper_tree_size,
+        recursion_branchout_num: cfg.prover.recursion_branchout_num,
     })));
     match ret {
         Ok(_) => (),

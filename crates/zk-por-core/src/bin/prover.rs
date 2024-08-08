@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -24,14 +23,14 @@ struct Proof {
 fn main() {
     let cfg = ProverConfig::try_new().unwrap();
     let trace_cfg: TraceConfig = cfg.log.into();
-    init_tracing(trace_cfg);
+    let _g = init_tracing(trace_cfg);
 
-    const RECURSION_FACTOR: usize = 64;
+    const RECURSION_BRANCHOUT_NUM: usize = 64;
     const BATCH_PROVING_THREADS_NUM: usize = 4;
     const RECURSIVE_PROVING_THREADS_NUM: usize = 2;
 
-    if cfg.prover.hyper_tree_size as usize != RECURSION_FACTOR {
-        panic!("The hyper_tree_size is not configured to be equal to 64 (Recursion_Factor)");
+    if cfg.prover.recursion_branchout_num as usize != RECURSION_BRANCHOUT_NUM {
+        panic!("The recursion_branchout_num is not configured to be equal to 64");
     }
     let batch_size = cfg.prover.batch_size as usize;
     let asset_num = cfg.prover.num_of_tokens as usize;
@@ -65,11 +64,11 @@ fn main() {
         account_reader = Box::new(parser);
     }
 
-    // Hardcode three levels of recursive circuits, each branching out 64 children, with the last level with zk enabled.
+    // TODO: tmp hardcode three levels of recursive circuits, each branching out 64 children, with the last level with zk enabled.
     // Hence given batch_size=1024, the current setting can support 268M (1024*64^3) accounts, enough for the foreseeable future. (Currently we have 10M accounts)
     let recursive_circuit_configs = vec![STANDARD_CONFIG, STANDARD_CONFIG, STANDARD_ZK_CONFIG];
 
-    let circuit_registry = CircuitRegistry::<RECURSION_FACTOR>::init(
+    let circuit_registry = CircuitRegistry::<RECURSION_BRANCHOUT_NUM>::init(
         batch_size,
         asset_num,
         STANDARD_CONFIG,
@@ -85,13 +84,22 @@ fn main() {
 
     let start = std::time::Instant::now();
     let mut offset = 0;
-    let per_parse_account_num = 10 * batch_size;
+    let num_cpus = num_cpus::get();
+    let per_parse_account_num = num_cpus * batch_size; // as we use one thread to prove each batch, we load num_cpus batches to increase the parallelism.
+
     let mut parse_num = 0;
     let mut batch_proofs = vec![];
     while offset < account_reader.total_num_of_users() {
         parse_num += 1;
-        let accounts: Vec<Account> = account_reader.read_n_accounts(offset, per_parse_account_num);
+        let mut accounts: Vec<Account> =
+            account_reader.read_n_accounts(offset, per_parse_account_num);
         let account_num = accounts.len();
+        if account_num % batch_size != 0 {
+            let pad_num = batch_size - account_num % batch_size;
+            tracing::info!("in {} parse, account number {} is not a multiple of batch size {}, hence padding {} empty accounts", parse_num, account_num, batch_size,pad_num);
+            accounts.resize(account_num + pad_num, Account::get_empty_account(asset_num));
+        }
+
         assert_eq!(account_num % batch_size, 0);
 
         tracing::info!(
@@ -101,8 +109,12 @@ fn main() {
             10,
         );
 
-        let proofs =
-            batch_prove_accounts(&circuit_registry, accounts, BATCH_PROVING_THREADS_NUM, batch_size);
+        let proofs = batch_prove_accounts(
+            &circuit_registry,
+            accounts,
+            BATCH_PROVING_THREADS_NUM,
+            batch_size,
+        );
         offset += batch_size;
         batch_proofs.extend(proofs.into_iter());
         tracing::info!(

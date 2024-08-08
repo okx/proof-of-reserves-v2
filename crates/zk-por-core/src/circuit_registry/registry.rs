@@ -8,7 +8,7 @@ use plonky2::{
 
 use crate::{
     account::gen_empty_accounts,
-    // circuit_config::{BATCH_SIZE, RECURSIVE_FACTOR, ASSET_NUM},
+    // circuit_config::{BATCH_SIZE, RECURSION_BRANCHOUT_NUM, ASSET_NUM},
     merkle_sum_prover::{
         circuits::{
             account_circuit::AccountTargets, merkle_sum_circuit::build_merkle_sum_tree_circuit,
@@ -23,17 +23,17 @@ use crate::{
 use std::collections::HashMap;
 
 #[allow(clippy::type_complexity)]
-pub struct CircuitRegistry<const RECURSIVE_FACTOR: usize> {
+pub struct CircuitRegistry<const RECURSION_BRANCHOUT_NUM: usize> {
     batch_circuit: (CircuitData<F, C, D>, Vec<AccountTargets>),
     // inner_vd => the verification circuit that verify the inner circuit
-    recurisve_circuits:
-        HashMap<HashOut<F>, (CircuitData<F, C, D>, RecursiveTargets<RECURSIVE_FACTOR>)>,
+    recursive_circuits:
+        HashMap<HashOut<F>, (CircuitData<F, C, D>, RecursiveTargets<RECURSION_BRANCHOUT_NUM>)>,
     // circuit_vd -> empty proof
     empty_proofs: HashMap<HashOut<F>, ProofWithPublicInputs<F, C, D>>,
     last_inner_circuit_vd: HashOut<F>,
 }
 
-impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
+impl<const RECURSION_BRANCHOUT_NUM: usize> CircuitRegistry<RECURSION_BRANCHOUT_NUM> {
     pub fn init(
         batch_size: usize,
         asset_num: usize,
@@ -75,7 +75,7 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
         for (level, circuit_config) in recursive_level_configs.into_iter().enumerate() {
             let start = std::time::Instant::now();
             let (recursive_circuit, recursive_targets) =
-                build_recursive_n_circuit::<C, RECURSIVE_FACTOR>(
+                build_recursive_n_circuit::<C, RECURSION_BRANCHOUT_NUM>(
                     &last_circuit_data.common,
                     &last_circuit_data.verifier_only,
                     circuit_config,
@@ -86,7 +86,7 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
                 start.elapsed(),
                 recursive_circuit.verifier_only.circuit_digest
             );
-            let sub_proofs: [ProofWithPublicInputs<F, C, D>; RECURSIVE_FACTOR] =
+            let sub_proofs: [ProofWithPublicInputs<F, C, D>; RECURSION_BRANCHOUT_NUM] =
                 std::array::from_fn(|_| last_empty_proof.clone());
             let start = std::time::Instant::now();
             let recursive_prover = RecursiveProver {
@@ -121,7 +121,7 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
         Self {
             batch_circuit: (batch_circuit_data, account_targets),
             empty_proofs: empty_proofs,
-            recurisve_circuits: recursive_circuits,
+            recursive_circuits: recursive_circuits,
             last_inner_circuit_vd: last_circuit_vd,
         }
     }
@@ -142,16 +142,16 @@ impl<const RECURSIVE_FACTOR: usize> CircuitRegistry<RECURSIVE_FACTOR> {
     pub fn get_recursive_circuit(
         &self,
         inner_circuit_vd: &HashOut<F>,
-    ) -> Option<(&CircuitData<F, C, D>, &RecursiveTargets<RECURSIVE_FACTOR>)> {
-        let circuit_and_targets = self.recurisve_circuits.get(inner_circuit_vd)?;
+    ) -> Option<(&CircuitData<F, C, D>, &RecursiveTargets<RECURSION_BRANCHOUT_NUM>)> {
+        let circuit_and_targets = self.recursive_circuits.get(inner_circuit_vd)?;
         Some((&circuit_and_targets.0, &circuit_and_targets.1))
     }
 
     pub fn get_recursive_levels(&self) -> usize {
-        self.recurisve_circuits.len()
+        self.recursive_circuits.len()
     }
 
     pub fn get_root_circuit(&self) -> &CircuitData<F, C, D> {
-        &self.recurisve_circuits[&self.last_inner_circuit_vd].0
+        &self.recursive_circuits[&self.last_inner_circuit_vd].0
     }
 }
