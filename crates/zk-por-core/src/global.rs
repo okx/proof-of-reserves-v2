@@ -106,7 +106,6 @@ mod test {
 
     #[test]
     fn test_global_mst() {
-        println!("new gmst");
         let gmst = GlobalMst::new(super::GlobalConfig {
             num_of_tokens: 22,
             num_of_batches: 6,
