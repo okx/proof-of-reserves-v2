@@ -224,7 +224,11 @@ fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>) -> Vec<Accou
         }
         // todo:: currently, we fill debt all to zero
         let asset_len = inner_vec.len();
-        accounts_data.push(Account { id: account_id.into(), equity: inner_vec, debt: vec![F::ZERO; asset_len] });
+        accounts_data.push(Account {
+            id: account_id.into(),
+            equity: inner_vec,
+            debt: vec![F::ZERO; asset_len],
+        });
     }
     accounts_data
 }
