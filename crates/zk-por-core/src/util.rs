@@ -8,10 +8,23 @@ pub fn get_recursive_hash_nums(num_of_batches: usize, hyper_tree_leaf_size: usiz
     let mut next = num_of_batches.div_ceil(hyper_tree_leaf_size);
     let mut num_of_hashes = 0;
     while next > 1 {
-        num_of_hashes += next;
+        
         next = next.div_ceil(hyper_tree_leaf_size);
+        num_of_hashes += next*hyper_tree_leaf_size;
     }
     num_of_hashes + 1
+}
+
+pub fn pad_to_multiple_of(n: usize, multiple: usize) -> usize {
+    if multiple == 0 {
+        return n; // Avoid division by zero
+    }
+    let remainder = n % multiple;
+    if remainder == 0 {
+        n
+    } else {
+        n + multiple - remainder
+    }
 }
 
 /// node level is the level from tree root; the root node has level of 0;
@@ -25,12 +38,14 @@ pub fn get_node_level(batch_size: usize, node_idx: usize) -> usize {
 pub mod test_util {
     use crate::util::{get_node_level, get_recursive_hash_nums};
 
+    use super::pad_to_multiple_of;
+
     #[test]
     fn test_get_recursive_hash_nums() {
         assert_eq!(get_recursive_hash_nums(2, 4), 1);
         assert_eq!(get_recursive_hash_nums(4, 4), 1);
-        assert_eq!(get_recursive_hash_nums(6, 4), 3);
-        assert_eq!(get_recursive_hash_nums(100, 4), 35);
+        assert_eq!(get_recursive_hash_nums(6, 4), 5);
+        assert_eq!(get_recursive_hash_nums(100, 4), 41);
     }
     #[test]
     fn test_get_node_level() {
@@ -41,5 +56,12 @@ pub mod test_util {
         assert_eq!(get_node_level(8, 0), 3);
         assert_eq!(get_node_level(8, 4), 3);
         assert_eq!(get_node_level(8, 7), 3);
+    }
+
+    #[test]
+    fn test_pad_to_multiple_of() {
+        assert_eq!(pad_to_multiple_of(23, 4), 24);
+        assert_eq!(pad_to_multiple_of(24, 4), 24);
+        assert_eq!(pad_to_multiple_of(27, 4), 28);
     }
 }

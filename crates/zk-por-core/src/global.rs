@@ -1,6 +1,6 @@
 use crate::{
     types::F,
-    util::{get_node_level, get_recursive_hash_nums},
+    util::{get_node_level, get_recursive_hash_nums, pad_to_multiple_of},
 };
 use once_cell::sync::OnceCell;
 use plonky2::{hash::hash_types::HashOut, util::log2_strict};
@@ -56,14 +56,19 @@ impl GlobalMst {
 
     pub fn get_recursive_global_index(&self, recursive_level: u32, index: usize) -> usize {
         let mut recursive_offset = self.cfg.num_of_batches * (2 * self.cfg.batch_size - 1);
-        if recursive_level > 1 {
-            let numerator = self.cfg.num_of_batches
-                * (self.cfg.hyper_tree_size.pow(recursive_level) - self.cfg.hyper_tree_size)
-                / self.cfg.hyper_tree_size;
-            let denominator =
-                (self.cfg.hyper_tree_size - 1) * self.cfg.hyper_tree_size.pow(recursive_level - 1);
-            recursive_offset += numerator.div_ceil(denominator);
+        let mut num = pad_to_multiple_of(self.cfg.num_of_batches, self.cfg.hyper_tree_size);
+        recursive_offset+= num-self.cfg.num_of_batches;
+
+        let mut level = recursive_level;
+        while level > 1 {
+            let branch = num/self.cfg.hyper_tree_size;
+            recursive_offset += branch;
+
+            num = num/self.cfg.hyper_tree_size;
+            recursive_offset += num;
+            level -=1;
         }
+
         let global_recursive_index = recursive_offset + index;
         global_recursive_index
     }
@@ -101,6 +106,7 @@ mod test {
 
     #[test]
     fn test_global_mst() {
+        println!("new gmst");
         let gmst = GlobalMst::new(super::GlobalConfig {
             num_of_tokens: 22,
             num_of_batches: 6,
@@ -108,7 +114,7 @@ mod test {
             hyper_tree_size: 4,
         });
         let total_len = gmst.get_tree_length();
-        assert_eq!(total_len, 93);
+        assert_eq!(total_len, 95);
 
         assert_eq!(gmst.get_batch_tree_global_index(0, 1), 1);
         assert_eq!(gmst.get_batch_tree_global_index(0, 14), 84);
@@ -117,8 +123,10 @@ mod test {
         assert_eq!(gmst.get_batch_tree_global_index(5, 7), 47);
         assert_eq!(gmst.get_batch_tree_global_index(5, 14), 89);
 
-        assert_eq!(gmst.get_recursive_global_index(1, 0), 90);
-        assert_eq!(gmst.get_recursive_global_index(1, 1), 91);
-        assert_eq!(gmst.get_recursive_global_index(2, 0), 92);
+        assert_eq!(gmst.get_recursive_global_index(1, 0), 92);
+        assert_eq!(gmst.get_recursive_global_index(1, 1), 93);
+        assert_eq!(gmst.get_recursive_global_index(1, 2), 94);
+        assert_eq!(gmst.get_recursive_global_index(1, 3), 95);
+        assert_eq!(gmst.get_recursive_global_index(2, 0), 96);
     }
 }
