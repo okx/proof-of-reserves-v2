@@ -233,6 +233,8 @@ fn main() {
         start.elapsed()
     );
 
+    assert!(!GLOBAL_MST.get().unwrap().read().unwrap().any_empty_node());
+
     let root_circuit_digest = circuit_registry.get_root_circuit().verifier_only.circuit_digest;
 
     let proof = Proof {

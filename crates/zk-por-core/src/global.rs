@@ -38,6 +38,10 @@ impl GlobalMst {
         mst
     }
 
+    pub fn any_empty_node(&self) -> bool {
+        self.inner.iter().any(|x| *x == HashOut::default())
+    }
+
     #[allow(dead_code)]
     fn get_tree_length(&self) -> usize {
         self.inner.len()
