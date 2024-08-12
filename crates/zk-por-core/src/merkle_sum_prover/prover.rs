@@ -1,48 +1,54 @@
 use crate::{
     account::Account,
     circuit_config::STANDARD_CONFIG,
-    merkle_sum_prover::circuits::{
-        account_circuit::{AccountSumTargets, AccountTargets},
-        merkle_sum_circuit::build_merkle_sum_tree_from_account_targets,
-    },
+    circuit_utils::prove_timing,
+    merkle_sum_prover::circuits::account_circuit::{AccountSumTargets, AccountTargets},
     types::{C, D, F},
 };
-use log::Level;
 use plonky2::{
     iop::witness::PartialWitness,
     plonk::{
         circuit_builder::CircuitBuilder, circuit_data::CircuitData, proof::ProofWithPublicInputs,
         prover::prove,
     },
-    util::timing::TimingTree,
 };
-use plonky2_field::goldilocks_field::GoldilocksField;
-use tracing::error;
+
+use tracing::{error, info};
+
+use super::circuits::merkle_sum_circuit::MerkleSumTreeTarget;
 
 /// A merkle sum tree prover with a batch id representing its index in the recursive proof tree and a Vec of accounts representing accounts in this batch.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct MerkleSumTreeProver {
     // batch_id: usize,
     pub accounts: Vec<Account>,
 }
 
 impl MerkleSumTreeProver {
-    /// Build the merkle sum tree targets and set the account targets with the account info.
-    pub fn build_and_set_merkle_tree_targets(
+    /// Sets provided account targets with values from accounts in the prover batch.
+    pub fn set_merkle_tree_targets(
+        &self,
+        pw: &mut PartialWitness<F>,
+        account_targets: &[AccountTargets],
+    ) {
+        for i in 0..self.accounts.len() {
+            // Set account targets
+            account_targets.get(i).unwrap().set_account_targets(self.accounts.get(i).unwrap(), pw);
+        }
+    }
+
+    /// Builds a merkle sum tree targets and returns the account targets to be set with input values.
+    pub fn build_merkle_tree_targets(
         &self,
         builder: &mut CircuitBuilder<F, D>,
-        pw: &mut PartialWitness<F>,
-    ) {
+    ) -> Vec<AccountTargets> {
         let mut account_targets: Vec<AccountTargets> = Vec::new();
 
         for i in 0..self.accounts.len() {
-            let equity_targets =
-                builder.add_virtual_targets(self.accounts.get(i).unwrap().equity.len());
-            let debt_targets =
-                builder.add_virtual_targets(self.accounts.get(i).unwrap().debt.len());
-            let account_target = AccountTargets { equity: equity_targets, debt: debt_targets };
-
-            account_target.set_account_targets(self.accounts.get(i).unwrap(), pw);
+            // Build account targets
+            let account_target =
+                AccountTargets::new_from_account(self.accounts.get(i).unwrap(), builder);
+            // Set account targets
             account_targets.push(account_target);
         }
 
@@ -51,35 +57,115 @@ impl MerkleSumTreeProver {
             .map(|x| AccountSumTargets::from_account_target(x, builder))
             .collect();
 
+        // build merkle sum tree
         let _merkle_tree_targets =
-            build_merkle_sum_tree_from_account_targets(builder, &mut account_sum_targets);
+            MerkleSumTreeTarget::build_new_from_account_targets(builder, &mut account_sum_targets);
+
+        account_targets
     }
 
     /// Get the merkle sum tree proof of this batch of accounts.
     pub fn get_proof(&self) -> ProofWithPublicInputs<F, C, D> {
         let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
-        let mut pw = PartialWitness::<GoldilocksField>::new();
+        let mut pw = PartialWitness::<F>::new();
 
-        self.build_and_set_merkle_tree_targets(&mut builder, &mut pw);
+        // Build and set merkle tree targets
+        let account_targets = self.build_merkle_tree_targets(&mut builder);
+        self.set_merkle_tree_targets(&mut pw, &account_targets);
 
         builder.print_gate_counts(0);
 
-        let mut timing = TimingTree::new("prove", Level::Debug);
+        let mut t = prove_timing();
         let data = builder.build::<C>();
 
         let CircuitData { prover_only, common, verifier_only: _ } = &data;
 
-        println!("Started Proving");
+        info!("Started Proving");
 
-        let proof_res = prove(&prover_only, &common, pw.clone(), &mut timing);
+        let proof_res = prove(prover_only, common, pw, &mut t);
 
         match proof_res {
             Ok(proof) => {
-                println!("Finished Proving");
-
                 let proof_verification_res = data.verify(proof.clone());
                 match proof_verification_res {
                     Ok(_) => proof,
+                    Err(e) => {
+                        error!("Proof verification failed: {:?}", e);
+                        panic!("Proof verification failed!");
+                    }
+                }
+            }
+            Err(e) => {
+                error!("Proof generation failed: {:?}", e);
+                panic!("Proof generation failed!");
+            }
+        }
+    }
+
+    /// Get proof with a pre-compiled merkle sum circuit and account targets. In this method we do not need to build the circuit as we use a pre-built circuit.
+    pub fn get_proof_with_circuit_data(
+        &self,
+        account_targets: Vec<AccountTargets>,
+        circuit_data: &CircuitData<F, C, D>,
+    ) -> ProofWithPublicInputs<F, C, D> {
+        let mut pw = PartialWitness::<F>::new();
+        for i in 0..self.accounts.len() {
+            // Build account targets
+            let account_target = account_targets.get(i).unwrap();
+            // Set account targets
+            account_target.set_account_targets(self.accounts.get(i).unwrap(), &mut pw);
+        }
+
+        let CircuitData { prover_only, common, verifier_only: _ } = &circuit_data;
+
+        let mut t = prove_timing();
+        let proof_res = prove(prover_only, common, pw, &mut t);
+
+        match proof_res {
+            Ok(proof) => {
+                let proof_verification_res = circuit_data.verify(proof.clone());
+                match proof_verification_res {
+                    Ok(_) => proof,
+                    Err(e) => {
+                        error!("Proof verification failed: {:?}", e);
+                        panic!("Proof verification failed!");
+                    }
+                }
+            }
+            Err(e) => {
+                error!("Proof generation failed: {:?}", e);
+                panic!("Proof generation failed!");
+            }
+        }
+    }
+
+    /// Get the merkle sum tree proof of this batch of accounts and the circuit data of the corresponding proof.
+    pub fn get_proof_and_circuit_data(
+        &self,
+    ) -> (ProofWithPublicInputs<F, C, D>, CircuitData<F, C, D>) {
+        let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
+        let mut pw = PartialWitness::<F>::new();
+
+        // Build and set merkle tree targets
+        let account_targets = self.build_merkle_tree_targets(&mut builder);
+        self.set_merkle_tree_targets(&mut pw, &account_targets);
+
+        builder.print_gate_counts(0);
+
+        let data = builder.build::<C>();
+
+        let CircuitData { prover_only, common, verifier_only: _ } = &data;
+
+        tracing::debug!("Starting proving!");
+
+        let mut t = prove_timing();
+        let proof_res = prove(prover_only, common, pw, &mut t);
+
+        match proof_res {
+            Ok(proof) => {
+                let proof_verification_res = data.verify(proof.clone());
+                match proof_verification_res {
+                    Ok(_) => (proof, data),
                     Err(e) => {
                         error!("Proof verification failed: {:?}", e);
                         panic!("Proof verification failed!");
@@ -96,50 +182,27 @@ impl MerkleSumTreeProver {
 
 #[cfg(test)]
 pub mod test {
-    use log::Level;
-    use plonky2::{
-        iop::witness::PartialWitness,
-        plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitData, prover::prove},
-        util::timing::TimingTree,
-    };
-    use plonky2_field::goldilocks_field::GoldilocksField;
-
-    use crate::{
-        circuit_config::STANDARD_CONFIG,
-        parser::read_json_into_accounts_vec,
-        types::{C, D, F},
-    };
+    use crate::{circuit_utils::run_circuit_test, parser::read_json_into_accounts_vec};
 
     use super::MerkleSumTreeProver;
 
     #[test]
     pub fn test_build_and_set_merkle_targets() {
-        let mut builder = CircuitBuilder::<F, D>::new(STANDARD_CONFIG);
-        let mut pw = PartialWitness::<GoldilocksField>::new();
+        run_circuit_test(|builder, pw| {
+            let path = "../../test-data/batch0.json";
+            let accounts = read_json_into_accounts_vec(path);
+            let prover = MerkleSumTreeProver {
+                // batch_id: 0,
+                accounts,
+            };
 
-        let path = "../../test-data/batch0.json";
-        let accounts = read_json_into_accounts_vec(path);
-        let prover = MerkleSumTreeProver {
-            // batch_id: 0,
-            accounts,
-        };
-
-        prover.build_and_set_merkle_tree_targets(&mut builder, &mut pw);
-
-        let data = builder.build::<C>();
-
-        let CircuitData { prover_only, common, verifier_only: _ } = &data;
-
-        println!("Started Proving");
-        let mut timing = TimingTree::new("prove", Level::Debug);
-        let proof_res = prove(&prover_only, &common, pw.clone(), &mut timing);
-        let proof = proof_res.expect("Proof failed");
-
-        println!("Verifying Proof");
-        // Verify proof
-        let _proof_verification_res = data.verify(proof.clone()).unwrap();
+            // Build and set merkle tree targets
+            let account_targets = prover.build_merkle_tree_targets(builder);
+            prover.set_merkle_tree_targets(pw, &account_targets);
+        });
     }
 
+    #[cfg(not(feature = "lightweight_test"))]
     #[test]
     pub fn test_get_proof() {
         let path = "../../test-data/batch0.json";

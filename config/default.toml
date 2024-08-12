@@ -1,0 +1,14 @@
+[prover]
+round_no = 0
+batch_size = 1024
+recursion_branchout_num = 64
+user_data_path = "/opt/data/zkpor/users/"
+num_of_tokens = 220
+[db]
+level_db_path = "level_db_data"
+[log]
+file_name_prefix = "zkpor"
+dir = "logs/"
+level = "info"
+console = true
+flame = false
