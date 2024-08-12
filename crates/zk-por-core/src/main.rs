@@ -6,7 +6,7 @@ pub fn main() {
         prefix: "zkpor".to_string(),
         dir: "logs".to_string(),
         level: Level::DEBUG,
-        console: false,
+        console: true,
         flame: false,
     };
     let guard = init_tracing(cfg);

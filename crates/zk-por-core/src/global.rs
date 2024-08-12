@@ -11,7 +11,7 @@ pub struct GlobalConfig {
     pub num_of_tokens: usize,
     pub num_of_batches: usize,
     pub batch_size: usize, // num of accounts witin one batch
-    pub hyper_tree_size: usize,
+    pub recursion_branchout_num: usize,
 }
 
 pub static GLOBAL_MST: OnceCell<RwLock<GlobalMst>> = OnceCell::new();
@@ -24,7 +24,7 @@ pub struct GlobalMst {
 impl GlobalMst {
     pub fn new(cfg: GlobalConfig) -> Self {
         let vec_size = cfg.num_of_batches * (2 * cfg.batch_size - 1)
-            + get_recursive_hash_nums(cfg.num_of_batches, cfg.hyper_tree_size);
+            + get_recursive_hash_nums(cfg.num_of_batches, cfg.recursion_branchout_num);
         let mst_vec = vec![HashOut::default(); vec_size];
         Self { inner: mst_vec, cfg }
     }
@@ -56,13 +56,13 @@ impl GlobalMst {
 
     pub fn get_recursive_global_index(&self, recursive_level: u32, index: usize) -> usize {
         let mut recursive_offset = self.cfg.num_of_batches * (2 * self.cfg.batch_size - 1);
-        let mut num = pad_to_multiple_of(self.cfg.num_of_batches, self.cfg.hyper_tree_size);
+        let mut num = pad_to_multiple_of(self.cfg.num_of_batches, self.cfg.recursion_branchout_num);
         recursive_offset += num - self.cfg.num_of_batches;
 
         let mut level = recursive_level;
         while level > 1 {
-            num = num / self.cfg.hyper_tree_size;
-            recursive_offset += pad_to_multiple_of(num, self.cfg.hyper_tree_size);
+            num = num / self.cfg.recursion_branchout_num;
+            recursive_offset += pad_to_multiple_of(num, self.cfg.recursion_branchout_num);
             level -= 1;
         }
 
@@ -107,7 +107,7 @@ mod test {
             num_of_tokens: 22,
             num_of_batches: 6,
             batch_size: 8,
-            hyper_tree_size: 4,
+            recursion_branchout_num: 4,
         });
         let total_len = gmst.get_tree_length();
         assert_eq!(total_len, 95);

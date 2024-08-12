@@ -37,17 +37,11 @@ impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
 
         recursive_targets.set_targets(&mut pw, self.sub_proofs.to_vec(), &self.sub_circuit_vd);
 
-        tracing::debug!("before prove");
-        let start = std::time::Instant::now();
         let mut t = prove_timing();
         let proof_res = prove(prover_only, common, pw, &mut t);
 
-        tracing::debug!("time for {:?} proofs, {:?}", N, start.elapsed().as_millis());
-
         match proof_res {
             Ok(proof) => {
-                println!("Finished Proving");
-
                 let proof_verification_res = cd.verify(proof.clone());
                 match proof_verification_res {
                     Ok(_) => proof,

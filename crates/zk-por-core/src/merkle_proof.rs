@@ -58,28 +58,29 @@ pub fn get_recursive_siblings_index(
     assert!(this_mst_root_idx >= first_mst_root_idx);
 
     let this_mst_root_offset = this_mst_root_idx - first_mst_root_idx;
-    let mut recursive_idx = this_mst_root_offset / global_mst.cfg.hyper_tree_size;
-    let mut recursive_offset = this_mst_root_offset % global_mst.cfg.hyper_tree_size;
+    let mut recursive_idx = this_mst_root_offset / global_mst.cfg.recursion_branchout_num;
+    let mut recursive_offset = this_mst_root_offset % global_mst.cfg.recursion_branchout_num;
 
-    let layers =
-        log2_strict(global_mst.cfg.num_of_batches) / log2_strict(global_mst.cfg.hyper_tree_size);
+    let layers = log2_strict(global_mst.cfg.num_of_batches)
+        / log2_strict(global_mst.cfg.recursion_branchout_num);
 
     for i in 0..layers {
         let mut layer = Vec::new();
         if i == 0 {
-            for j in 0..global_mst.cfg.hyper_tree_size {
+            for j in 0..global_mst.cfg.recursion_branchout_num {
                 if j != recursive_offset {
-                    let index =
-                        first_mst_root_idx + (global_mst.cfg.hyper_tree_size * recursive_idx) + j;
+                    let index = first_mst_root_idx
+                        + (global_mst.cfg.recursion_branchout_num * recursive_idx)
+                        + j;
                     layer.push(index);
                 }
             }
         } else {
-            for j in 0..global_mst.cfg.hyper_tree_size {
+            for j in 0..global_mst.cfg.recursion_branchout_num {
                 if j != recursive_offset {
                     let index = global_mst.get_recursive_global_index(
                         i as u32,
-                        recursive_idx * global_mst.cfg.hyper_tree_size + j,
+                        recursive_idx * global_mst.cfg.recursion_branchout_num + j,
                     );
                     layer.push(index);
                 }
@@ -88,8 +89,8 @@ pub fn get_recursive_siblings_index(
 
         siblings.push(layer);
 
-        recursive_idx = recursive_idx / global_mst.cfg.hyper_tree_size;
-        recursive_offset = recursive_idx % global_mst.cfg.hyper_tree_size;
+        recursive_idx = recursive_idx / global_mst.cfg.recursion_branchout_num;
+        recursive_offset = recursive_idx % global_mst.cfg.recursion_branchout_num;
     }
 
     siblings
@@ -110,7 +111,7 @@ pub mod test {
             num_of_tokens: 100,
             num_of_batches: 4,
             batch_size: 8,
-            hyper_tree_size: 4,
+            recursion_branchout_num: 4,
         });
 
         let global_index = 0;
@@ -122,7 +123,7 @@ pub mod test {
             num_of_tokens: 100,
             num_of_batches: 8,
             batch_size: 8,
-            hyper_tree_size: 4,
+            recursion_branchout_num: 4,
         });
 
         let global_index = 0;
@@ -137,7 +138,7 @@ pub mod test {
             num_of_tokens: 100,
             num_of_batches: 16,
             batch_size: 4,
-            hyper_tree_size: 4,
+            recursion_branchout_num: 4,
         });
 
         let global_index = 0;

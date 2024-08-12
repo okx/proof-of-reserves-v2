@@ -20,7 +20,7 @@ use zk_por_core::{
 fn test() {
     let batch_size = 4;
     let asset_num = 2;
-    const RECURSIVE_FACTOR: usize = 8;
+    const RECURSION_BRANCHOUT_NUM: usize = 8;
 
     let accounts = gen_accounts_with_random_data(batch_size, asset_num);
 
@@ -44,15 +44,16 @@ fn test() {
         prover.get_proof_with_circuit_data(&account_targets, &merkle_sum_circuit);
     println!("prove merkle sum tree in : {:?}", start.elapsed());
 
-    let sub_proofs: [ProofWithPublicInputs<F, C, D>; RECURSIVE_FACTOR] =
+    let sub_proofs: [ProofWithPublicInputs<F, C, D>; RECURSION_BRANCHOUT_NUM] =
         std::array::from_fn(|_| merkle_sum_proof.clone());
 
     let start = std::time::Instant::now();
-    let (recursive_circuit, recursive_targets) = build_recursive_n_circuit::<C, RECURSIVE_FACTOR>(
-        &merkle_sum_circuit.common,
-        &merkle_sum_circuit.verifier_only,
-        STANDARD_CONFIG,
-    );
+    let (recursive_circuit, recursive_targets) =
+        build_recursive_n_circuit::<C, RECURSION_BRANCHOUT_NUM>(
+            &merkle_sum_circuit.common,
+            &merkle_sum_circuit.verifier_only,
+            STANDARD_CONFIG,
+        );
     println!("build recursive N circuit in : {:?}", start.elapsed());
 
     let start = std::time::Instant::now();
@@ -66,11 +67,11 @@ fn test() {
 
     // print public inputs in recursive proof
     assert_eq!(
-        equity_sum * F::from_canonical_u32(RECURSIVE_FACTOR as u32),
+        equity_sum * F::from_canonical_u32(RECURSION_BRANCHOUT_NUM as u32),
         recursive_proof_result.public_inputs[0]
     );
     assert_eq!(
-        debt_sum * F::from_canonical_u32(RECURSIVE_FACTOR as u32),
+        debt_sum * F::from_canonical_u32(RECURSION_BRANCHOUT_NUM as u32),
         recursive_proof_result.public_inputs[1]
     );
 }
