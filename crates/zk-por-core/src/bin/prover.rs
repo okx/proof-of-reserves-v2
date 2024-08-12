@@ -7,7 +7,7 @@ use zk_por_core::{
     circuit_config::{STANDARD_CONFIG, STANDARD_ZK_CONFIG},
     circuit_registry::registry::CircuitRegistry,
     config::ProverConfig,
-    e2e::{batch_prove_accounts, recursive_prove_subproofs},
+    e2e::{batch_prove_accounts, prove_subproofs},
     parser::{self, AccountParser, FilesCfg, FilesParser},
     types::{C, D, F},
 };
@@ -133,8 +133,40 @@ fn main() {
     );
 
     let batch_proof_num = batch_proofs.len();
-    let root_proof =
-        recursive_prove_subproofs(batch_proofs, &circuit_registry, RECURSIVE_PROVING_THREADS_NUM);
+
+    let (batch_circuit, _) = circuit_registry.get_batch_circuit();
+    let mut last_level_circuit_vd = batch_circuit.verifier_only.clone();
+    let mut last_level_proofs = batch_proofs;
+    let recursive_levels = circuit_registry.get_recursive_levels();
+
+    for level in 0..recursive_levels {
+        let start = std::time::Instant::now();
+
+        last_level_proofs = prove_subproofs(last_level_proofs, last_level_circuit_vd.clone(), &circuit_registry, RECURSIVE_PROVING_THREADS_NUM, level);
+
+        let recursive_circuit = circuit_registry
+            .get_recursive_circuit(&last_level_circuit_vd.circuit_digest)
+            .expect(format!("No recursive circuit found for inner circuit with vd {:?}", last_level_circuit_vd.circuit_digest).as_str())
+            .0;
+
+        last_level_circuit_vd = recursive_circuit.verifier_only.clone();
+
+        tracing::info!(
+            "finish recursive level {} with {} proofs in : {:?}",
+            level,
+            last_level_proofs.len(),
+            start.elapsed()
+        );
+    }
+
+    if last_level_proofs.len() != 1 {
+        panic!("The last level proofs should be of length 1, but got {}", last_level_proofs.len());
+    }
+    let root_proof = last_level_proofs.pop().unwrap();
+    circuit_registry
+        .get_root_circuit()
+        .verify(root_proof.clone())
+        .expect("fail to verify root proof");
     tracing::info!(
         "finish recursive proving {} subproofs in {:?}",
         batch_proof_num,
