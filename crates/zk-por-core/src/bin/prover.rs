@@ -2,6 +2,7 @@ use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{env, fs::File, io::Write, path::PathBuf, str::FromStr};
+use indicatif::ProgressBar;
 use zk_por_core::{
     account::Account,
     circuit_config::{STANDARD_CONFIG, STANDARD_ZK_CONFIG},
@@ -26,8 +27,8 @@ fn main() {
     let _g = init_tracing(trace_cfg);
 
     const RECURSION_BRANCHOUT_NUM: usize = 64;
-    const BATCH_PROVING_THREADS_NUM: usize = 4;
-    const RECURSIVE_PROVING_THREADS_NUM: usize = 2;
+    const BATCH_PROVING_THREADS_NUM: usize = 64;
+    const RECURSIVE_PROVING_THREADS_NUM: usize = 64;
 
     if cfg.prover.recursion_branchout_num as usize != RECURSION_BRANCHOUT_NUM {
         panic!("The recursion_branchout_num is not configured to be equal to 64");
@@ -89,6 +90,7 @@ fn main() {
 
     let mut parse_num = 0;
     let mut batch_proofs = vec![];
+    let bar = ProgressBar::new(account_reader.total_num_of_users() as u64);
     while offset < account_reader.total_num_of_users() {
         parse_num += 1;
         let mut accounts: Vec<Account> =
@@ -123,7 +125,9 @@ fn main() {
             parse_num,
             start.elapsed()
         );
+        bar.inc(account_num as u64);
     }
+    bar.finish();
 
     tracing::info!(
         "finish batch proving {} accounts, generating {} proofs in {:?}",
