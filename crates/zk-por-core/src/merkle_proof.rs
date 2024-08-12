@@ -130,6 +130,19 @@ pub mod test {
 
         let siblings = get_mst_siblings_index(global_index, &gmst);
         assert_eq!(siblings, vec![1, 65, 97]);
+
+        let gmst = GlobalMst::new(GlobalConfig {
+            num_of_tokens: 100,
+            num_of_batches: 6,
+            batch_size: 8,
+            recursion_branchout_num: 4,
+        });
+
+        let global_index = 0;
+
+        let siblings = get_mst_siblings_index(global_index, &gmst);
+        assert_eq!(siblings, vec![1, 49, 73]);
+
     }
 
     #[test]

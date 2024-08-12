@@ -46,6 +46,8 @@ thiserror = "1.0"
 tracing = "0.1"
 opentelemetry = { version = "0.17", features = ["serialize"]}
 num_cpus = "1.15"
+indicatif = "0.17.8"
+clap = { version = "4.5.4", features = ["derive"] }
 
 [profile.dev]
 opt-level = 0

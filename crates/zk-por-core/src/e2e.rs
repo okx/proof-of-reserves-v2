@@ -47,6 +47,7 @@ pub fn recursive_prove_subproofs<const RECURSION_BRANCHOUT_NUM: usize>(
     let mut last_level_circuit_vd = batch_circuit.verifier_only.clone();
     let mut last_level_proofs = subproofs;
     let recursive_levels = circuit_registry.get_recursive_levels();
+    tracing::info!("total recursive levels: {:?}", recursive_levels);
 
     for level in 0..recursive_levels {
         let start = std::time::Instant::now();
