@@ -1,6 +1,6 @@
 use crate::{
     types::F,
-    util::{get_node_level, get_recursive_hash_nums},
+    util::{get_node_level, get_recursive_hash_nums, pad_to_multiple_of},
 };
 use once_cell::sync::OnceCell;
 use plonky2::{hash::hash_types::HashOut, util::log2_strict};
@@ -55,17 +55,31 @@ impl GlobalMst {
     }
 
     pub fn get_recursive_global_index(&self, recursive_level: u32, index: usize) -> usize {
-        let mut recursive_offset = self.cfg.num_of_batches * (2 * self.cfg.batch_size - 1);
-        if recursive_level > 1 {
-            let numerator = self.cfg.num_of_batches
-                * (self.cfg.recursion_branchout_num.pow(recursive_level)
-                    - self.cfg.recursion_branchout_num)
-                / self.cfg.recursion_branchout_num;
-            let denominator = (self.cfg.recursion_branchout_num - 1)
-                * self.cfg.recursion_branchout_num.pow(recursive_level - 1);
-            println!("numerator: {:?}, denominator: {:?}", numerator, denominator);
-            recursive_offset += numerator.div_ceil(denominator);
+        let mst_node_num = 2 * self.cfg.batch_size - 1;
+
+        // pad num_of_batches to be multiple of recursion_branchout_num. 
+        let pad_num = if self.cfg.num_of_batches % self.cfg.recursion_branchout_num == 0 {
+            0
+        } else {
+            self.cfg.recursion_branchout_num - self.cfg.num_of_batches % self.cfg.recursion_branchout_num
+        };
+
+        let mut last_level_node_num = self.cfg.num_of_batches + pad_num;
+        assert_eq!(0, last_level_node_num % self.cfg.recursion_branchout_num);
+
+        let mut recursive_offset = self.cfg.num_of_batches * mst_node_num + pad_num;
+
+        let mut level = recursive_level;
+        while level > 1 {
+            let mut this_level_node_num = last_level_node_num / self.cfg.recursion_branchout_num;
+            this_level_node_num = pad_to_multiple_of(this_level_node_num, self.cfg.recursion_branchout_num);
+
+            recursive_offset += this_level_node_num;
+
+            last_level_node_num = this_level_node_num;
+            level -= 1;
         }
+
         let global_recursive_index = recursive_offset + index;
         global_recursive_index
     }
@@ -110,7 +124,7 @@ mod test {
             recursion_branchout_num: 4,
         });
         let total_len = gmst.get_tree_length();
-        assert_eq!(total_len, 93);
+        assert_eq!(total_len, 95);
 
         assert_eq!(gmst.get_batch_tree_global_index(0, 1), 1);
         assert_eq!(gmst.get_batch_tree_global_index(0, 14), 84);
@@ -119,8 +133,10 @@ mod test {
         assert_eq!(gmst.get_batch_tree_global_index(5, 7), 47);
         assert_eq!(gmst.get_batch_tree_global_index(5, 14), 89);
 
-        assert_eq!(gmst.get_recursive_global_index(1, 0), 90);
-        assert_eq!(gmst.get_recursive_global_index(1, 1), 91);
-        assert_eq!(gmst.get_recursive_global_index(2, 0), 92);
+        assert_eq!(gmst.get_recursive_global_index(1, 0), 92);
+        assert_eq!(gmst.get_recursive_global_index(1, 1), 93);
+        assert_eq!(gmst.get_recursive_global_index(1, 2), 94);
+        assert_eq!(gmst.get_recursive_global_index(1, 3), 95);
+        assert_eq!(gmst.get_recursive_global_index(2, 0), 96);
     }
 }
