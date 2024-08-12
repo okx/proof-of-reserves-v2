@@ -61,7 +61,7 @@ pub fn get_recursive_siblings_index(
     let mut recursive_idx = this_mst_root_offset / global_mst.cfg.recursion_branchout_num;
     let mut recursive_offset = this_mst_root_offset % global_mst.cfg.recursion_branchout_num;
 
-    let layers = log2_strict(global_mst.cfg.num_of_batches)
+    let layers = log2_strict(global_mst.cfg.num_of_batches.next_power_of_two())
         / log2_strict(global_mst.cfg.recursion_branchout_num);
 
     for i in 0..layers {
@@ -136,7 +136,7 @@ pub mod test {
     pub fn test_get_recursive_siblings_index() {
         let gmst = GlobalMst::new(GlobalConfig {
             num_of_tokens: 100,
-            num_of_batches: 16,
+            num_of_batches: 15,
             batch_size: 4,
             recursion_branchout_num: 4,
         });
@@ -144,6 +144,18 @@ pub mod test {
         let global_index = 0;
 
         let siblings = get_recursive_siblings_index(global_index, &gmst);
-        assert_eq!(siblings, vec![vec![97, 98, 99], vec![113, 114, 115]]);
+        assert_eq!(siblings, vec![vec![91, 92, 93], vec![107, 108, 109]]);
+
+        let gmst = GlobalMst::new(GlobalConfig {
+            num_of_tokens: 100,
+            num_of_batches: 30,
+            batch_size: 8,
+            recursion_branchout_num: 4,
+        });
+
+        let global_index = 163;
+
+        let siblings = get_recursive_siblings_index(global_index, &gmst);
+        assert_eq!(siblings, vec![vec![441, 442, 443], vec![456, 458, 459]]);
     }
 }
