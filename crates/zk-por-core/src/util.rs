@@ -6,7 +6,8 @@ pub fn get_recursive_hash_nums(num_of_batches: usize, hyper_tree_leaf_size: usiz
     }
 
     let mut next = num_of_batches.div_ceil(hyper_tree_leaf_size);
-    let mut num_of_hashes = 0;
+
+    let mut num_of_hashes = pad_to_multiple_of(num_of_batches, hyper_tree_leaf_size) - num_of_batches;
     while next > 1 {
         next = next.div_ceil(hyper_tree_leaf_size);
         num_of_hashes += next * hyper_tree_leaf_size;
@@ -43,7 +44,7 @@ pub mod test_util {
     fn test_get_recursive_hash_nums() {
         assert_eq!(get_recursive_hash_nums(2, 4), 1);
         assert_eq!(get_recursive_hash_nums(4, 4), 1);
-        assert_eq!(get_recursive_hash_nums(6, 4), 5);
+        assert_eq!(get_recursive_hash_nums(6, 4), 7);
         assert_eq!(get_recursive_hash_nums(100, 4), 41);
     }
     #[test]
