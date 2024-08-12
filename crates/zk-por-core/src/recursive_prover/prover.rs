@@ -1,12 +1,18 @@
 use plonky2::{
+    hash::{
+        hash_types::{HashOut, RichField},
+        poseidon::PoseidonHash,
+    },
     iop::witness::PartialWitness,
     plonk::{
         circuit_data::{CircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig},
+        config::{AlgebraicHasher, GenericConfig, Hasher},
         proof::ProofWithPublicInputs,
         prover::prove,
     },
 };
+use plonky2_field::extension::Extendable;
+
 use tracing::error;
 
 use crate::{
@@ -57,4 +63,12 @@ impl<C: GenericConfig<D, F = F>, const N: usize> RecursiveProver<C, N> {
             }
         }
     }
+}
+
+pub fn hash_n_subhashes<F: RichField + Extendable<D>, const D: usize>(
+    hashes: &Vec<HashOut<F>>,
+) -> HashOut<F> {
+    let inputs : Vec<F> = hashes.iter().map(|h|{h.elements.to_vec()}).flatten().collect();
+    let hash = PoseidonHash::hash_no_pad(inputs.as_slice());
+    hash
 }

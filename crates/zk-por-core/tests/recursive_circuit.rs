@@ -1,20 +1,19 @@
 use plonky2::plonk::proof::ProofWithPublicInputs;
+use plonky2::hash::hash_types::HashOut;
 use zk_por_core::{
     merkle_sum_prover::circuits::merkle_sum_circuit::build_merkle_sum_tree_circuit,
-    recursive_prover::prover::RecursiveProver, types::D,
+    recursive_prover::prover::RecursiveProver, types::{C, F, D},
+    account::gen_accounts_with_random_data,
+    circuit_config::STANDARD_CONFIG,
 };
 
 use zk_por_core::{
     merkle_sum_prover::prover::MerkleSumTreeProver,
     recursive_prover::recursive_circuit::build_recursive_n_circuit,
+    recursive_prover::prover::hash_n_subhashes,
 };
 
 use plonky2_field::types::Field;
-use zk_por_core::{
-    account::gen_accounts_with_random_data,
-    circuit_config::STANDARD_CONFIG,
-    types::{C, F},
-};
 
 #[test]
 fn test() {
@@ -41,7 +40,7 @@ fn test() {
 
     let start = std::time::Instant::now();
     let merkle_sum_proof =
-        prover.get_proof_with_circuit_data(&account_targets, &merkle_sum_circuit);
+        prover.get_proof_with_circuit_data(account_targets, &merkle_sum_circuit);
     println!("prove merkle sum tree in : {:?}", start.elapsed());
 
     let sub_proofs: [ProofWithPublicInputs<F, C, D>; RECURSION_BRANCHOUT_NUM] =
@@ -57,6 +56,9 @@ fn test() {
     println!("build recursive N circuit in : {:?}", start.elapsed());
 
     let start = std::time::Instant::now();
+    let subhashes = sub_proofs.clone().map(|proof|{
+        HashOut::<F>::from_partial(&proof.public_inputs[2..])
+    });
     let recursive_prover = RecursiveProver {
         sub_proofs: sub_proofs,
         sub_circuit_vd: merkle_sum_circuit.verifier_only.clone(),
@@ -64,6 +66,11 @@ fn test() {
     let recursive_proof_result =
         recursive_prover.get_proof_with_circuit_data(recursive_targets, &recursive_circuit);
     println!("prove recursive subproofs in : {:?}", start.elapsed());
+
+    let expected_hash = hash_n_subhashes::<F, D>(&subhashes.to_vec());
+    let actual_hash = HashOut::<F>::from_partial(&recursive_proof_result.public_inputs[2..]);
+
+    assert_eq!(expected_hash, actual_hash);
 
     // print public inputs in recursive proof
     assert_eq!(

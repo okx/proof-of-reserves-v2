@@ -99,6 +99,7 @@ fn main() {
         asset_num,
         batch_size
     );
+    let expected_batch_num = account_reader.total_num_of_users() / batch_size;
 
     let start = std::time::Instant::now();
     let mut offset = 0;
@@ -107,6 +108,7 @@ fn main() {
 
     let mut parse_num = 0;
     let mut batch_proofs = vec![];
+
     while offset < account_reader.total_num_of_users() {
         parse_num += 1;
         let mut accounts: Vec<Account> =
@@ -119,7 +121,6 @@ fn main() {
         }
 
         assert_eq!(account_num % batch_size, 0);
-        let expected_batch_num = account_num / batch_size;
 
         tracing::info!(
             "parse {} times, with number of accounts {}, number of batches {}",
@@ -190,18 +191,34 @@ fn main() {
     // level 0 for mst root hash
     for level in 1..=recursive_levels {
         let start = std::time::Instant::now();
+        let last_level_vd_digest = last_level_circuit_vd.circuit_digest;
+        let last_level_empty_proof =
+            circuit_registry.get_empty_proof(&last_level_vd_digest).expect(
+                format!(
+                    "fail to find empty proof for circuit vd {:?}", last_level_vd_digest
+                )
+                .as_str(),
+            );
 
-        let this_level_proofs = prove_subproofs(last_level_proofs, last_level_circuit_vd.clone(), &circuit_registry, RECURSIVE_PROVING_THREADS_NUM, level);
+        let subproof_len = last_level_proofs.len();
 
-        this_level_proofs.iter().enumerate().for_each(|(i, proof)|{
+        if subproof_len % RECURSION_BRANCHOUT_NUM != 0 {
+            let pad_num = RECURSION_BRANCHOUT_NUM - subproof_len % RECURSION_BRANCHOUT_NUM;
+            tracing::info!("{} subproofs are not a multiple of RECURSION_BRANCHOUT_NUM {}, hence padding {} empty proofs. ", subproof_len, RECURSION_BRANCHOUT_NUM, pad_num);
+
+            last_level_proofs.resize(subproof_len + pad_num, last_level_empty_proof.clone());
+        }
+
+        last_level_proofs.iter().enumerate().for_each(|(i, proof)|{
             let proof_root_hash = HashOut::<F>::from_partial(&proof.public_inputs[2..]);
 
             let global_mst = GLOBAL_MST.get().unwrap();
             let mut _g = global_mst.write().expect("unable to get a lock");
-            _g.set_recursive_hash(level as u32, i, proof_root_hash);
+            _g.set_recursive_hash(level-1, i, proof_root_hash);
             drop(_g);
-
         });
+
+        let this_level_proofs = prove_subproofs(last_level_proofs, last_level_circuit_vd.clone(), &circuit_registry, RECURSIVE_PROVING_THREADS_NUM, level);
 
         let recursive_circuit = circuit_registry
             .get_recursive_circuit(&last_level_circuit_vd.circuit_digest)
@@ -223,27 +240,37 @@ fn main() {
         panic!("The last level proofs should be of length 1, but got {}", last_level_proofs.len());
     }
     let root_proof = last_level_proofs.pop().unwrap();
+
+    // Set the root hash of the recursive circuit to the global mst
+    let proof_root_hash = HashOut::<F>::from_partial(&root_proof.public_inputs[2..]);
+
+    let global_mst = GLOBAL_MST.get().unwrap();
+    let mut _g = global_mst.write().expect("unable to get a lock");
+    _g.set_recursive_hash(recursive_levels, 0, proof_root_hash);
+    drop(_g);
+
     circuit_registry
         .get_root_circuit()
         .verify(root_proof.clone())
         .expect("fail to verify root proof");
+
     tracing::info!(
         "finish recursive proving {} subproofs in {:?}",
         batch_proof_num,
         start.elapsed()
     );
 
-    assert!(!GLOBAL_MST.get().unwrap().read().unwrap().any_empty_node());
-
-    let root_circuit_digest = circuit_registry.get_root_circuit().verifier_only.circuit_digest;
-
-    let proof = Proof {
-        round_num: cfg.prover.round_no,
-        root_vd_digest: root_circuit_digest,
-        proof: root_proof,
-    };
+    assert!(!GLOBAL_MST.get().unwrap().read().unwrap().is_integral());
 
     if !bench_mode {
+        let root_circuit_digest = circuit_registry.get_root_circuit().verifier_only.circuit_digest;
+
+        let proof = Proof {
+            round_num: cfg.prover.round_no,
+            root_vd_digest: root_circuit_digest,
+            proof: root_proof,
+        };
+
         let proof_path_str = arg1;
         let proof_path = PathBuf::from(proof_path_str);
         let mut file = File::create(proof_path.clone())
