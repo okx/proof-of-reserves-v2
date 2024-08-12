@@ -99,7 +99,7 @@ impl FilesParser {
     }
 
     pub fn log_state(&self) {
-        info!("cfg: {:?},\n num_of_files: {:?},\n num_of_batches_per_doc: {:?},\n file_idx: {:?},\n offset: {:?},\n total_num_of_users: {:?},\n total_num_of_batches: {:?}", 
+        info!("cfg: {:?},\n num_of_files: {:?},\n num_of_batches_per_doc: {:?},\n file_idx: {:?},\n offset: {:?},\n total_num_of_users: {:?},\n total_num_of_batches: {:?}",
         self.cfg, self.num_of_docs, self.num_of_batches_per_doc, self.file_idx, self.offset, self.total_num_of_users, self.total_num_of_batches);
     }
 }
@@ -223,7 +223,13 @@ fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>) -> Vec<Accou
                 account_id = value.as_str().unwrap();
             }
         }
-        accounts_data.push(Account { id: account_id.into(), equity: inner_vec, debt: Vec::new() });
+        // todo:: currently, we fill debt all to zero
+        let asset_len = inner_vec.len();
+        accounts_data.push(Account {
+            id: account_id.into(),
+            equity: inner_vec,
+            debt: vec![F::ZERO; asset_len],
+        });
     }
     accounts_data
 }
