@@ -57,13 +57,13 @@ impl GlobalMst {
     pub fn get_recursive_global_index(&self, recursive_level: u32, index: usize) -> usize {
         let mut recursive_offset = self.cfg.num_of_batches * (2 * self.cfg.batch_size - 1);
         let mut num = pad_to_multiple_of(self.cfg.num_of_batches, self.cfg.hyper_tree_size);
-        recursive_offset+= num-self.cfg.num_of_batches;
+        recursive_offset += num - self.cfg.num_of_batches;
 
         let mut level = recursive_level;
         while level > 1 {
-            num = num/self.cfg.hyper_tree_size;
+            num = num / self.cfg.hyper_tree_size;
             recursive_offset += pad_to_multiple_of(num, self.cfg.hyper_tree_size);
-            level -=1;
+            level -= 1;
         }
 
         let global_recursive_index = recursive_offset + index;

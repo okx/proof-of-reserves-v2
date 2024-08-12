@@ -8,9 +8,8 @@ pub fn get_recursive_hash_nums(num_of_batches: usize, hyper_tree_leaf_size: usiz
     let mut next = num_of_batches.div_ceil(hyper_tree_leaf_size);
     let mut num_of_hashes = 0;
     while next > 1 {
-        
         next = next.div_ceil(hyper_tree_leaf_size);
-        num_of_hashes += next*hyper_tree_leaf_size;
+        num_of_hashes += next * hyper_tree_leaf_size;
     }
     num_of_hashes + 1
 }
