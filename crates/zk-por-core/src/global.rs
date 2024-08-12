@@ -61,11 +61,8 @@ impl GlobalMst {
 
         let mut level = recursive_level;
         while level > 1 {
-            let branch = num/self.cfg.hyper_tree_size;
-            recursive_offset += branch;
-
             num = num/self.cfg.hyper_tree_size;
-            recursive_offset += num;
+            recursive_offset += pad_to_multiple_of(num, self.cfg.hyper_tree_size);
             level -=1;
         }
 
