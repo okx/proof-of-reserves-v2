@@ -21,7 +21,6 @@ pub fn batch_prove_accounts<const RECURSION_BRANCHOUT_NUM: usize>(
 ) -> Vec<ProofWithPublicInputs<F, C, D>> {
     let mut batch_proofs: Vec<ProofWithPublicInputs<F, C, D>> = Vec::new();
     let (batch_circuit, account_targets) = circuit_registry.get_batch_circuit();
-    let expected_batch_num = account_batches.len() / batch_size;
 
     let _ = account_batches
         .chunks(parallism * batch_size)
@@ -37,11 +36,6 @@ pub fn batch_prove_accounts<const RECURSION_BRANCHOUT_NUM: usize>(
                 })
                 .collect();
             batch_proofs.extend(proofs.into_iter());
-            tracing::info!(
-                "finish {}/{} batches of accounts",
-                batch_proofs.len(),
-                expected_batch_num
-            );
         })
         .collect::<Vec<_>>();
 

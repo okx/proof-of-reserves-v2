@@ -119,12 +119,13 @@ fn main() {
         }
 
         assert_eq!(account_num % batch_size, 0);
+        let expected_batch_num = account_num / batch_size;
 
         tracing::info!(
             "parse {} times, with number of accounts {}, number of batches {}",
             parse_num,
             account_num,
-            account_num / batch_size
+            expected_batch_num,
         );
 
         let batch_idx_base = batch_proofs.len();
@@ -161,9 +162,11 @@ fn main() {
         });
 
         batch_proofs.extend(proofs.into_iter());
+
         tracing::info!(
-            "finish {} batches in {} parse, since start {:?}",
+            "finish {}/{} batches of accounts in {} parse, since start {:?}",
             batch_proofs.len(),
+            expected_batch_num,
             parse_num,
             start.elapsed()
         );

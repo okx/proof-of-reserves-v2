@@ -1,6 +1,6 @@
 use crate::{
     types::F,
-    util::{get_node_level, get_recursive_hash_nums, pad_to_multiple_of},
+    util::{get_node_level, pad_to_multiple_of},
 };
 use once_cell::sync::OnceCell;
 use plonky2::{hash::hash_types::HashOut, util::log2_strict};
@@ -23,10 +23,19 @@ pub struct GlobalMst {
 
 impl GlobalMst {
     pub fn new(cfg: GlobalConfig) -> Self {
-        let vec_size = cfg.num_of_batches * (2 * cfg.batch_size - 1)
-            + get_recursive_hash_nums(cfg.num_of_batches, cfg.recursion_branchout_num);
-        let mst_vec = vec![HashOut::default(); vec_size];
-        Self { inner: mst_vec, cfg }
+        let mut level = 0;
+        let mut n = cfg.num_of_batches;
+        while n > 0 {
+            level += 1;
+            n = n / cfg.recursion_branchout_num;
+        }
+
+        let mst_vec = vec![HashOut::default(); cfg.num_of_batches];
+        let mut mst = Self { inner: mst_vec, cfg: cfg };
+        // the number of hash is equal to the index of the root node. 
+        let root_node_idx = mst.get_recursive_global_index(level, 0);
+        mst.inner.resize(root_node_idx, HashOut::default());
+        mst
     }
 
     #[allow(dead_code)]
@@ -55,8 +64,6 @@ impl GlobalMst {
     }
 
     pub fn get_recursive_global_index(&self, recursive_level: u32, index: usize) -> usize {
-        let mst_node_num = 2 * self.cfg.batch_size - 1;
-
         // pad num_of_batches to be multiple of recursion_branchout_num. 
         let pad_num = if self.cfg.num_of_batches % self.cfg.recursion_branchout_num == 0 {
             0
@@ -67,6 +74,7 @@ impl GlobalMst {
         let mut last_level_node_num = self.cfg.num_of_batches + pad_num;
         assert_eq!(0, last_level_node_num % self.cfg.recursion_branchout_num);
 
+        let mst_node_num = 2 * self.cfg.batch_size - 1;
         let mut recursive_offset = self.cfg.num_of_batches * mst_node_num + pad_num;
 
         let mut level = recursive_level;
