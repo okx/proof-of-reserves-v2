@@ -33,7 +33,11 @@ impl GlobalMst {
     fn get_tree_length(&self) -> usize {
         self.inner.len()
     }
-
+    
+    pub fn get_num_of_leaves(&self)->usize{
+        self.cfg.batch_size * self.cfg.num_of_batches
+    }
+    
     pub fn get_batch_tree_global_index(&self, batch_idx: usize, i: usize) -> usize {
         let batch_size = self.cfg.batch_size;
         let tree_depth = log2_strict(batch_size);

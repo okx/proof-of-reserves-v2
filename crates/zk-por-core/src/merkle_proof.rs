@@ -1,4 +1,3 @@
-use plonky2::util::log2_strict;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::global::GlobalMst;
@@ -21,6 +20,10 @@ impl MerkleProofIndex {
 /// Get the siblings index for the merkle proof of inclusion given a leaf index of a binary merkle sum tree.
 /// We get the parent index of a leaf using the formula: parent = index / 2 + num_leaves
 pub fn get_mst_siblings_index(global_index: usize, global_mst: &GlobalMst) -> Vec<usize> {
+
+    // Make sure our global index is within the number of leaves
+    assert!(global_index < global_mst.get_num_of_leaves());
+
     let batch_idx = global_index / global_mst.cfg.batch_size;
     let mut siblings = Vec::new();
 
@@ -48,6 +51,10 @@ pub fn get_recursive_siblings_index(
     global_index: usize,
     global_mst: &GlobalMst,
 ) -> Vec<Vec<usize>> {
+
+    // Make sure our global index is within the number of leaves
+    assert!(global_index < global_mst.get_num_of_leaves());
+
     let mut siblings = Vec::new();
     let local_mst_root_index = global_mst.cfg.batch_size * 2 - 2;
     let mst_batch_idx = global_index / global_mst.cfg.batch_size;
@@ -61,8 +68,7 @@ pub fn get_recursive_siblings_index(
     let mut recursive_idx = this_mst_root_offset / global_mst.cfg.recursion_branchout_num;
     let mut recursive_offset = this_mst_root_offset % global_mst.cfg.recursion_branchout_num;
 
-    let layers = log2_strict(global_mst.cfg.num_of_batches.next_power_of_two())
-        / log2_strict(global_mst.cfg.recursion_branchout_num);
+    let layers = (global_mst.cfg.num_of_batches.next_power_of_two() as f64).log(global_mst.cfg.recursion_branchout_num as f64).ceil() as usize;
 
     for i in 0..layers {
         let mut layer = Vec::new();
@@ -89,8 +95,8 @@ pub fn get_recursive_siblings_index(
 
         siblings.push(layer);
 
-        recursive_idx = recursive_idx / global_mst.cfg.recursion_branchout_num;
         recursive_offset = recursive_idx % global_mst.cfg.recursion_branchout_num;
+        recursive_idx = recursive_idx / global_mst.cfg.recursion_branchout_num;
     }
 
     siblings
@@ -169,6 +175,18 @@ pub mod test {
         let global_index = 163;
 
         let siblings = get_recursive_siblings_index(global_index, &gmst);
-        assert_eq!(siblings, vec![vec![441, 442, 443], vec![456, 458, 459]]);
+        assert_eq!(siblings, vec![vec![441, 442, 443], vec![456, 458, 459], vec![460, 462, 463]]);
+
+        let gmst = GlobalMst::new(GlobalConfig {
+            num_of_tokens: 100,
+            num_of_batches: 6,
+            batch_size: 4,
+            recursion_branchout_num: 4,
+        });
+
+        let global_index = 20;
+
+        let siblings = get_recursive_siblings_index(global_index, &gmst);
+        assert_eq!(siblings, vec![[40, 42, 43], [44, 46, 47]]);
     }
 }
