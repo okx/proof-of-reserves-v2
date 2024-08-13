@@ -1,9 +1,9 @@
-use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
+use plonky2::hash::hash_types::HashOut;
 use rayon::{iter::ParallelIterator, prelude::*};
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{env, fs::File, io::Write, path::PathBuf, str::FromStr, sync::RwLock};
 use zk_por_core::{
+    {Proof, General},
     account::Account,
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
@@ -14,16 +14,9 @@ use zk_por_core::{
     merkle_sum_tree::MerkleSumTree,
     parser::{self, AccountParser, FilesCfg, FilesParser},
     recursive_prover::recursive_circuit::RecursiveTargets,
-    types::{C, D, F},
+    types::F,
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
-
-#[derive(Serialize, Deserialize)]
-struct Proof {
-    round_num: usize,
-    root_vd_digest: HashOut<F>,
-    proof: ProofWithPublicInputs<F, C, D>,
-}
 
 fn main() {
     let cfg = ProverConfig::try_new().unwrap();
@@ -296,7 +289,13 @@ fn main() {
         let root_circuit_digest = circuit_registry.get_root_circuit().verifier_only.circuit_digest;
 
         let proof = Proof {
-            round_num: cfg.prover.round_no,
+            general: General {
+                round_num: cfg.prover.round_no,
+                batch_num: batch_num,
+                recursion_branchout_num: RECURSION_BRANCHOUT_NUM,
+                batch_size: batch_size,
+                asset_num: asset_num,
+            },
             root_vd_digest: root_circuit_digest,
             proof: root_proof,
         };

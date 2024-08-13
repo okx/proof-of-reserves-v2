@@ -1,3 +1,7 @@
+use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
+use serde::*;
+use types::{C, D, F};
+
 pub mod account;
 pub mod circuit_config;
 pub mod circuit_registry;
@@ -13,3 +17,19 @@ pub mod parser;
 pub mod recursive_prover;
 pub mod types;
 pub mod util;
+
+#[derive(Serialize, Deserialize)]
+pub struct General {
+    pub round_num: usize,
+	pub batch_num: usize, 
+	pub recursion_branchout_num : usize,
+	pub batch_size: usize,
+	pub asset_num: usize,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Proof {
+	pub general: General,
+    pub root_vd_digest: HashOut<F>,
+    pub proof: ProofWithPublicInputs<F, C, D>,
+}
