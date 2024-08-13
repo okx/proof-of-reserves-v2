@@ -92,12 +92,13 @@ impl DataBase {
 
 #[cfg(test)]
 mod test {
+    use plonky2::{hash::hash_types::HashOut, field::types::Sample};
     use tempdir::TempDir;
 
-    use crate::database::{DataBase, DbOption, UserId};
+    use crate::{database::{DataBase, DbOption, UserId}, types::F};
 
     #[test]
-    fn test_user() {
+    fn test_database() {
         let tempdir_user = TempDir::new("example_user").unwrap();
         let tempdir_gmst = TempDir::new("example_gmst").unwrap();
         let mut db = DataBase::new(DbOption {
@@ -105,7 +106,7 @@ mod test {
             gmst_dir: tempdir_gmst.path().to_string_lossy().into_owned(),
         });
 
-        let batches = (0..4)
+        let batches_user = (0..4)
             .into_iter()
             .map(|i| {
                 let id = UserId::rand();
@@ -113,8 +114,21 @@ mod test {
                 (id, idx)
             })
             .collect::<Vec<(UserId, u32)>>();
-        db.add_batch_users(batches.clone());
-        assert_eq!(db.get_user_index(batches[0].0), Some(0));
-        assert_eq!(db.get_user_index(batches[3].0), Some(3));
+        db.add_batch_users(batches_user.clone());
+        assert_eq!(db.get_user_index(batches_user[0].0), Some(0));
+        assert_eq!(db.get_user_index(batches_user[3].0), Some(3));
+
+        let batches_hash = (0..4)
+        .into_iter()
+        .map(|i| {
+            (i,HashOut::<F>::from_vec(vec![F::rand(), F::rand(), F::rand(),F::rand()]))
+        })
+        .collect::<Vec<(i32, HashOut<F>)>>();
+        db.add_batch_gmst_nodes(batches_hash.clone());
+
+        assert_eq!(db.get_gmst_node_hash(0),Some( batches_hash[0].1));
+        assert_eq!(db.get_gmst_node_hash(1),Some( batches_hash[1].1));
+        assert_eq!(db.get_gmst_node_hash(2),Some( batches_hash[2].1));
+        assert_eq!(db.get_gmst_node_hash(3),Some( batches_hash[3].1));
     }
 }
