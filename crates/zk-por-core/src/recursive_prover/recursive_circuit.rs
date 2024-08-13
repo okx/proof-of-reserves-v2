@@ -27,9 +27,9 @@ pub struct RecursiveTargets<const N: usize> {
 }
 
 impl<const N: usize> RecursiveTargets<N> {
-    pub fn pub_input_hash_offset() -> usize {
+    pub fn pub_input_hash_offset() -> std::ops::Range<usize> {
         // the hash offset of recursive pub input is the same as the merkle sum tree node target
-        MerkleSumNodeTarget::pub_input_hash_offset()
+        MerkleSumNodeTarget::pub_input_root_hash_offset()
     }
 
     /// Builds a N-ary merkle sum tree and sets its root as a public input. We use a N-ary merkle sum tree instead of the binary one since it requires less hash gates.
