@@ -20,7 +20,6 @@ impl MerkleProofIndex {
 /// Get the siblings index for the merkle proof of inclusion given a leaf index of a binary merkle sum tree.
 /// We get the parent index of a leaf using the formula: parent = index / 2 + num_leaves
 pub fn get_mst_siblings_index(global_index: usize, global_mst: &GlobalMst) -> Vec<usize> {
-
     // Make sure our global index is within the number of leaves
     assert!(global_index < global_mst.get_num_of_leaves());
 
@@ -51,7 +50,6 @@ pub fn get_recursive_siblings_index(
     global_index: usize,
     global_mst: &GlobalMst,
 ) -> Vec<Vec<usize>> {
-
     // Make sure our global index is within the number of leaves
     assert!(global_index < global_mst.get_num_of_leaves());
 
@@ -68,7 +66,9 @@ pub fn get_recursive_siblings_index(
     let mut recursive_idx = this_mst_root_offset / global_mst.cfg.recursion_branchout_num;
     let mut recursive_offset = this_mst_root_offset % global_mst.cfg.recursion_branchout_num;
 
-    let layers = (global_mst.cfg.num_of_batches.next_power_of_two() as f64).log(global_mst.cfg.recursion_branchout_num as f64).ceil() as usize;
+    let layers = (global_mst.cfg.num_of_batches.next_power_of_two() as f64)
+        .log(global_mst.cfg.recursion_branchout_num as f64)
+        .ceil() as usize;
 
     for i in 0..layers {
         let mut layer = Vec::new();

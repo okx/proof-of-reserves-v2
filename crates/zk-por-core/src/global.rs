@@ -43,8 +43,8 @@ impl GlobalMst {
     fn get_tree_length(&self) -> usize {
         self.inner.len()
     }
-    
-    pub fn get_num_of_leaves(&self)->usize{
+
+    pub fn get_num_of_leaves(&self) -> usize {
         self.cfg.batch_size * self.cfg.num_of_batches
     }
 
