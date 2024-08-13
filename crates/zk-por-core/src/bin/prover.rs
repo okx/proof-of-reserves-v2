@@ -1,5 +1,4 @@
 use indicatif::ProgressBar;
-use itertools::Itertools;
 use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
 use rayon::{iter::ParallelIterator, prelude::*};
 use serde::{Deserialize, Serialize};
