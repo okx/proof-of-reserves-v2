@@ -10,6 +10,35 @@ use leveldb::{
     options::{Options, ReadOptions, WriteOptions},
 };
 use tracing::warn;
+use rand::Rng;
+
+#[derive(Debug, Clone)]
+pub struct UserId([u8; 32]);
+
+impl UserId {
+    pub fn rand() -> Self {
+        let mut bytes: [u8; 32] = [0; 32];
+        let mut rng = rand::thread_rng();
+        rng.fill(&mut bytes);
+        Self(bytes)
+    }
+}
+
+impl db_key::Key for UserId {
+    fn from_u8(key: &[u8]) -> UserId {
+        assert!(key.len() == 32);
+        let mut output: [u8; 32] = [0; 32];
+        unsafe {
+            std::ptr::copy_nonoverlapping(key.as_ptr(), output.as_mut_ptr(), 32);
+        }
+        UserId(output)
+    }
+
+    fn as_slice<T, F: Fn(&[u8]) -> T>(&self, f: F) -> T {
+        let mut dst = self.0.as_slice();
+        f(&dst)
+    }
+}
 
 pub struct LevelDb<K: db_key::Key> {
     db: Database<K>,
@@ -74,12 +103,22 @@ impl<K: db_key::Key> LevelDb<K> {
 #[cfg(test)]
 mod test {
     extern crate tempdir;
+    use std::path::Path;
+
     use tempdir::TempDir;
 
-    use crate::LevelDb;
+    use crate::{LevelDb, UserId};
+    use leveldb::{
+        database::{
+            batch::{Batch, Writebatch},
+            Database,
+        },
+        kv::KV,
+        options::{Options, ReadOptions, WriteOptions},
+    };
 
     #[test]
-    fn test_db() {
+    fn test_db_i32() {
         let tempdir = TempDir::new("example").unwrap();
         let db = LevelDb::<i32>::new(tempdir.path());
         db.put(1, b"hello");
@@ -91,5 +130,21 @@ mod test {
         let ret = db.get(1);
         assert_eq!(ret, None);
         db.delete(2);
+    }
+
+    #[test]
+    fn test_db_bytes() {
+        let tempdir = TempDir::new("example").unwrap();
+        let db = LevelDb::<UserId>::new(tempdir.path());
+        let key = UserId::rand();
+        db.put(key.clone(), b"hello");
+        // db.put(2, b"world");
+        let ret = db.get(key).unwrap();
+
+        assert_eq!(ret, b"hello");
+        // db.delete(1);
+        // let ret = db.get(1);
+        // assert_eq!(ret, None);
+        // db.delete(2);
     }
 }
