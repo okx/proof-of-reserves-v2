@@ -38,7 +38,8 @@ fn test() {
     let prover = MerkleSumTreeProver { accounts };
 
     let start = std::time::Instant::now();
-    let merkle_sum_proof = prover.get_proof_with_circuit_data(account_targets, &merkle_sum_circuit);
+    let merkle_sum_proof =
+        prover.get_proof_with_circuit_data(account_targets.as_slice(), &merkle_sum_circuit);
     println!("prove merkle sum tree in : {:?}", start.elapsed());
 
     let sub_proofs: [ProofWithPublicInputs<F, C, D>; RECURSION_BRANCHOUT_NUM] =
@@ -57,7 +58,7 @@ fn test() {
     let hash_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_hash_offset();
     let subhashes = sub_proofs
         .clone()
-        .map(|proof| HashOut::<F>::from_partial(&proof.public_inputs[hash_offset..]));
+        .map(|proof| HashOut::<F>::from_partial(&proof.public_inputs[hash_offset.clone()]));
     let recursive_prover = RecursiveProver {
         sub_proofs: sub_proofs,
         sub_circuit_vd: merkle_sum_circuit.verifier_only.clone(),
@@ -68,7 +69,7 @@ fn test() {
 
     let expected_hash = hash_n_subhashes::<F, D>(&subhashes.to_vec());
     let actual_hash =
-        HashOut::<F>::from_partial(&recursive_proof_result.public_inputs[hash_offset..]);
+        HashOut::<F>::from_partial(&recursive_proof_result.public_inputs[hash_offset]);
 
     assert_eq!(expected_hash, actual_hash);
 
