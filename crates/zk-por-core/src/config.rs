@@ -37,7 +37,8 @@ pub struct ConfigProver {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ConfigDb {
-    pub level_db_path: String,
+    pub level_db_user_path: String,
+    pub level_db_gmst_path: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]

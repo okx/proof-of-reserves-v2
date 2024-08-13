@@ -11,5 +11,6 @@ pub mod merkle_sum_prover;
 pub mod merkle_sum_tree;
 pub mod parser;
 pub mod recursive_prover;
+pub mod database;
 pub mod types;
 pub mod util;

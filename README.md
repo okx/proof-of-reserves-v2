@@ -21,6 +21,7 @@ python3 scripts/gen_test_data.py 100 131072
 - gen mst
 ```
 ENV=local cargo run -p zk-por-core --release --bin gen_mst
+nohup cargo run --release -p zk-por-core --bin prover run.json > run.log 2>&1 &
 ```
 
 ## code coverage

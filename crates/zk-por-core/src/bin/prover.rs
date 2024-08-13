@@ -1,13 +1,14 @@
+use indicatif::ProgressBar;
 use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{env, fs::File, io::Write, path::PathBuf, str::FromStr};
-use indicatif::ProgressBar;
 use zk_por_core::{
     account::Account,
     circuit_config::{STANDARD_CONFIG, STANDARD_ZK_CONFIG},
     circuit_registry::registry::CircuitRegistry,
     config::ProverConfig,
+    database::{DataBase, DbOption, UserId},
     e2e::{batch_prove_accounts, recursive_prove_subproofs},
     parser::{self, AccountParser, FilesCfg, FilesParser},
     types::{C, D, F},
@@ -25,6 +26,9 @@ fn main() {
     let cfg = ProverConfig::try_new().unwrap();
     let trace_cfg: TraceConfig = cfg.log.into();
     let _g = init_tracing(trace_cfg);
+
+    let mut database =
+        DataBase::new(DbOption { user_map_dir: cfg.db.level_db_user_path.to_string(), gmst_dir:  cfg.db.level_db_gmst_path.to_string() });
 
     const RECURSION_BRANCHOUT_NUM: usize = 64;
     const BATCH_PROVING_THREADS_NUM: usize = 64;
@@ -95,6 +99,22 @@ fn main() {
         parse_num += 1;
         let mut accounts: Vec<Account> =
             account_reader.read_n_accounts(offset, per_parse_account_num);
+
+        // persist users id->index mapping to database
+        let user_batch = accounts
+            .iter()
+            .enumerate()
+            .map(|(i, acct)| {
+                let hex_decode = hex::decode(&acct.id).unwrap();
+                assert_eq!(hex_decode.len(), 32);
+                let mut array = [0u8; 32];
+                array.copy_from_slice(&hex_decode);
+            
+                (UserId(array), (i+offset) as u32)
+            })
+            .collect::<Vec<(UserId, u32)>>();
+        database.add_batch_users(user_batch);
+
         let account_num = accounts.len();
         if account_num % batch_size != 0 {
             let pad_num = batch_size - account_num % batch_size;
@@ -160,4 +180,6 @@ fn main() {
             .expect(format!("fail to create proof file at {:#?}", proof_path).as_str());
         file.write_all(json!(proof).to_string().as_bytes()).expect("fail to write proof to file");
     }
+
+    // persist gmst to database
 }

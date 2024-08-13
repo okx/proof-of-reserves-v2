@@ -2476,8 +2476,10 @@ dependencies = [
  "anyhow",
  "config",
  "criterion",
+ "db-key",
  "diesel",
  "env_logger",
+ "hex",
  "indicatif",
  "itertools 0.13.0",
  "jemallocator",
@@ -2492,8 +2494,10 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
+ "tempdir",
  "thiserror",
  "tracing",
+ "zk-por-db",
  "zk-por-tracing",
 ]
 
