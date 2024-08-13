@@ -73,13 +73,10 @@ impl<K: db_key::Key> LevelDb<K> {
 
 #[cfg(test)]
 mod test {
-    extern crate tempdir;
-    
 
     use tempdir::TempDir;
 
     use crate::LevelDb;
-    use leveldb::kv::KV;
 
     #[test]
     fn test_db_i32() {
