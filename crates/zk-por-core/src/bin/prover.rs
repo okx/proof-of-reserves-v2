@@ -1,3 +1,4 @@
+use indicatif::ProgressBar;
 use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
 use rayon::{iter::ParallelIterator, prelude::*};
 use serde::{Deserialize, Serialize};
@@ -31,7 +32,7 @@ fn main() {
     let _g = init_tracing(trace_cfg);
 
     const RECURSION_BRANCHOUT_NUM: usize = 64;
-    const BATCH_PROVING_THREADS_NUM: usize = 4;
+    const BATCH_PROVING_THREADS_NUM: usize = 2;
     const RECURSIVE_PROVING_THREADS_NUM: usize = 2;
 
     if cfg.prover.recursion_branchout_num as usize != RECURSION_BRANCHOUT_NUM {
@@ -115,7 +116,7 @@ fn main() {
 
     let mut parse_num = 0;
     let mut batch_proofs = vec![];
-
+    let bar = ProgressBar::new(account_reader.total_num_of_users() as u64);
     while offset < account_reader.total_num_of_users() {
         parse_num += 1;
         let mut accounts: Vec<Account> =
@@ -187,8 +188,10 @@ fn main() {
             parse_num,
             start.elapsed()
         );
+        bar.inc(account_num as u64);
         offset += per_parse_account_num;
     }
+    bar.finish();
 
     tracing::info!(
         "finish batch proving {} accounts, generating {} proofs in {:?}",

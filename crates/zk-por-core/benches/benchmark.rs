@@ -30,7 +30,7 @@ pub fn bench_batch_circuit(
         b.iter(|| {
             (0..parallism).into_par_iter().for_each(|_| {
                 let prover = MerkleSumTreeProver { accounts: accounts.clone() };
-                let _ = prover.get_proof_with_circuit_data(account_targets.clone(), &circuit_data);
+                let _ = prover.get_proof_with_circuit_data(&account_targets, &circuit_data);
             });
         })
     });
@@ -82,7 +82,8 @@ pub fn bench_recursive_circuit<const SUBPROOF_NUM: usize>(
     let accounts = gen_accounts_with_random_data(batch_size, asset_num);
     let prover = MerkleSumTreeProver { accounts };
 
-    let merkle_sum_proof = prover.get_proof_with_circuit_data(account_targets, &merkle_sum_circuit);
+    let merkle_sum_proof =
+        prover.get_proof_with_circuit_data(&account_targets, &merkle_sum_circuit);
 
     let (recursive_circuit, recursive_targets) = build_recursive_n_circuit::<C, SUBPROOF_NUM>(
         &merkle_sum_circuit.common,
