@@ -57,7 +57,7 @@ fn test() {
     let hash_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_hash_offset();
     let subhashes = sub_proofs
         .clone()
-        .map(|proof| HashOut::<F>::from_partial(&proof.public_inputs[hash_offset]));
+        .map(|proof| HashOut::<F>::from_partial(&proof.public_inputs[hash_offset.clone()]));
     let recursive_prover = RecursiveProver {
         sub_proofs: sub_proofs,
         sub_circuit_vd: merkle_sum_circuit.verifier_only.clone(),
