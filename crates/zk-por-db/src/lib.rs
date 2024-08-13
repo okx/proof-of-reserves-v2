@@ -9,7 +9,6 @@ use leveldb::{
     kv::KV,
     options::{Options, ReadOptions, WriteOptions},
 };
-use rand::Rng;
 use tracing::warn;
 
 pub struct LevelDb<K: db_key::Key> {
@@ -75,19 +74,12 @@ impl<K: db_key::Key> LevelDb<K> {
 #[cfg(test)]
 mod test {
     extern crate tempdir;
-    use std::path::Path;
+    
 
     use tempdir::TempDir;
 
     use crate::LevelDb;
-    use leveldb::{
-        database::{
-            batch::{Batch, Writebatch},
-            Database,
-        },
-        kv::KV,
-        options::{Options, ReadOptions, WriteOptions},
-    };
+    use leveldb::kv::KV;
 
     #[test]
     fn test_db_i32() {

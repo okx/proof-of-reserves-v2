@@ -1,4 +1,4 @@
-use std::{io::Read, str::FromStr};
+use std::str::FromStr;
 
 use plonky2::{hash::hash_types::HashOut, plonk::config::GenericHashOut};
 use rand::Rng;

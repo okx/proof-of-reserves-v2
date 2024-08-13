@@ -12,7 +12,7 @@ use zk_por_core::{
     circuit_registry::registry::CircuitRegistry,
     config::ProverConfig,
     database::{DataBase, DbOption, UserId},
-    e2e::{batch_prove_accounts, prove_subproofs, recursive_prove_subproofs},
+    e2e::{batch_prove_accounts, prove_subproofs},
     global::{GlobalConfig, GlobalMst, GLOBAL_MST},
     merkle_sum_prover::circuits::merkle_sum_circuit::MerkleSumNodeTarget,
     merkle_sum_tree::MerkleSumTree,
