@@ -1,3 +1,5 @@
+#![allow(unused_variables)]
+
 use clap::{Parser, Subcommand};
 use zk_por_core::error::ProofError;
 
