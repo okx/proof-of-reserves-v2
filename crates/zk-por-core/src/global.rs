@@ -44,6 +44,10 @@ impl GlobalMst {
         self.inner.len()
     }
 
+    pub fn get_num_of_leaves(&self) -> usize {
+        self.cfg.batch_size * self.cfg.num_of_batches
+    }
+
     /// convert a mst node inner index to global index in gmst.
     /// For a mst, the inner index is level-by-level, e.g.,
     ///       14

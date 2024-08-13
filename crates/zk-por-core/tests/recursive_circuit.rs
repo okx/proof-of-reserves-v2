@@ -38,7 +38,8 @@ fn test() {
     let prover = MerkleSumTreeProver { accounts };
 
     let start = std::time::Instant::now();
-    let merkle_sum_proof = prover.get_proof_with_circuit_data(account_targets, &merkle_sum_circuit);
+    let merkle_sum_proof =
+        prover.get_proof_with_circuit_data(account_targets.as_slice(), &merkle_sum_circuit);
     println!("prove merkle sum tree in : {:?}", start.elapsed());
 
     let sub_proofs: [ProofWithPublicInputs<F, C, D>; RECURSION_BRANCHOUT_NUM] =

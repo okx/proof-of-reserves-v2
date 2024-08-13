@@ -56,7 +56,7 @@ impl<const RECURSION_BRANCHOUT_NUM: usize> CircuitRegistry<RECURSION_BRANCHOUT_N
         let start = std::time::Instant::now();
         let prover = MerkleSumTreeProver { accounts };
         let empty_batch_proof =
-            prover.get_proof_with_circuit_data(account_targets.clone(), &batch_circuit_data);
+            prover.get_proof_with_circuit_data(&account_targets, &batch_circuit_data);
         tracing::info!(
             "prove merkle sum tree with batch size {} in : {:?}",
             batch_size,

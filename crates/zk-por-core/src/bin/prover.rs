@@ -37,8 +37,8 @@ fn main() {
         DataBase::new(DbOption { user_map_dir: cfg.db.level_db_user_path.to_string(), gmst_dir:  cfg.db.level_db_gmst_path.to_string() });
 
     const RECURSION_BRANCHOUT_NUM: usize = 64;
-    const BATCH_PROVING_THREADS_NUM: usize = 64;
-    const RECURSIVE_PROVING_THREADS_NUM: usize = 64;
+    const BATCH_PROVING_THREADS_NUM: usize = 2;
+    const RECURSIVE_PROVING_THREADS_NUM: usize = 2;
 
     if cfg.prover.recursion_branchout_num as usize != RECURSION_BRANCHOUT_NUM {
         panic!("The recursion_branchout_num is not configured to be equal to 64");
