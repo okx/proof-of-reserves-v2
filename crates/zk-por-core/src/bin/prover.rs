@@ -4,16 +4,15 @@ use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
 use rayon::{iter::ParallelIterator, prelude::*};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tracing::info;
 use std::{env, fs::File, io::Write, path::PathBuf, str::FromStr, sync::RwLock};
+use tracing::info;
 use zk_por_core::{
     account::Account,
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
     config::ProverConfig,
     database::{DataBase, DbOption, UserId},
-    e2e::{batch_prove_accounts, recursive_prove_subproofs},
-    e2e::{ prove_subproofs},
+    e2e::{batch_prove_accounts, prove_subproofs, recursive_prove_subproofs},
     global::{GlobalConfig, GlobalMst, GLOBAL_MST},
     merkle_sum_prover::circuits::merkle_sum_circuit::MerkleSumNodeTarget,
     merkle_sum_tree::MerkleSumTree,
@@ -35,8 +34,10 @@ fn main() {
     let trace_cfg: TraceConfig = cfg.log.into();
     let _g = init_tracing(trace_cfg);
 
-    let mut database =
-        DataBase::new(DbOption { user_map_dir: cfg.db.level_db_user_path.to_string(), gmst_dir:  cfg.db.level_db_gmst_path.to_string() });
+    let mut database = DataBase::new(DbOption {
+        user_map_dir: cfg.db.level_db_user_path.to_string(),
+        gmst_dir: cfg.db.level_db_gmst_path.to_string(),
+    });
 
     const RECURSION_BRANCHOUT_NUM: usize = 64;
     const BATCH_PROVING_THREADS_NUM: usize = 2;
@@ -138,8 +139,8 @@ fn main() {
                 assert_eq!(hex_decode.len(), 32);
                 let mut array = [0u8; 32];
                 array.copy_from_slice(&hex_decode);
-            
-                (UserId(array), (i+offset) as u32)
+
+                (UserId(array), (i + offset) as u32)
             })
             .collect::<Vec<(UserId, u32)>>();
         database.add_batch_users(user_batch);
@@ -337,22 +338,23 @@ fn main() {
     }
 
     // persist gmst to database
-   
+
     let global_mst = GLOBAL_MST.get().unwrap();
-    let _g= global_mst.read().expect("unable to get a lock");
+    let _g = global_mst.read().expect("unable to get a lock");
 
     let length = _g.get_tree_length();
     info!("start persist gmst into db of size: {:?}", length);
-    let chunk_size = 1<<12;
-    let mut i=0;
-    while i <length {
-        let end = if i+chunk_size <= length {i+chunk_size} else {length};
+    let chunk_size = 1 << 12;
+    let mut i = 0;
+    while i < length {
+        let end = if i + chunk_size <= length { i + chunk_size } else { length };
         let nodes = _g.get_nodes(i..end);
-        let batches = (i..end).into_iter().enumerate().map(|(chunk_idx, j)| {
-            ((i+j).try_into().unwrap(), nodes[chunk_idx])
-        }).collect::<Vec<(i32, HashOut<F>)>>();
+        let batches = (i..end)
+            .into_iter()
+            .enumerate()
+            .map(|(chunk_idx, j)| ((i + j).try_into().unwrap(), nodes[chunk_idx]))
+            .collect::<Vec<(i32, HashOut<F>)>>();
         database.add_batch_gmst_nodes(batches);
-        i+= chunk_size;
+        i += chunk_size;
     }
-
 }

@@ -9,9 +9,8 @@ use leveldb::{
     kv::KV,
     options::{Options, ReadOptions, WriteOptions},
 };
-use tracing::warn;
 use rand::Rng;
-
+use tracing::warn;
 
 pub struct LevelDb<K: db_key::Key> {
     db: Database<K>,
@@ -80,7 +79,7 @@ mod test {
 
     use tempdir::TempDir;
 
-    use crate::{LevelDb};
+    use crate::LevelDb;
     use leveldb::{
         database::{
             batch::{Batch, Writebatch},

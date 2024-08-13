@@ -47,7 +47,7 @@ impl GlobalMst {
         self.cfg.batch_size * self.cfg.num_of_batches
     }
 
-    pub fn get_nodes(&self, range: std::ops::Range<usize>) -> &[HashOut<F>]{
+    pub fn get_nodes(&self, range: std::ops::Range<usize>) -> &[HashOut<F>] {
         &self.inner[range]
     }
 
