@@ -75,6 +75,11 @@ impl MerkleSumNodeTarget {
         }
     }
 
+    pub fn pub_input_root_hash_offset() -> std::ops::Range<usize> {
+        // the first two targets are sum_equity and sum_debt.
+        2..6
+    }
+
     /// Register this node targets as a public input
     pub fn register_as_public_input(&self, builder: &mut CircuitBuilder<F, D>) {
         builder.register_public_input(self.sum_equity);

@@ -108,6 +108,7 @@ impl AccountParser for FilesParser {
     fn total_num_of_users(&self) -> usize {
         self.total_num_of_users
     }
+
     /// `offset` is to the global user vectors;
     fn read_n_accounts(&mut self, offset: usize, n: usize) -> Vec<Account> {
         debug!("read with offset: {:?}, account_num: {:?}", offset, n);
