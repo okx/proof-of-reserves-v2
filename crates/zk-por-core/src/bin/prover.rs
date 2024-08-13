@@ -1,8 +1,8 @@
+use indicatif::ProgressBar;
 use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
 use rayon::{iter::ParallelIterator, prelude::*};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use indicatif::ProgressBar;
 use std::{env, fs::File, io::Write, path::PathBuf, str::FromStr, sync::RwLock};
 use zk_por_core::{
     account::Account,

@@ -61,7 +61,8 @@ pub fn get_recursive_siblings_index(
     let mut recursive_idx = this_mst_root_offset / global_mst.cfg.recursion_branchout_num;
     let mut recursive_offset = this_mst_root_offset % global_mst.cfg.recursion_branchout_num;
 
-    let layers = log2_strict(global_mst.cfg.num_of_batches.next_power_of_two()).div_ceil(log2_strict(global_mst.cfg.recursion_branchout_num));
+    let layers = log2_strict(global_mst.cfg.num_of_batches.next_power_of_two())
+        .div_ceil(log2_strict(global_mst.cfg.recursion_branchout_num));
 
     for i in 0..layers {
         let mut layer = Vec::new();
@@ -141,7 +142,6 @@ pub mod test {
 
         let siblings = get_mst_siblings_index(global_index, &gmst);
         assert_eq!(siblings, vec![1, 49, 73]);
-
     }
 
     #[test]

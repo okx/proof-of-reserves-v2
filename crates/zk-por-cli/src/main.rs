@@ -20,7 +20,7 @@ pub enum ZkPorCommitCommands {
     },
     GetMerkleProof {
         #[arg(short, long)]
-        user_id: String
+        user_id: String,
     },
     VerifyProof {
         #[arg(short, long)]
@@ -36,15 +36,18 @@ pub enum ZkPorCommitCommands {
     },
 }
 
-
 impl Execute for ZkPorCommitCommands {
     fn execute(&self) -> std::result::Result<(), ProofError> {
         match self {
-            ZkPorCommitCommands::Prove {
-                cfg_path
+            ZkPorCommitCommands::Prove { cfg_path } => todo!(),
+            ZkPorCommitCommands::GetMerkleProof { user_id } => todo!(),
+            ZkPorCommitCommands::VerifyProof {
+                final_proof,
+                merkle_proof,
+                user_id,
+                skip_circit_verify,
+                circuit_vd,
             } => todo!(),
-            ZkPorCommitCommands::GetMerkleProof {user_id} => todo!(),
-            ZkPorCommitCommands::VerifyProof {final_proof, merkle_proof, user_id, skip_circit_verify, circuit_vd} => todo!()
         }
     }
 }
