@@ -3,7 +3,7 @@ use zk_por_core::{
     account::gen_accounts_with_random_data,
     circuit_config::STANDARD_CONFIG,
     merkle_sum_prover::circuits::merkle_sum_circuit::build_merkle_sum_tree_circuit,
-    recursive_prover::prover::RecursiveProver,
+    recursive_prover::{prover::RecursiveProver, recursive_circuit::RecursiveTargets},
     types::{C, D, F},
 };
 
@@ -54,8 +54,10 @@ fn test() {
     println!("build recursive N circuit in : {:?}", start.elapsed());
 
     let start = std::time::Instant::now();
-    let subhashes =
-        sub_proofs.clone().map(|proof| HashOut::<F>::from_partial(&proof.public_inputs[2..]));
+    let hash_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_hash_offset();
+    let subhashes = sub_proofs
+        .clone()
+        .map(|proof| HashOut::<F>::from_partial(&proof.public_inputs[hash_offset..]));
     let recursive_prover = RecursiveProver {
         sub_proofs: sub_proofs,
         sub_circuit_vd: merkle_sum_circuit.verifier_only.clone(),
@@ -65,7 +67,8 @@ fn test() {
     println!("prove recursive subproofs in : {:?}", start.elapsed());
 
     let expected_hash = hash_n_subhashes::<F, D>(&subhashes.to_vec());
-    let actual_hash = HashOut::<F>::from_partial(&recursive_proof_result.public_inputs[2..]);
+    let actual_hash =
+        HashOut::<F>::from_partial(&recursive_proof_result.public_inputs[hash_offset..]);
 
     assert_eq!(expected_hash, actual_hash);
 

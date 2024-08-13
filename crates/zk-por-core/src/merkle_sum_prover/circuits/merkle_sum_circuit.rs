@@ -75,6 +75,11 @@ impl MerkleSumNodeTarget {
         }
     }
 
+    pub fn pub_input_hash_offset() -> usize {
+        // the first two targets are sum_equity and sum_debt.
+        2
+    }
+
     /// Register this node targets as a public input
     pub fn register_as_public_input(&self, builder: &mut CircuitBuilder<F, D>) {
         builder.register_public_input(self.sum_equity);

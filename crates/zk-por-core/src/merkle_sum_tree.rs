@@ -79,7 +79,7 @@ pub mod test {
         account::gen_accounts_with_random_data,
         circuit_config::STANDARD_CONFIG,
         merkle_sum_prover::{
-            circuits::merkle_sum_circuit::build_merkle_sum_tree_circuit,
+            circuits::merkle_sum_circuit::{build_merkle_sum_tree_circuit, MerkleSumNodeTarget},
             prover::MerkleSumTreeProver,
         },
         parser::read_json_into_accounts_vec,
@@ -152,8 +152,8 @@ pub mod test {
         let prover = MerkleSumTreeProver { accounts };
         let proof = prover.get_proof_with_circuit_data(account_targets.clone(), &batch_circuit);
 
-        // exclude the first two pub inputs for equity and debt
-        let proof_root_hash = HashOut::<F>::from_partial(&proof.public_inputs[2..]);
+        let hash_offset = MerkleSumNodeTarget::pub_input_hash_offset();
+        let proof_root_hash = HashOut::<F>::from_partial(&proof.public_inputs[hash_offset..]);
         assert_eq!(proof_root_hash, merkle_sum_tree.get_root().hash);
     }
 }

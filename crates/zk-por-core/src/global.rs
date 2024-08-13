@@ -30,7 +30,7 @@ impl GlobalMst {
         let top_level =
             (cfg.num_of_batches as f64).log(cfg.recursion_branchout_num as f64).ceil() as usize;
 
-        let mst_vec = vec![HashOut::default(); cfg.num_of_batches];
+        let mst_vec = vec![HashOut::default(); 0]; // will resize later
         let mut mst = Self { inner: mst_vec, top_recursion_level: top_level, cfg: cfg };
         // the number of hash is one smaller to the index of the root node of the last recursion level.
         let root_node_idx = mst.get_recursive_global_index(top_level, 0);
@@ -246,7 +246,7 @@ mod test {
                 0 - 7, 8 - 15, 16 - 23, 24 - 31, 32 - 39, 40 - 47
         */
         assert_eq!(total_len, 97);
-        assert_eq!(gmst.top_recursion_level, 3);
+        assert_eq!(gmst.top_recursion_level, 2);
 
         assert_eq!(gmst.get_batch_tree_global_index(0, 1), 1);
         assert_eq!(gmst.get_batch_tree_global_index(0, 14), 84);

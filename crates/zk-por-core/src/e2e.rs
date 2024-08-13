@@ -106,11 +106,13 @@ pub fn recursive_prove_subproofs<const RECURSION_BRANCHOUT_NUM: usize>(
         let start = std::time::Instant::now();
 
         let last_level_vd_digest = last_level_circuit_vd.circuit_digest;
-        let last_level_empty_proof =
-            circuit_registry.get_empty_proof(&last_level_vd_digest).expect(
+        let last_level_empty_proof = circuit_registry
+            .get_empty_proof(&last_level_vd_digest)
+            .expect(
                 format!("fail to find empty proof for circuit vd {:?}", last_level_vd_digest)
                     .as_str(),
-            );
+            )
+            .clone();
 
         let subproof_len = last_level_proofs.len();
 
@@ -118,7 +120,7 @@ pub fn recursive_prove_subproofs<const RECURSION_BRANCHOUT_NUM: usize>(
             let pad_num = RECURSION_BRANCHOUT_NUM - subproof_len % RECURSION_BRANCHOUT_NUM;
             tracing::info!("At level {}, {} subproofs are not a multiple of RECURSION_BRANCHOUT_NUM {}, hence padding {} empty proofs. ", level, subproof_len, RECURSION_BRANCHOUT_NUM, pad_num);
 
-            last_level_proofs.resize(subproof_len + pad_num, last_level_empty_proof.clone());
+            last_level_proofs.resize(subproof_len + pad_num, last_level_empty_proof);
         }
 
         last_level_proofs = prove_subproofs(
