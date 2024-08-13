@@ -75,9 +75,18 @@ impl MerkleSumTree {
 
 #[cfg(test)]
 pub mod test {
-    use crate::{account::gen_accounts_with_random_data, circuit_config::STANDARD_CONFIG, merkle_sum_prover::circuits::merkle_sum_circuit::build_merkle_sum_tree_circuit, parser::read_json_into_accounts_vec, types::F, merkle_sum_prover::prover::MerkleSumTreeProver};
-    use plonky2_field::types::Field;
+    use crate::{
+        account::gen_accounts_with_random_data,
+        circuit_config::STANDARD_CONFIG,
+        merkle_sum_prover::{
+            circuits::merkle_sum_circuit::build_merkle_sum_tree_circuit,
+            prover::MerkleSumTreeProver,
+        },
+        parser::read_json_into_accounts_vec,
+        types::F,
+    };
     use plonky2::hash::hash_types::HashOut;
+    use plonky2_field::types::Field;
 
     use super::{MerkleSumNode, MerkleSumTree};
 
@@ -137,7 +146,8 @@ pub mod test {
 
         let merkle_sum_tree = MerkleSumTree::new_tree_from_accounts(&accounts);
 
-        let (batch_circuit, account_targets) = build_merkle_sum_tree_circuit(batch_num, num_assets, STANDARD_CONFIG);
+        let (batch_circuit, account_targets) =
+            build_merkle_sum_tree_circuit(batch_num, num_assets, STANDARD_CONFIG);
 
         let prover = MerkleSumTreeProver { accounts };
         let proof = prover.get_proof_with_circuit_data(account_targets.clone(), &batch_circuit);

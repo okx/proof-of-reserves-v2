@@ -1,7 +1,4 @@
-use plonky2:: plonk::{
-        proof::ProofWithPublicInputs,
-        circuit_data::VerifierOnlyCircuitData,
-};
+use plonky2::plonk::{circuit_data::VerifierOnlyCircuitData, proof::ProofWithPublicInputs};
 
 use rayon::prelude::*;
 
@@ -41,13 +38,24 @@ pub fn batch_prove_accounts<const RECURSION_BRANCHOUT_NUM: usize>(
     batch_proofs
 }
 
-pub fn prove_subproofs<const RECURSION_BRANCHOUT_NUM: usize>(subproofs: Vec<ProofWithPublicInputs<F, C, D>>, last_level_circuit_vd : VerifierOnlyCircuitData<C, D>, circuit_registry: &CircuitRegistry<RECURSION_BRANCHOUT_NUM>, parallism : usize, level : usize) -> Vec<ProofWithPublicInputs<F, C, D>> {
+pub fn prove_subproofs<const RECURSION_BRANCHOUT_NUM: usize>(
+    subproofs: Vec<ProofWithPublicInputs<F, C, D>>,
+    last_level_circuit_vd: VerifierOnlyCircuitData<C, D>,
+    circuit_registry: &CircuitRegistry<RECURSION_BRANCHOUT_NUM>,
+    parallism: usize,
+    level: usize,
+) -> Vec<ProofWithPublicInputs<F, C, D>> {
     assert_eq!(subproofs.len() % RECURSION_BRANCHOUT_NUM, 0);
     let last_level_vd_digest = last_level_circuit_vd.circuit_digest;
 
-    let (recursive_circuit, recursive_targets) = circuit_registry
-        .get_recursive_circuit(&last_level_vd_digest)
-        .expect(format!("No recursive circuit found for inner circuit with vd {:?}", last_level_vd_digest).as_str());
+    let (recursive_circuit, recursive_targets) =
+        circuit_registry.get_recursive_circuit(&last_level_vd_digest).expect(
+            format!(
+                "No recursive circuit found for inner circuit with vd {:?}",
+                last_level_vd_digest
+            )
+            .as_str(),
+        );
 
     let expected_this_level_proof_num = subproofs.len() / RECURSION_BRANCHOUT_NUM;
     let mut this_level_proofs = vec![];
@@ -65,18 +73,22 @@ pub fn prove_subproofs<const RECURSION_BRANCHOUT_NUM: usize>(subproofs: Vec<Proo
                             .expect("subproofs length not equal to RECURSION_BRANCHOUT_NUM"),
                         sub_circuit_vd: last_level_circuit_vd.clone(),
                     };
-                    let proof = recursive_prover.get_proof_with_circuit_data(
-                        recursive_targets.clone(),
-                        &recursive_circuit,
-                    );
+                    let proof = recursive_prover
+                        .get_proof_with_circuit_data(recursive_targets.clone(), &recursive_circuit);
                     proof
                 })
                 .collect();
             this_level_proofs.extend(proofs.into_iter());
-            tracing::info!("finish {}/{} proofs in level {}/{}", this_level_proofs.len(), expected_this_level_proof_num, level, circuit_registry.get_recursive_levels());
+            tracing::info!(
+                "finish {}/{} proofs in level {}/{}",
+                this_level_proofs.len(),
+                expected_this_level_proof_num,
+                level,
+                circuit_registry.get_recursive_levels()
+            );
         })
         .collect::<Vec<_>>();
-    
+
     this_level_proofs
 }
 
@@ -96,10 +108,8 @@ pub fn recursive_prove_subproofs<const RECURSION_BRANCHOUT_NUM: usize>(
         let last_level_vd_digest = last_level_circuit_vd.circuit_digest;
         let last_level_empty_proof =
             circuit_registry.get_empty_proof(&last_level_vd_digest).expect(
-                format!(
-                    "fail to find empty proof for circuit vd {:?}", last_level_vd_digest
-                )
-                .as_str(),
+                format!("fail to find empty proof for circuit vd {:?}", last_level_vd_digest)
+                    .as_str(),
             );
 
         let subproof_len = last_level_proofs.len();
@@ -111,11 +121,23 @@ pub fn recursive_prove_subproofs<const RECURSION_BRANCHOUT_NUM: usize>(
             last_level_proofs.resize(subproof_len + pad_num, last_level_empty_proof.clone());
         }
 
-        last_level_proofs = prove_subproofs(last_level_proofs, last_level_circuit_vd.clone(), circuit_registry, parallism, level);
+        last_level_proofs = prove_subproofs(
+            last_level_proofs,
+            last_level_circuit_vd.clone(),
+            circuit_registry,
+            parallism,
+            level,
+        );
 
         let recursive_circuit = circuit_registry
             .get_recursive_circuit(&last_level_circuit_vd.circuit_digest)
-            .expect(format!("No recursive circuit found for inner circuit with vd {:?}", last_level_circuit_vd.circuit_digest).as_str())
+            .expect(
+                format!(
+                    "No recursive circuit found for inner circuit with vd {:?}",
+                    last_level_circuit_vd.circuit_digest
+                )
+                .as_str(),
+            )
             .0;
 
         last_level_circuit_vd = recursive_circuit.verifier_only.clone();

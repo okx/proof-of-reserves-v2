@@ -1,16 +1,15 @@
-use plonky2::plonk::proof::ProofWithPublicInputs;
-use plonky2::hash::hash_types::HashOut;
+use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
 use zk_por_core::{
-    merkle_sum_prover::circuits::merkle_sum_circuit::build_merkle_sum_tree_circuit,
-    recursive_prover::prover::RecursiveProver, types::{C, F, D},
     account::gen_accounts_with_random_data,
     circuit_config::STANDARD_CONFIG,
+    merkle_sum_prover::circuits::merkle_sum_circuit::build_merkle_sum_tree_circuit,
+    recursive_prover::prover::RecursiveProver,
+    types::{C, D, F},
 };
 
 use zk_por_core::{
     merkle_sum_prover::prover::MerkleSumTreeProver,
-    recursive_prover::recursive_circuit::build_recursive_n_circuit,
-    recursive_prover::prover::hash_n_subhashes,
+    recursive_prover::{prover::hash_n_subhashes, recursive_circuit::build_recursive_n_circuit},
 };
 
 use plonky2_field::types::Field;
@@ -39,8 +38,7 @@ fn test() {
     let prover = MerkleSumTreeProver { accounts };
 
     let start = std::time::Instant::now();
-    let merkle_sum_proof =
-        prover.get_proof_with_circuit_data(account_targets, &merkle_sum_circuit);
+    let merkle_sum_proof = prover.get_proof_with_circuit_data(account_targets, &merkle_sum_circuit);
     println!("prove merkle sum tree in : {:?}", start.elapsed());
 
     let sub_proofs: [ProofWithPublicInputs<F, C, D>; RECURSION_BRANCHOUT_NUM] =
@@ -56,9 +54,8 @@ fn test() {
     println!("build recursive N circuit in : {:?}", start.elapsed());
 
     let start = std::time::Instant::now();
-    let subhashes = sub_proofs.clone().map(|proof|{
-        HashOut::<F>::from_partial(&proof.public_inputs[2..])
-    });
+    let subhashes =
+        sub_proofs.clone().map(|proof| HashOut::<F>::from_partial(&proof.public_inputs[2..]));
     let recursive_prover = RecursiveProver {
         sub_proofs: sub_proofs,
         sub_circuit_vd: merkle_sum_circuit.verifier_only.clone(),

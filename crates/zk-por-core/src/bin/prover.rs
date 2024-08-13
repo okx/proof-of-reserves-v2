@@ -1,5 +1,5 @@
 use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
-use rayon::iter::ParallelIterator;
+use rayon::{iter::ParallelIterator, prelude::*};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{env, fs::File, io::Write, path::PathBuf, str::FromStr, sync::RwLock};
@@ -9,13 +9,12 @@ use zk_por_core::{
     circuit_registry::registry::CircuitRegistry,
     config::ProverConfig,
     e2e::{batch_prove_accounts, prove_subproofs},
-    parser::{self, AccountParser, FilesCfg, FilesParser},
-    types::{C, D, F},
     global::{GlobalConfig, GlobalMst, GLOBAL_MST},
     merkle_sum_tree::MerkleSumTree,
+    parser::{self, AccountParser, FilesCfg, FilesParser},
+    types::{C, D, F},
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
-use rayon::prelude::*;
 
 #[derive(Serialize, Deserialize)]
 struct Proof {
@@ -73,9 +72,9 @@ fn main() {
     match GLOBAL_MST.set(RwLock::new(GlobalMst::new(GlobalConfig {
         num_of_tokens: cfg.prover.num_of_tokens,
         num_of_batches: batch_num,
-        batch_size: batch_size, 
+        batch_size: batch_size,
         recursion_branchout_num: cfg.prover.recursion_branchout_num,
-    }))){ 
+    }))) {
         Ok(_) => (),
         Err(_) => {
             panic!("set global mst error");
@@ -130,19 +129,27 @@ fn main() {
         );
 
         let batch_idx_base = batch_proofs.len();
-        let root_hashes : Vec<HashOut<F>> = accounts.par_chunks(batch_size).enumerate().map(|(i, account_batch)|{
-            let batch_idx = batch_idx_base + i;
-            let mst = MerkleSumTree::new_tree_from_accounts(&account_batch.to_vec());
+        let root_hashes: Vec<HashOut<F>> = accounts
+            .par_chunks(batch_size)
+            .enumerate()
+            .map(|(i, account_batch)| {
+                let batch_idx = batch_idx_base + i;
+                let mst = MerkleSumTree::new_tree_from_accounts(&account_batch.to_vec());
 
-            let global_mst = GLOBAL_MST.get().unwrap();
-            let mut _g = global_mst.write().expect("unable to get a lock");
+                let global_mst = GLOBAL_MST.get().unwrap();
+                let mut _g = global_mst.write().expect("unable to get a lock");
 
-            for i in 0..batch_size * 2 - 1 {
-                _g.set_batch_hash(batch_idx, i, mst.merkle_sum_tree[i].hash);
-            }
-            drop(_g);
-            mst.get_root().hash
-        }).collect();
+                for inner_tree_node_idx in 0..batch_size * 2 - 1 {
+                    _g.set_batch_hash(
+                        batch_idx,
+                        inner_tree_node_idx,
+                        mst.merkle_sum_tree[inner_tree_node_idx].hash,
+                    );
+                }
+                drop(_g);
+                mst.get_root().hash
+            })
+            .collect();
 
         let proofs = batch_prove_accounts(
             &circuit_registry,
@@ -194,35 +201,45 @@ fn main() {
         let last_level_vd_digest = last_level_circuit_vd.circuit_digest;
         let last_level_empty_proof =
             circuit_registry.get_empty_proof(&last_level_vd_digest).expect(
-                format!(
-                    "fail to find empty proof for circuit vd {:?}", last_level_vd_digest
-                )
-                .as_str(),
+                format!("fail to find empty proof for circuit vd {:?}", last_level_vd_digest)
+                    .as_str(),
             );
 
         let subproof_len = last_level_proofs.len();
 
         if subproof_len % RECURSION_BRANCHOUT_NUM != 0 {
             let pad_num = RECURSION_BRANCHOUT_NUM - subproof_len % RECURSION_BRANCHOUT_NUM;
-            tracing::info!("{} subproofs are not a multiple of RECURSION_BRANCHOUT_NUM {}, hence padding {} empty proofs. ", subproof_len, RECURSION_BRANCHOUT_NUM, pad_num);
+            tracing::info!("At level {}, {} subproofs are not a multiple of RECURSION_BRANCHOUT_NUM {}, hence padding {} empty proofs. ", level, subproof_len, RECURSION_BRANCHOUT_NUM, pad_num);
 
             last_level_proofs.resize(subproof_len + pad_num, last_level_empty_proof.clone());
         }
 
-        last_level_proofs.iter().enumerate().for_each(|(i, proof)|{
+        last_level_proofs.iter().enumerate().for_each(|(i, proof)| {
             let proof_root_hash = HashOut::<F>::from_partial(&proof.public_inputs[2..]);
 
             let global_mst = GLOBAL_MST.get().unwrap();
             let mut _g = global_mst.write().expect("unable to get a lock");
-            _g.set_recursive_hash(level-1, i, proof_root_hash);
+            _g.set_recursive_hash(level - 1, i, proof_root_hash);
             drop(_g);
         });
 
-        let this_level_proofs = prove_subproofs(last_level_proofs, last_level_circuit_vd.clone(), &circuit_registry, RECURSIVE_PROVING_THREADS_NUM, level);
+        let this_level_proofs = prove_subproofs(
+            last_level_proofs,
+            last_level_circuit_vd.clone(),
+            &circuit_registry,
+            RECURSIVE_PROVING_THREADS_NUM,
+            level,
+        );
 
         let recursive_circuit = circuit_registry
             .get_recursive_circuit(&last_level_circuit_vd.circuit_digest)
-            .expect(format!("No recursive circuit found for inner circuit with vd {:?}", last_level_circuit_vd.circuit_digest).as_str())
+            .expect(
+                format!(
+                    "No recursive circuit found for inner circuit with vd {:?}",
+                    last_level_circuit_vd.circuit_digest
+                )
+                .as_str(),
+            )
             .0;
 
         last_level_circuit_vd = recursive_circuit.verifier_only.clone();
@@ -249,6 +266,8 @@ fn main() {
     _g.set_recursive_hash(recursive_levels, 0, proof_root_hash);
     drop(_g);
 
+    assert!(!GLOBAL_MST.get().unwrap().read().unwrap().is_integral());
+
     circuit_registry
         .get_root_circuit()
         .verify(root_proof.clone())
@@ -259,8 +278,6 @@ fn main() {
         batch_proof_num,
         start.elapsed()
     );
-
-    assert!(!GLOBAL_MST.get().unwrap().read().unwrap().is_integral());
 
     if !bench_mode {
         let root_circuit_digest = circuit_registry.get_root_circuit().verifier_only.circuit_digest;
