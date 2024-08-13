@@ -4,11 +4,13 @@ use rayon::{iter::ParallelIterator, prelude::*};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{env, fs::File, io::Write, path::PathBuf, str::FromStr, sync::RwLock};
+use tracing::info;
 use zk_por_core::{
     account::Account,
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
     config::ProverConfig,
+    database::{DataBase, DbOption, UserId},
     e2e::{batch_prove_accounts, prove_subproofs},
     global::{GlobalConfig, GlobalMst, GLOBAL_MST},
     merkle_sum_prover::circuits::merkle_sum_circuit::MerkleSumNodeTarget,
@@ -30,6 +32,11 @@ fn main() {
     let cfg = ProverConfig::try_new().unwrap();
     let trace_cfg: TraceConfig = cfg.log.into();
     let _g = init_tracing(trace_cfg);
+
+    let mut database = DataBase::new(DbOption {
+        user_map_dir: cfg.db.level_db_user_path.to_string(),
+        gmst_dir: cfg.db.level_db_gmst_path.to_string(),
+    });
 
     const RECURSION_BRANCHOUT_NUM: usize = 64;
     const BATCH_PROVING_THREADS_NUM: usize = 2;
@@ -121,6 +128,22 @@ fn main() {
         parse_num += 1;
         let mut accounts: Vec<Account> =
             account_reader.read_n_accounts(offset, per_parse_account_num);
+
+        // persist users id->index mapping to database
+        let user_batch = accounts
+            .iter()
+            .enumerate()
+            .map(|(i, acct)| {
+                let hex_decode = hex::decode(&acct.id).unwrap();
+                assert_eq!(hex_decode.len(), 32);
+                let mut array = [0u8; 32];
+                array.copy_from_slice(&hex_decode);
+
+                (UserId(array), (i + offset) as u32)
+            })
+            .collect::<Vec<(UserId, u32)>>();
+        database.add_batch_users(user_batch);
+
         let account_num = accounts.len();
         if account_num % batch_size != 0 {
             let pad_num = batch_size - account_num % batch_size;
@@ -311,5 +334,26 @@ fn main() {
         let mut file = File::create(proof_path.clone())
             .expect(format!("fail to create proof file at {:#?}", proof_path).as_str());
         file.write_all(json!(proof).to_string().as_bytes()).expect("fail to write proof to file");
+    }
+
+    // persist gmst to database
+
+    let global_mst = GLOBAL_MST.get().unwrap();
+    let _g = global_mst.read().expect("unable to get a lock");
+
+    let length = _g.get_tree_length();
+    info!("start persist gmst into db of size: {:?}", length);
+    let chunk_size = 1 << 12;
+    let mut i = 0;
+    while i < length {
+        let end = if i + chunk_size <= length { i + chunk_size } else { length };
+        let nodes = _g.get_nodes(i..end);
+        let batches = (i..end)
+            .into_iter()
+            .enumerate()
+            .map(|(chunk_idx, j)| ((i + j).try_into().unwrap(), nodes[chunk_idx]))
+            .collect::<Vec<(i32, HashOut<F>)>>();
+        database.add_batch_gmst_nodes(batches);
+        i += chunk_size;
     }
 }

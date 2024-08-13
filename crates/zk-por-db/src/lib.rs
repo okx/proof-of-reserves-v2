@@ -16,7 +16,7 @@ pub struct LevelDb<K: db_key::Key> {
 }
 
 impl<K: db_key::Key> LevelDb<K> {
-    pub fn new(db_path: &std::path::Path) -> Self {
+    pub fn new(db_path: &std::path::PathBuf) -> Self {
         let mut options = Options::new();
         options.create_if_missing = true;
 
@@ -39,10 +39,10 @@ impl<K: db_key::Key> LevelDb<K> {
     }
 
     /// input is a vector of (k,v) tuple
-    pub fn batch_put(&self, batches: Vec<(K, &[u8])>) {
+    pub fn batch_put(&self, batches: Vec<(K, Vec<u8>)>) {
         let mut batch = Writebatch::<K>::new();
         batches.into_iter().for_each(|(k, v)| {
-            batch.put(k, v);
+            batch.put(k, v.as_ref());
         });
 
         match self.db.write(WriteOptions::new(), &batch) {
@@ -73,15 +73,15 @@ impl<K: db_key::Key> LevelDb<K> {
 
 #[cfg(test)]
 mod test {
-    extern crate tempdir;
+
     use tempdir::TempDir;
 
     use crate::LevelDb;
 
     #[test]
-    fn test_db() {
+    fn test_db_i32() {
         let tempdir = TempDir::new("example").unwrap();
-        let db = LevelDb::<i32>::new(tempdir.path());
+        let db = LevelDb::<i32>::new(&tempdir.path().to_path_buf());
         db.put(1, b"hello");
         db.put(2, b"world");
         let ret = db.get(1).unwrap();

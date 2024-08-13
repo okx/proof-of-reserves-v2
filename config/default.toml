@@ -5,7 +5,8 @@ recursion_branchout_num = 64
 user_data_path = "/opt/data/zkpor/users/"
 num_of_tokens = 220
 [db]
-level_db_path = "level_db_data"
+level_db_user_path = "level_db_user_data"
+level_db_gmst_path = "level_db_gmst_data"
 [log]
 file_name_prefix = "zkpor"
 dir = "logs/"

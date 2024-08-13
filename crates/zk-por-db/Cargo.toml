@@ -20,12 +20,12 @@ thiserror.workspace = true
 serde_json.workspace = true
 tracing.workspace = true
 opentelemetry.workspace = true
+rand.workspace = true
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 tracing-flame = "0.2"
 tracing-opentelemetry = "0.17"
-tempdir = "0.3.7"
-db-key = "=0.0.5"
-
+tempdir = {workspace=true}
+db-key ={workspace=true}
 
 

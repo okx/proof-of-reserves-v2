@@ -3,6 +3,7 @@ pub mod circuit_config;
 pub mod circuit_registry;
 pub mod circuit_utils;
 pub mod config;
+pub mod database;
 pub mod e2e;
 pub mod error;
 pub mod global;
