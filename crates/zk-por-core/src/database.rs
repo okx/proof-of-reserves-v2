@@ -99,8 +99,10 @@ mod test {
     #[test]
     fn test_user() {
         let tempdir_user = TempDir::new("example_user").unwrap();
+        let tempdir_gmst = TempDir::new("example_gmst").unwrap();
         let mut db = DataBase::new(DbOption {
             user_map_dir: tempdir_user.path().to_string_lossy().into_owned(),
+            gmst_dir: tempdir_gmst.path().to_string_lossy().into_owned(),
         });
 
         let batches = (0..4)

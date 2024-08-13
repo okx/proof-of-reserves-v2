@@ -1,8 +1,10 @@
 use indicatif::ProgressBar;
+use itertools::Itertools;
 use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
 use rayon::{iter::ParallelIterator, prelude::*};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tracing::info;
 use std::{env, fs::File, io::Write, path::PathBuf, str::FromStr, sync::RwLock};
 use zk_por_core::{
     account::Account,
@@ -335,4 +337,22 @@ fn main() {
     }
 
     // persist gmst to database
+   
+    let global_mst = GLOBAL_MST.get().unwrap();
+    let _g= global_mst.read().expect("unable to get a lock");
+
+    let length = _g.get_tree_length();
+    info!("start persist gmst into db of size: {:?}", length);
+    let chunk_size = 1<<12;
+    let mut i=0;
+    while i <length {
+        let end = if i+chunk_size <= length {i+chunk_size} else {length};
+        let nodes = _g.get_nodes(i..end);
+        let batches = (i..end).into_iter().enumerate().map(|(chunk_idx, j)| {
+            ((i+j).try_into().unwrap(), nodes[chunk_idx])
+        }).collect::<Vec<(i32, HashOut<F>)>>();
+        database.add_batch_gmst_nodes(batches);
+        i+= chunk_size;
+    }
+
 }
