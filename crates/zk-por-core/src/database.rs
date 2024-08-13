@@ -92,10 +92,13 @@ impl DataBase {
 
 #[cfg(test)]
 mod test {
-    use plonky2::{hash::hash_types::HashOut, field::types::Sample};
+    use plonky2::{field::types::Sample, hash::hash_types::HashOut};
     use tempdir::TempDir;
 
-    use crate::{database::{DataBase, DbOption, UserId}, types::F};
+    use crate::{
+        database::{DataBase, DbOption, UserId},
+        types::F,
+    };
 
     #[test]
     fn test_database() {
@@ -119,16 +122,14 @@ mod test {
         assert_eq!(db.get_user_index(batches_user[3].0), Some(3));
 
         let batches_hash = (0..4)
-        .into_iter()
-        .map(|i| {
-            (i,HashOut::<F>::from_vec(vec![F::rand(), F::rand(), F::rand(),F::rand()]))
-        })
-        .collect::<Vec<(i32, HashOut<F>)>>();
+            .into_iter()
+            .map(|i| (i, HashOut::<F>::from_vec(vec![F::rand(), F::rand(), F::rand(), F::rand()])))
+            .collect::<Vec<(i32, HashOut<F>)>>();
         db.add_batch_gmst_nodes(batches_hash.clone());
 
-        assert_eq!(db.get_gmst_node_hash(0),Some( batches_hash[0].1));
-        assert_eq!(db.get_gmst_node_hash(1),Some( batches_hash[1].1));
-        assert_eq!(db.get_gmst_node_hash(2),Some( batches_hash[2].1));
-        assert_eq!(db.get_gmst_node_hash(3),Some( batches_hash[3].1));
+        assert_eq!(db.get_gmst_node_hash(0), Some(batches_hash[0].1));
+        assert_eq!(db.get_gmst_node_hash(1), Some(batches_hash[1].1));
+        assert_eq!(db.get_gmst_node_hash(2), Some(batches_hash[2].1));
+        assert_eq!(db.get_gmst_node_hash(3), Some(batches_hash[3].1));
     }
 }
