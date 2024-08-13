@@ -32,8 +32,8 @@ fn main() {
     let _g = init_tracing(trace_cfg);
 
     const RECURSION_BRANCHOUT_NUM: usize = 64;
-    const BATCH_PROVING_THREADS_NUM: usize = 64;
-    const RECURSIVE_PROVING_THREADS_NUM: usize = 64;
+    const BATCH_PROVING_THREADS_NUM: usize = 2;
+    const RECURSIVE_PROVING_THREADS_NUM: usize = 2;
 
     if cfg.prover.recursion_branchout_num as usize != RECURSION_BRANCHOUT_NUM {
         panic!("The recursion_branchout_num is not configured to be equal to 64");
