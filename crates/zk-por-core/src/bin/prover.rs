@@ -109,6 +109,7 @@ fn main() {
     let start = std::time::Instant::now();
     let mut offset = 0;
     let num_cpus = num_cpus::get();
+    let num_cpus = if BATCH_PROVING_THREADS_NUM < num_cpus {BATCH_PROVING_THREADS_NUM} else {num_cpus};
     let per_parse_account_num = num_cpus * batch_size; // as we use one thread to prove each batch, we load num_cpus batches to increase the parallelism.
 
     let mut parse_num = 0;
