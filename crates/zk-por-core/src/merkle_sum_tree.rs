@@ -153,7 +153,7 @@ pub mod test {
         let proof = prover.get_proof_with_circuit_data(account_targets.clone(), &batch_circuit);
 
         let hash_offset = MerkleSumNodeTarget::pub_input_root_hash_offset();
-        let proof_root_hash = HashOut::<F>::from_partial(&proof.public_inputs[hash_offset..]);
+        let proof_root_hash = HashOut::<F>::from_partial(&proof.public_inputs[hash_offset]);
         assert_eq!(proof_root_hash, merkle_sum_tree.get_root().hash);
     }
 }
