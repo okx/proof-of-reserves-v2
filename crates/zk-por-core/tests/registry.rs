@@ -12,7 +12,7 @@ fn test() {
 
     let batch_circuit = registry.get_batch_circuit().0;
     let batch_proof =
-        registry.get_empty_proof(&batch_circuit.verifier_only.circuit_digest).unwrap();
+        registry.get_empty_proof(&batch_circuit.verifier_only.circuit_digest).unwrap().clone();
 
     assert_eq!(recursive_levels, registry.get_recursive_levels());
     assert_eq!(F::ZERO, batch_proof.public_inputs[0]);
@@ -27,7 +27,7 @@ fn test() {
 
         assert_eq!(F::ZERO, recursive_empty_proof.public_inputs[0]);
         assert_eq!(F::ZERO, recursive_empty_proof.public_inputs[1]);
-        assert!(recursive_circuit.verify(recursive_empty_proof).is_ok());
+        assert!(recursive_circuit.verify(recursive_empty_proof.clone()).is_ok());
 
         inner_vd_digest = recursive_circuit.verifier_only.circuit_digest;
     }
