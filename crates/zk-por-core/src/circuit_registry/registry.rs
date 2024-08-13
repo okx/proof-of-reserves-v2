@@ -126,16 +126,15 @@ impl<const RECURSION_BRANCHOUT_NUM: usize> CircuitRegistry<RECURSION_BRANCHOUT_N
         }
     }
 
-    pub fn get_batch_circuit(&self) -> (&CircuitData<F, C, D>, Vec<AccountTargets>) {
-        (&self.batch_circuit.0, self.batch_circuit.1.clone())
+    pub fn get_batch_circuit(&self) -> (&CircuitData<F, C, D>, &[AccountTargets]) {
+        (&self.batch_circuit.0, &self.batch_circuit.1)
     }
 
     pub fn get_empty_proof(
         &self,
         circuit_vd: &HashOut<F>,
-    ) -> Option<ProofWithPublicInputs<F, C, D>> {
-        let p = self.empty_proofs.get(circuit_vd)?;
-        Some(p.clone())
+    ) -> Option<&ProofWithPublicInputs<F, C, D>> {
+        self.empty_proofs.get(circuit_vd)
     }
 
     /// leaf node at level 0

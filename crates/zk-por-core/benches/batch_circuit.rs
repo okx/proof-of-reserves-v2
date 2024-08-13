@@ -18,7 +18,7 @@ fn bench(b: &mut Bencher, batch_size: usize) {
     let account_targets: Vec<AccountTargets> = prover.build_merkle_tree_targets(&mut builder);
     let data = &builder.build::<C>();
 
-    b.iter(|| _ = prover.get_proof_with_circuit_data(&account_targets, data));
+    b.iter(|| _ = prover.get_proof_with_circuit_data(account_targets.as_slice(), data));
 }
 
 #[bench]

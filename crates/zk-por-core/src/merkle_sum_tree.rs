@@ -75,7 +75,17 @@ impl MerkleSumTree {
 
 #[cfg(test)]
 pub mod test {
-    use crate::{parser::read_json_into_accounts_vec, types::F};
+    use crate::{
+        account::gen_accounts_with_random_data,
+        circuit_config::STANDARD_CONFIG,
+        merkle_sum_prover::{
+            circuits::merkle_sum_circuit::{build_merkle_sum_tree_circuit, MerkleSumNodeTarget},
+            prover::MerkleSumTreeProver,
+        },
+        parser::read_json_into_accounts_vec,
+        types::F,
+    };
+    use plonky2::hash::hash_types::HashOut;
     use plonky2_field::types::Field;
 
     use super::{MerkleSumNode, MerkleSumTree};
@@ -126,5 +136,24 @@ pub mod test {
         let root = tree.get_root();
         assert_eq!(root.sum_equity, sum_equity);
         assert_eq!(root.sum_debt, F::ZERO);
+    }
+
+    #[test]
+    fn test_identical_root_hash_with_proving() {
+        let batch_num = 4;
+        let num_assets = 4;
+        let accounts = gen_accounts_with_random_data(4, num_assets);
+
+        let merkle_sum_tree = MerkleSumTree::new_tree_from_accounts(&accounts);
+
+        let (batch_circuit, account_targets) =
+            build_merkle_sum_tree_circuit(batch_num, num_assets, STANDARD_CONFIG);
+
+        let prover = MerkleSumTreeProver { accounts };
+        let proof = prover.get_proof_with_circuit_data(&account_targets, &batch_circuit);
+
+        let hash_offset = MerkleSumNodeTarget::pub_input_root_hash_offset();
+        let proof_root_hash = HashOut::<F>::from_partial(&proof.public_inputs[hash_offset]);
+        assert_eq!(proof_root_hash, merkle_sum_tree.get_root().hash);
     }
 }

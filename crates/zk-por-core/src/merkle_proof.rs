@@ -85,7 +85,7 @@ pub fn get_recursive_siblings_index(
             for j in 0..global_mst.cfg.recursion_branchout_num {
                 if j != recursive_offset {
                     let index = global_mst.get_recursive_global_index(
-                        i as u32,
+                        i,
                         recursive_idx * global_mst.cfg.recursion_branchout_num + j,
                     );
                     layer.push(index);
@@ -148,7 +148,6 @@ pub mod test {
 
         let siblings = get_mst_siblings_index(global_index, &gmst);
         assert_eq!(siblings, vec![1, 49, 73]);
-
     }
 
     #[test]
