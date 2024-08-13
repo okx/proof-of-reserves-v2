@@ -26,8 +26,8 @@ pub fn batch_prove_accounts<const RECURSION_BRANCHOUT_NUM: usize>(
                 .par_chunks(batch_size)
                 .map(|accounts| {
                     let prover = MerkleSumTreeProver { accounts: accounts.to_owned() };
-                    let proof =
-                        prover.get_proof_with_circuit_data(account_targets.to_vec(), &batch_circuit);
+                    let proof = prover
+                        .get_proof_with_circuit_data(account_targets.to_vec(), &batch_circuit);
                     proof
                 })
                 .collect();
