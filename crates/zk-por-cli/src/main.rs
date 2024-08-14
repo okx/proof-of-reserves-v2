@@ -51,7 +51,7 @@ impl Execute for ZkPorCommitCommands {
             ZkPorCommitCommands::Verify { global_proof_path, inclusion_proof_path } => {
                 let global_proof_path = PathBuf::from_str(&global_proof_path).unwrap();
                 let inclusion_proof_path =
-                    inclusion_proof_path.clone().map(|p| PathBuf::from_str(&p).unwrap());
+                    inclusion_proof_path.as_ref().map(|p| PathBuf::from_str(&p).unwrap());
                 verify(global_proof_path, inclusion_proof_path)
             }
         }
