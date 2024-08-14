@@ -23,7 +23,7 @@ pub fn bench_batch_circuit(
 ) {
     let accounts = gen_accounts_with_random_data(batch_size, num_assets);
     let bench_id =
-        format!("batch_circuit_{}_asset_num_{}_parallism_{}", batch_size, num_assets, parallism);
+        format!("batch_circuit_{}_token_num_{}_parallism_{}", batch_size, num_assets, parallism);
     let (circuit_data, account_targets) =
         build_merkle_sum_tree_circuit(batch_size, num_assets, STANDARD_CONFIG);
     c.bench_function(bench_id.as_str(), |b| {
@@ -47,8 +47,8 @@ pub fn batch_circuit_for_batch_size(c: &mut Criterion) {
     group.finish();
 }
 
-pub fn batch_circuit_for_asset_num(c: &mut Criterion) {
-    let mut group = c.benchmark_group("batch_circuit_for_asset_num");
+pub fn batch_circuit_for_token_num(c: &mut Criterion) {
+    let mut group = c.benchmark_group("batch_circuit_for_token_num");
     group.sample_size(10);
     let batch_size = 1024;
     let parallism = 1;
@@ -61,10 +61,10 @@ pub fn batch_circuit_for_asset_num(c: &mut Criterion) {
 pub fn batch_circuit_for_parallism(c: &mut Criterion) {
     let mut group = c.benchmark_group("batch_circuit_for_parallism");
     group.sample_size(10);
-    let asset_num = 200;
+    let token_num = 200;
     for &batch_size in [16, 1024].iter() {
         for &parallism in [1, 2, 4, 8, 16, 32].iter() {
-            bench_batch_circuit(&mut group, batch_size, asset_num, parallism);
+            bench_batch_circuit(&mut group, batch_size, token_num, parallism);
         }
     }
     group.finish();
@@ -75,11 +75,11 @@ pub fn bench_recursive_circuit<const SUBPROOF_NUM: usize>(
     parallism: usize,
 ) {
     let batch_size = 1024;
-    let asset_num = 4;
+    let token_num = 4;
     let (merkle_sum_circuit, account_targets) =
-        build_merkle_sum_tree_circuit(batch_size, asset_num, STANDARD_CONFIG);
+        build_merkle_sum_tree_circuit(batch_size, token_num, STANDARD_CONFIG);
 
-    let accounts = gen_accounts_with_random_data(batch_size, asset_num);
+    let accounts = gen_accounts_with_random_data(batch_size, token_num);
     let prover = MerkleSumTreeProver { accounts };
 
     let merkle_sum_proof =
@@ -133,7 +133,7 @@ pub fn recursive_circuit_for_parallism(c: &mut Criterion) {
 
 criterion_group!(
     benches,
-    batch_circuit_for_asset_num,
+    batch_circuit_for_token_num,
     batch_circuit_for_batch_size,
     batch_circuit_for_parallism,
     recursive_circuit_for_branchout,

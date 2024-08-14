@@ -22,15 +22,15 @@ pub mod util;
 #[derive(Serialize, Deserialize)]
 pub struct General {
     pub round_num: usize,
-	pub batch_num: usize, 
-	pub recursion_branchout_num : usize,
-	pub batch_size: usize,
-	pub asset_num: usize,
+    pub batch_num: usize,
+    pub recursion_branchout_num: usize,
+    pub batch_size: usize,
+    pub token_num: usize,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Proof {
-	pub general: General,
+    pub general: General,
     pub root_vd_digest: HashOut<F>,
     pub proof: ProofWithPublicInputs<F, C, D>,
 }

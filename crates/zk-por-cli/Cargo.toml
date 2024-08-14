@@ -19,10 +19,16 @@ default = []
 [dependencies]
 zk-por-tracing={path="../zk-por-tracing"}
 zk-por-db={path="../zk-por-db"}
-zk-por-core={path="../zk-por-core"}
+zk-por-core={path="../zk-por-core", features = ["verifier"]}
 plonky2={workspace=true}
 plonky2_field={workspace=true}
 clap={workspace=true}
+indicatif={workspace=true}
+tracing={workspace=true}
+serde_json={workspace=true}
+rayon={workspace=true}
+num_cpus={workspace=true}
+hex={workspace=true}
 
 [dev-dependencies]
 criterion = { version = "0.5.1", default-features = false }

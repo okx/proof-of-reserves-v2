@@ -4,7 +4,10 @@ use plonky2::{
 };
 use plonky2_field::types::Field;
 
-use crate::types::F;
+use crate::{
+    database::{DataBase, UserId},
+    types::F,
+};
 use rand::Rng;
 
 /// A struct representing a users account. It represents their equity and debt as a Vector of goldilocks field elements.
@@ -56,6 +59,26 @@ impl Account {
             .map(|seg| F::from_canonical_u64(u64::from_str_radix(seg, 16).unwrap()))
             .collect::<Vec<F>>()
     }
+}
+
+pub fn persist_account_id_to_gmst_pos(
+    db: &mut DataBase,
+    accounts: &Vec<Account>,
+    start_idx: usize,
+) {
+    let user_batch = accounts
+        .iter()
+        .enumerate()
+        .map(|(i, acct)| {
+            let hex_decode = hex::decode(&acct.id).unwrap();
+            assert_eq!(hex_decode.len(), 32);
+            let mut array = [0u8; 32];
+            array.copy_from_slice(&hex_decode);
+
+            (UserId(array), (i + start_idx) as u32)
+        })
+        .collect::<Vec<(UserId, u32)>>();
+    db.add_batch_users(user_batch);
 }
 
 /// Generates num_accounts number of accounts with num_assets of assets (with equity and debt being seperate vecs)

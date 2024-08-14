@@ -30,7 +30,6 @@ impl From<ConfigLog> for TraceConfig {
 pub struct ConfigProver {
     pub round_no: usize,
     pub batch_size: usize,
-    pub recursion_branchout_num: usize,
     pub num_of_tokens: usize,
     pub user_data_path: String,
 }

@@ -16,4 +16,7 @@ pub enum ProofError {
 
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
+
+    #[error("The verification circuit digest does not match the prover. ")]
+    CircuitDigestMismatch,
 }

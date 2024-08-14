@@ -8,16 +8,15 @@ use plonky2::{
 
 use crate::{
     merkle_sum_prover::circuits::{
-        account_circuit::AccountTargets, 
-        merkle_sum_circuit::build_merkle_sum_tree_circuit,
+        account_circuit::AccountTargets, merkle_sum_circuit::build_merkle_sum_tree_circuit,
     },
-    recursive_prover::recursive_circuit::{build_recursive_n_circuit, RecursiveTargets}, types::{C, D, F}
+    recursive_prover::recursive_circuit::{build_recursive_n_circuit, RecursiveTargets},
+    types::{C, D, F},
 };
 
 #[cfg(not(feature = "verifier"))]
 use crate::{
-    account::gen_empty_accounts, 
-    merkle_sum_prover::prover::MerkleSumTreeProver,
+    account::gen_empty_accounts, merkle_sum_prover::prover::MerkleSumTreeProver,
     recursive_prover::prover::RecursiveProver,
 };
 
@@ -30,7 +29,7 @@ pub struct CircuitRegistry<const RECURSION_BRANCHOUT_NUM: usize> {
     recursive_circuits:
         HashMap<HashOut<F>, (CircuitData<F, C, D>, RecursiveTargets<RECURSION_BRANCHOUT_NUM>)>,
     // circuit_vd -> empty proof
-    #[cfg(not(feature = "verifier"))] 
+    #[cfg(not(feature = "verifier"))]
     empty_proofs: HashMap<HashOut<F>, ProofWithPublicInputs<F, C, D>>,
 
     last_inner_circuit_vd: HashOut<F>,
@@ -39,7 +38,7 @@ pub struct CircuitRegistry<const RECURSION_BRANCHOUT_NUM: usize> {
 impl<const RECURSION_BRANCHOUT_NUM: usize> CircuitRegistry<RECURSION_BRANCHOUT_NUM> {
     pub fn init(
         batch_size: usize,
-        asset_num: usize,
+        token_num: usize,
         batch_circuit_config: CircuitConfig,
         recursive_level_configs: Vec<CircuitConfig>,
     ) -> Self {
@@ -47,7 +46,7 @@ impl<const RECURSION_BRANCHOUT_NUM: usize> CircuitRegistry<RECURSION_BRANCHOUT_N
 
         let start = std::time::Instant::now();
         let (batch_circuit_data, account_targets) =
-            build_merkle_sum_tree_circuit(batch_size, asset_num, batch_circuit_config);
+            build_merkle_sum_tree_circuit(batch_size, token_num, batch_circuit_config);
         tracing::info!(
             "build merkle sum tree circuit with batch size {} in : {:?}",
             batch_size,
@@ -58,11 +57,11 @@ impl<const RECURSION_BRANCHOUT_NUM: usize> CircuitRegistry<RECURSION_BRANCHOUT_N
         let mut last_circuit_data = &batch_circuit_data;
         let mut last_circuit_vd = last_circuit_data.verifier_only.circuit_digest;
         let mut _empty_proofs: HashMap<HashOut<F>, ProofWithPublicInputs<F, C, D>> = HashMap::new();
-        let mut _last_empty_proof : ProofWithPublicInputs<F, C, D>;
+        let mut _last_empty_proof: ProofWithPublicInputs<F, C, D>;
 
-        #[cfg(not(feature = "verifier"))] 
+        #[cfg(not(feature = "verifier"))]
         {
-            let accounts = gen_empty_accounts(batch_size, asset_num);
+            let accounts = gen_empty_accounts(batch_size, token_num);
             let start = std::time::Instant::now();
             let prover = MerkleSumTreeProver { accounts };
             let empty_batch_proof =
@@ -92,7 +91,7 @@ impl<const RECURSION_BRANCHOUT_NUM: usize> CircuitRegistry<RECURSION_BRANCHOUT_N
                 recursive_circuit.verifier_only.circuit_digest
             );
 
-            #[cfg(not(feature = "verifier"))] 
+            #[cfg(not(feature = "verifier"))]
             {
                 let sub_proofs: [ProofWithPublicInputs<F, C, D>; RECURSION_BRANCHOUT_NUM] =
                     std::array::from_fn(|_| _last_empty_proof.clone());
@@ -110,8 +109,10 @@ impl<const RECURSION_BRANCHOUT_NUM: usize> CircuitRegistry<RECURSION_BRANCHOUT_N
                     start.elapsed()
                 );
 
-                _empty_proofs
-                    .insert(recursive_circuit.verifier_only.circuit_digest, recursive_proof.clone());
+                _empty_proofs.insert(
+                    recursive_circuit.verifier_only.circuit_digest,
+                    recursive_proof.clone(),
+                );
 
                 _last_empty_proof = recursive_proof;
             }
@@ -127,14 +128,16 @@ impl<const RECURSION_BRANCHOUT_NUM: usize> CircuitRegistry<RECURSION_BRANCHOUT_N
             init_start.elapsed()
         );
 
-        #[cfg(feature = "verifier")] {
+        #[cfg(feature = "verifier")]
+        {
             Self {
                 batch_circuit: (batch_circuit_data, account_targets),
                 recursive_circuits: recursive_circuits,
                 last_inner_circuit_vd: last_circuit_vd,
             }
         }
-        #[cfg(not(feature = "verifier"))] {
+        #[cfg(not(feature = "verifier"))]
+        {
             Self {
                 batch_circuit: (batch_circuit_data, account_targets),
                 empty_proofs: _empty_proofs,
@@ -142,7 +145,6 @@ impl<const RECURSION_BRANCHOUT_NUM: usize> CircuitRegistry<RECURSION_BRANCHOUT_N
                 last_inner_circuit_vd: last_circuit_vd,
             }
         }
-
     }
 
     pub fn get_batch_circuit(&self) -> (&CircuitData<F, C, D>, &[AccountTargets]) {
@@ -153,13 +155,14 @@ impl<const RECURSION_BRANCHOUT_NUM: usize> CircuitRegistry<RECURSION_BRANCHOUT_N
         &self,
         _circuit_vd: &HashOut<F>,
     ) -> Option<&ProofWithPublicInputs<F, C, D>> {
-        #[cfg(feature = "verifier")] 
+        #[cfg(feature = "verifier")]
         {
             tracing::error!("empty proof is not available in verifier mode");
             None
         }
 
-        #[cfg(not(feature = "verifier"))] {
+        #[cfg(not(feature = "verifier"))]
+        {
             self.empty_proofs.get(_circuit_vd)
         }
     }

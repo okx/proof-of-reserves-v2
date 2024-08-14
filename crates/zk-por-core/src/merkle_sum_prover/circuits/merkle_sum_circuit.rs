@@ -168,7 +168,7 @@ impl MerkleSumTreeTarget {
 
 pub fn build_merkle_sum_tree_circuit(
     num_of_leaves: usize,
-    asset_num: usize,
+    token_num: usize,
     config: CircuitConfig,
 ) -> (CircuitData<F, C, D>, Vec<AccountTargets>) {
     // assert num_of_leaves is a power of 2
@@ -178,8 +178,8 @@ pub fn build_merkle_sum_tree_circuit(
     let mut account_targets: Vec<AccountTargets> = Vec::new();
     (0..num_of_leaves).for_each(|_| {
         let id: [Target; 5] = std::array::from_fn(|_| builder.add_virtual_target());
-        let equity_targets = builder.add_virtual_targets(asset_num);
-        let debt_targets = builder.add_virtual_targets(asset_num);
+        let equity_targets = builder.add_virtual_targets(token_num);
+        let debt_targets = builder.add_virtual_targets(token_num);
         let account_target = AccountTargets { id, equity: equity_targets, debt: debt_targets };
         account_targets.push(account_target);
     });
