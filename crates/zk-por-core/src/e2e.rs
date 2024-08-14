@@ -1,5 +1,6 @@
 use plonky2::plonk::{circuit_data::VerifierOnlyCircuitData, proof::ProofWithPublicInputs};
 
+use indicatif::ProgressBar;
 use rayon::prelude::*;
 
 use crate::{
@@ -44,6 +45,7 @@ pub fn prove_subproofs<const RECURSION_BRANCHOUT_NUM: usize>(
     parallism: usize,
     level: usize,
 ) -> Vec<ProofWithPublicInputs<F, C, D>> {
+    let bar = ProgressBar::new(subproofs.len() as u64);
     assert_eq!(subproofs.len() % RECURSION_BRANCHOUT_NUM, 0);
     let last_level_vd_digest = last_level_circuit_vd.circuit_digest;
 
@@ -78,7 +80,8 @@ pub fn prove_subproofs<const RECURSION_BRANCHOUT_NUM: usize>(
                 })
                 .collect();
             this_level_proofs.extend(proofs.into_iter());
-            tracing::info!(
+            bar.inc((this_level_proofs.len() * RECURSION_BRANCHOUT_NUM) as u64);
+            tracing::debug!(
                 "finish {}/{} proofs in level {}/{}",
                 this_level_proofs.len(),
                 expected_this_level_proof_num,
@@ -87,6 +90,7 @@ pub fn prove_subproofs<const RECURSION_BRANCHOUT_NUM: usize>(
             );
         })
         .collect::<Vec<_>>();
+    bar.finish();
 
     this_level_proofs
 }

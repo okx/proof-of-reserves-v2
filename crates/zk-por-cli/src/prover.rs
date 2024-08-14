@@ -108,7 +108,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), ProofE
 
         assert_eq!(account_num % batch_size, 0);
 
-        tracing::info!(
+        tracing::debug!(
             "parse {} times, with number of accounts {}, number of batches {}",
             parse_num,
             account_num,
@@ -159,7 +159,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), ProofE
 
         batch_proofs.extend(proofs.into_iter());
 
-        tracing::info!(
+        tracing::debug!(
             "finish {}/{} batches of accounts in {} parse, since start {:?}",
             batch_proofs.len(),
             batch_num,
@@ -198,6 +198,13 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), ProofE
             .clone();
 
         let subproof_len = last_level_proofs.len();
+
+        tracing::info!(
+            "start to recursively prove {} subproofs at level {}/{}",
+            subproof_len,
+            level,
+            recursive_levels,
+        );
 
         if subproof_len % RECURSION_BRANCHOUT_NUM != 0 {
             let pad_num = RECURSION_BRANCHOUT_NUM - subproof_len % RECURSION_BRANCHOUT_NUM;
@@ -238,7 +245,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), ProofE
         last_level_circuit_vd = recursive_circuit.verifier_only.clone();
         last_level_proofs = this_level_proofs;
 
-        tracing::info!(
+        tracing::debug!(
             "finish recursive level {} with {} proofs in : {:?}",
             level,
             last_level_proofs.len(),

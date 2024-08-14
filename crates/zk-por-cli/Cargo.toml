@@ -19,7 +19,7 @@ default = []
 [dependencies]
 zk-por-tracing={path="../zk-por-tracing"}
 zk-por-db={path="../zk-por-db"}
-zk-por-core={path="../zk-por-core", features = ["verifier"]}
+zk-por-core={path="../zk-por-core"}
 plonky2={workspace=true}
 plonky2_field={workspace=true}
 clap={workspace=true}

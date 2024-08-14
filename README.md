@@ -33,12 +33,12 @@ cargo run --release --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg
 
 - verify
 ```
-global_root_path="test_data_proof.json"
+global_root_path="global_proof.json"
 
 # optional. If not provided, will skip verifying the inclusion
 arg_inclusion_proof_path="--inclusion-proof-path inclusion_proof.json"
 
-cargo run --release --package zk-por-cli --bin zk-por-cli verify --global-proof-path ${global_root_path} ${arg_inclusion_proof_path}
+cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify --global-proof-path ${global_root_path} ${arg_inclusion_proof_path}
 ```
 
 ## code coverage
