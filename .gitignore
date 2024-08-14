@@ -7,3 +7,4 @@ config/local.toml
 config/prod.toml
 test-data/user-data*/
 my_permanent_leveldb/
+*level_db*/
