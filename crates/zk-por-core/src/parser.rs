@@ -283,7 +283,7 @@ impl AccountParser for RandomAccountParser {
         &mut self,
         offset: usize,
         n: usize,
-        fm: &impl JsonFileManager,
+        _: &impl JsonFileManager,
     ) -> Vec<Account> {
         let n = std::cmp::min(n, self.total_num_of_users - offset);
         gen_accounts_with_random_data(n, self.num_of_tokens)
