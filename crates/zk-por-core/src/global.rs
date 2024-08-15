@@ -1,4 +1,5 @@
 use crate::{
+    database::DataBase,
     merkle_sum_prover::utils::hash_2_subhashes,
     recursive_prover::prover::hash_n_subhashes,
     types::{D, F},
@@ -218,6 +219,24 @@ impl GlobalMst {
         visited_global_idx[global_root_idx] = true;
 
         visited_global_idx.iter().all(|&v| v)
+    }
+
+    pub fn persist(&self, db: &mut DataBase) {
+        let length = self.get_tree_length();
+        tracing::info!("start to persist gmst into db of size: {:?}", length);
+        let chunk_size = 1 << 12;
+        let mut i = 0;
+        while i < length {
+            let end = if i + chunk_size <= length { i + chunk_size } else { length };
+            let nodes = self.get_nodes(i..end);
+            let batches = (i..end)
+                .into_iter()
+                .enumerate()
+                .map(|(chunk_idx, j)| ((i + j).try_into().unwrap(), nodes[chunk_idx]))
+                .collect::<Vec<(i32, HashOut<F>)>>();
+            db.add_batch_gmst_nodes(batches);
+            i += chunk_size;
+        }
     }
 }
 

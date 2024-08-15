@@ -17,10 +17,10 @@ use plonky2_field::types::Field;
 #[test]
 fn test() {
     let batch_size = 4;
-    let asset_num = 2;
+    let token_num = 2;
     const RECURSION_BRANCHOUT_NUM: usize = 8;
 
-    let accounts = gen_accounts_with_random_data(batch_size, asset_num);
+    let accounts = gen_accounts_with_random_data(batch_size, token_num);
 
     let equity_sum = accounts
         .iter()
@@ -32,7 +32,7 @@ fn test() {
 
     let start = std::time::Instant::now();
     let (merkle_sum_circuit, account_targets) =
-        build_merkle_sum_tree_circuit(batch_size, asset_num, STANDARD_CONFIG);
+        build_merkle_sum_tree_circuit(batch_size, token_num, STANDARD_CONFIG);
     println!("build merkle sum tree circuit in : {:?}", start.elapsed());
 
     let prover = MerkleSumTreeProver { accounts };

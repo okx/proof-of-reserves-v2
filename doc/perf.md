@@ -27,10 +27,10 @@ pub const STANDARD_CONFIG: CircuitConfig = CircuitConfig {
 # Batch Circuit
 ## Effects of Batch Size
 ```
-asset_num=200
+token_num=200
 parallism=1
 
-cargo bench --package zk-por-core -- batch_circuit_\\d+_asset_num_${asset_num}_parallism_${parallism}$
+cargo bench --package zk-por-core -- batch_circuit_\\d+_token_num_${token_num}_parallism_${parallism}$
 ```
 | Batch Size  | Delay (sec) |
 |---|---|
@@ -45,7 +45,7 @@ cargo bench --package zk-por-core -- batch_circuit_\\d+_asset_num_${asset_num}_p
 parallism=1
 batch_size=1024
 
-cargo bench --package zk-por-core -- batch_circuit_${batch_size}_asset_num_\\d+_parallism_${parallism}
+cargo bench --package zk-por-core -- batch_circuit_${batch_size}_token_num_\\d+_parallism_${parallism}
 ```
 | Number of Assets  | Delay (sec) |
 |---|---|
@@ -59,10 +59,10 @@ cargo bench --package zk-por-core -- batch_circuit_${batch_size}_asset_num_\\d+_
 ### Batch Size = 1024
 Number of concurrent threads, each proving a batch. 
 ```
-asset_num=200
+token_num=200
 batch_size=1024
 
-cargo bench --package zk-por-core -- batch_circuit_${batch_size}_asset_num_${asset_num}_parallism_\\d+$
+cargo bench --package zk-por-core -- batch_circuit_${batch_size}_token_num_${token_num}_parallism_\\d+$
 ```
 
 | Parallism  | Delay (sec) |
@@ -77,10 +77,10 @@ cargo bench --package zk-por-core -- batch_circuit_${batch_size}_asset_num_${ass
 ### Batch Size = 16
 Number of concurrent threads, each proving a batch. 
 ```
-asset_num=200
+token_num=200
 batch_size=16
 
-cargo bench --package zk-por-core -- batch_circuit_${batch_size}_asset_num_${asset_num}_parallism_\\d+$
+cargo bench --package zk-por-core -- batch_circuit_${batch_size}_token_num_${token_num}_parallism_\\d+$
 ```
 
 | Parallism  | Delay (sec) |

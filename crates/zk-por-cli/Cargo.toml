@@ -23,6 +23,12 @@ zk-por-core={path="../zk-por-core"}
 plonky2={workspace=true}
 plonky2_field={workspace=true}
 clap={workspace=true}
+indicatif={workspace=true}
+tracing={workspace=true}
+serde_json={workspace=true}
+rayon={workspace=true}
+num_cpus={workspace=true}
+hex={workspace=true}
 
 [dev-dependencies]
 criterion = { version = "0.5.1", default-features = false }

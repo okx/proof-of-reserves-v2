@@ -16,12 +16,33 @@ basis of protecting user privacy. We used plonky2 to build the proofs of users' 
 ## run
 - gen test data
 ```
-python3 scripts/gen_test_data.py 100 131072
+file_num=10
+per_file_account_num=131072 # multiple of 1024, the batch size
+
+# test data will be generated to ./test-data/user-data
+python3 scripts/gen_test_data.py ${file_num} ${per_file_account_num}
 ```
-- gen mst
+- prove
 ```
-ENV=local cargo run -p zk-por-core --release --bin gen_mst
-nohup cargo run --release -p zk-por-core --bin prover run.json > run.log 2>&1 &
+cfg_dir_path="config"
+
+cp ${cfg_dir_path}/default.toml ${cfg_dir_path}/local.toml
+
+# edit local.toml such that the field "user_data_path" to "test-data/user-data"
+sed -i '' 's|/opt/data/zkpor/users/|test-data/user-data|g' config/local.toml
+
+output_proof_path="global_proof.json"
+
+cargo run --release --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_path}
+```
+- verify
+```
+global_root_path="global_proof.json"
+
+# optional. If not provided, will skip verifying the inclusion
+arg_inclusion_proof_path="--inclusion-proof-path inclusion_proof.json"
+
+cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify --global-proof-path ${global_root_path} ${arg_inclusion_proof_path}
 ```
 
 ## code coverage

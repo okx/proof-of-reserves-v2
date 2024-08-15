@@ -202,7 +202,6 @@ pub mod test {
         });
     }
 
-    #[cfg(not(feature = "lightweight_test"))]
     #[test]
     pub fn test_get_proof() {
         let path = "../../test-data/batch0.json";

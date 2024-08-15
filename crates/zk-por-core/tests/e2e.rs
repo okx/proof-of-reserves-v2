@@ -25,11 +25,11 @@ fn test_prove() {
 
     const RECURSION_BRANCHOUT_NUM: usize = 4;
     let batch_size = 8;
-    let asset_num = 4;
+    let token_num = 4;
 
     let circuit_registry = CircuitRegistry::<RECURSION_BRANCHOUT_NUM>::init(
         batch_size,
-        asset_num,
+        token_num,
         STANDARD_CONFIG,
         vec![STANDARD_CONFIG; 2],
     );
