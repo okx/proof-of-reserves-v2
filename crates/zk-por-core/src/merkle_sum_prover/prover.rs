@@ -182,7 +182,10 @@ impl MerkleSumTreeProver {
 
 #[cfg(test)]
 pub mod test {
-    use crate::{circuit_utils::run_circuit_test, parser::{FileManager, JsonFileManager}};
+    use crate::{
+        circuit_utils::run_circuit_test,
+        parser::{FileManager, JsonFileManager},
+    };
 
     use super::MerkleSumTreeProver;
 
@@ -190,7 +193,7 @@ pub mod test {
     pub fn test_build_and_set_merkle_targets() {
         run_circuit_test(|builder, pw| {
             let path = "../../test-data/batch0.json";
-            let fm = FileManager{};
+            let fm = FileManager {};
             let accounts = fm.read_json_into_accounts_vec(path);
             let prover = MerkleSumTreeProver {
                 // batch_id: 0,
@@ -206,7 +209,7 @@ pub mod test {
     #[test]
     pub fn test_get_proof() {
         let path = "../../test-data/batch0.json";
-        let fm = FileManager{};
+        let fm = FileManager {};
         let accounts = fm.read_json_into_accounts_vec(path);
         let prover = MerkleSumTreeProver {
             // batch_id: 0,

@@ -293,7 +293,10 @@ impl AccountParser for RandomAccountParser {
 #[cfg(test)]
 mod test {
 
-    use crate::{account::Account, parser::{FileManager, FilesCfg}};
+    use crate::{
+        account::Account,
+        parser::{FileManager, FilesCfg},
+    };
     use mockall::*;
     use serde_json::Value;
     use std::{
@@ -306,7 +309,7 @@ mod test {
 
     #[test]
     pub fn test_read_json_file_into_map() {
-        let fm = FileManager{};
+        let fm = FileManager {};
         let path = "../../test-data/batch0.json";
         let maps = fm.read_json_file_into_map(path);
 
@@ -321,7 +324,7 @@ mod test {
 
     #[test]
     pub fn test_parse_exchange_state() {
-        let fm = FileManager{};
+        let fm = FileManager {};
         let path = "../../test-data/batch0.json";
         let maps = fm.read_json_file_into_map(path);
         let accounts = parse_exchange_state(&maps);
@@ -337,7 +340,7 @@ mod test {
 
     #[test]
     pub fn test_read_json_into_accounts_vec() {
-        let fm = FileManager{};
+        let fm = FileManager {};
         let path = "../../test-data/batch0.json";
         let accounts = fm.read_json_into_accounts_vec(&path);
 

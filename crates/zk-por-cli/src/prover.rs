@@ -17,7 +17,7 @@ use zk_por_core::{
     global::{GlobalConfig, GlobalMst, GLOBAL_MST},
     merkle_sum_prover::circuits::merkle_sum_circuit::MerkleSumNodeTarget,
     merkle_sum_tree::MerkleSumTree,
-    parser::{AccountParser, FileManager, FilesCfg, FileAccountReader},
+    parser::{AccountParser, FileAccountReader, FileManager, FilesCfg},
     recursive_prover::recursive_circuit::RecursiveTargets,
     types::F,
     General, Proof,
@@ -37,12 +37,15 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
     let token_num = cfg.prover.num_of_tokens as usize;
 
     // the path to dump the final generated proof
-    let file_manager = FileManager{};
-    let mut account_parser = FileAccountReader::new(FilesCfg {
-        dir: std::path::PathBuf::from_str(&cfg.prover.user_data_path).unwrap(),
-        batch_size: cfg.prover.batch_size,
-        num_of_tokens: cfg.prover.num_of_tokens,
-    }, &file_manager);
+    let file_manager = FileManager {};
+    let mut account_parser = FileAccountReader::new(
+        FilesCfg {
+            dir: std::path::PathBuf::from_str(&cfg.prover.user_data_path).unwrap(),
+            batch_size: cfg.prover.batch_size,
+            num_of_tokens: cfg.prover.num_of_tokens,
+        },
+        &file_manager,
+    );
     account_parser.log_state();
     // let mut account_parser: Box<dyn AccountParser> = Box::new(parser);
 

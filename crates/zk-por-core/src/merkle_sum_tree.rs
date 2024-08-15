@@ -93,7 +93,7 @@ pub mod test {
     #[test]
     pub fn test_new_from_account() {
         let path = "../../test-data/batch0.json";
-        let fm =FileManager{};
+        let fm = FileManager {};
         let accounts = fm.read_json_into_accounts_vec(path);
 
         let account = accounts.get(0).unwrap();
@@ -104,7 +104,7 @@ pub mod test {
 
     #[test]
     pub fn test_new_from_children_nodes() {
-        let fm =FileManager{};
+        let fm = FileManager {};
         let path = "../../test-data/batch0.json";
         let accounts = fm.read_json_into_accounts_vec(path);
 
@@ -122,7 +122,7 @@ pub mod test {
 
     #[test]
     pub fn test_new_tree_from_accounts() {
-        let fm =FileManager{};
+        let fm = FileManager {};
         let path = "../../test-data/batch0.json";
         let accounts = fm.read_json_into_accounts_vec(path);
         let mut sum_equity = F::ZERO;

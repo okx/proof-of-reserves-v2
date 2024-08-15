@@ -207,7 +207,7 @@ pub mod test {
     pub fn test_merkle_sum_node() {
         run_circuit_test(|builder, pw| {
             let path = "../../test-data/batch0.json";
-            let fm = FileManager{};
+            let fm = FileManager {};
             let accounts = fm.read_json_into_accounts_vec(path);
 
             let account_target_1 =
