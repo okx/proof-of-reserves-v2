@@ -18,10 +18,9 @@ basis of protecting user privacy. We used plonky2 to build the proofs of users' 
 ```
 file_num=10
 per_file_account_num=131072 # multiple of 1024, the batch size
-python3 scripts/gen_test_data.py ${file_num} ${per_file_acount_num}
+python3 scripts/gen_test_data.py ${file_num} ${per_file_account_num}
 ```
 - prove
-NOTE: copy 
 ```
 cp ${cfg_dir_path}/default.toml ${cfg_dir_path}/local.toml
 # edit local.toml such that the field user_data_path to "proof-of-reserves-v2/test-data/user-data"
