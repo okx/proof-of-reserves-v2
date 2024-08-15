@@ -115,10 +115,12 @@ impl AccountParser for FilesParser {
         self.log_state();
         // to make it simpler, we assume only read by a multiple of batch size;
         // if try to read cross multiple docs; simply can run this function multiple times;
-        let n = if n > self.num_of_batches_per_doc * self.cfg.batch_size { self.num_of_batches_per_doc * self.cfg.batch_size } else { n };
-        assert!(
-            n % self.cfg.batch_size == 0
-        );
+        let n = if n > self.num_of_batches_per_doc * self.cfg.batch_size {
+            self.num_of_batches_per_doc * self.cfg.batch_size
+        } else {
+            n
+        };
+        assert!(n % self.cfg.batch_size == 0);
         let min_offset: usize = self.file_idx * self.cfg.batch_size * self.num_of_batches_per_doc;
         assert!(offset >= min_offset);
 
