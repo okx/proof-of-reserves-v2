@@ -13,7 +13,7 @@ use zk_por_core::{
     config::ProverConfig,
     database::{DataBase, DbOption},
     e2e::{batch_prove_accounts, prove_subproofs},
-    error::ProofError,
+    error::PoRError,
     global::{GlobalConfig, GlobalMst, GLOBAL_MST},
     merkle_sum_prover::circuits::merkle_sum_circuit::MerkleSumNodeTarget,
     merkle_sum_tree::MerkleSumTree,
@@ -24,7 +24,7 @@ use zk_por_core::{
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
 
-pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), ProofError> {
+pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRError> {
     let trace_cfg: TraceConfig = cfg.log.into();
     let _g = init_tracing(trace_cfg);
 

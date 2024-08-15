@@ -6,14 +6,14 @@ use super::constant::RECURSION_BRANCHOUT_NUM;
 use zk_por_core::{
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
-    error::ProofError,
+    error::PoRError,
     Proof,
 };
 
 pub fn verify(
     global_proof_path: PathBuf,
     merkle_inclusion_path: Option<PathBuf>,
-) -> Result<(), ProofError> {
+) -> Result<(), PoRError> {
     let proof_file = File::open(&global_proof_path).unwrap();
     let reader = std::io::BufReader::new(proof_file);
 
@@ -49,7 +49,7 @@ pub fn verify(
 
     let circuit_vd = root_circuit.verifier_only.circuit_digest;
     if circuit_vd != proof.root_vd_digest {
-        return Err(ProofError::CircuitDigestMismatch);
+        return Err(PoRError::CircuitDigestMismatch);
     }
 
     println!(
@@ -59,7 +59,7 @@ pub fn verify(
     );
 
     if !root_circuit.verify(proof.proof).is_ok() {
-        return Err(ProofError::InvalidProof);
+        return Err(PoRError::InvalidProof);
     }
     println!("successfully verify the global proof for round {}", round_num);
 
