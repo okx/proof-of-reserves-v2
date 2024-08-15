@@ -16,21 +16,21 @@ basis of protecting user privacy. We used plonky2 to build the proofs of users' 
 ## run
 - gen test data
 ```
-python3 scripts/gen_test_data.py 100 131072
-```
-- gen mst
-```
-ENV=local cargo run -p zk-por-core --release --bin gen_mst
-nohup cargo run --release -p zk-por-core --bin prover run.json > run.log 2>&1 &
+file_num=10
+per_file_account_num=131072 # multiple of 1024, the batch size
+python3 scripts/gen_test_data.py ${file_num} ${per_file_acount_num}
 ```
 - prove
+NOTE: copy 
 ```
+cp ${cfg_dir_path}/default.toml ${cfg_dir_path}/local.toml
+# edit local.toml such that the field user_data_path to "proof-of-reserves-v2/test-data/user-data"
+
 cfg_dir_path="config"
 output_proof_path="global_proof.json"
 
 cargo run --release --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_path}
 ```
-
 - verify
 ```
 global_root_path="global_proof.json"
