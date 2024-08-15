@@ -96,6 +96,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
         parse_num += 1;
         let mut accounts: Vec<Account> =
             account_parser.read_n_accounts(offset, per_parse_account_num);
+        let account_num_read = accounts.len();
 
         persist_account_id_to_gmst_pos(&mut database, &accounts, offset);
 
@@ -167,7 +168,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
             start.elapsed()
         );
         bar.inc(account_num as u64);
-        offset += per_parse_account_num;
+        offset += account_num_read;
     }
     bar.finish();
 
