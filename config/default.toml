@@ -3,6 +3,7 @@ round_no = 0
 batch_size = 1024
 user_data_path = "/opt/data/zkpor/users/"
 num_of_tokens = 220
+num_users = 2048
 [db]
 level_db_user_path = "level_db_user_data"
 level_db_gmst_path = "level_db_gmst_data"

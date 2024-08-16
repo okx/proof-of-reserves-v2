@@ -32,12 +32,29 @@ pub struct ConfigProver {
     pub batch_size: usize,
     pub num_of_tokens: usize,
     pub user_data_path: String,
+    pub num_users: usize,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ConfigDb {
     pub level_db_user_path: String,
     pub level_db_gmst_path: String,
+}
+
+impl ConfigDb {
+    pub fn load(dir: &str) -> Result<Config, ConfigError> {
+        let env = std::env::var("ENV").unwrap_or("default".into());
+        Config::builder()
+            // .add_source(File::with_name(&format!("{}/default", dir)))
+            .add_source(File::with_name(&format!("{}/{}", dir, env)).required(false))
+            .add_source(File::with_name(&format!("{}/local", dir)).required(false))
+            .add_source(config::Environment::with_prefix("ZKPOR"))
+            .build()
+    }
+    pub fn try_new() -> Result<Self, ConfigError> {
+        let config = Self::load("config")?;
+        config.try_deserialize()
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
