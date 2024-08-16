@@ -9,7 +9,7 @@ use crate::{
     account::Account,
     database::{DataBase, UserId},
     global::GlobalMst,
-    merkle_sum_prover::utils::{hash_2_subhashes, hash_inputs},
+    merkle_sum_prover::utils::hash_2_subhashes,
     types::{D, F},
 };
 
@@ -138,12 +138,6 @@ pub fn get_recursive_siblings_index(
     siblings
 }
 
-/// Hashes for a given users merkle proof of inclusion siblings in the Global Merkle Sum Tree
-#[derive(Debug, Clone)]
-pub struct MerkleProof {
-    pub sum_tree_siblings: Vec<HashOut<F>>,
-    pub recursive_tree_siblings: Vec<RecursiveHashes>,
-}
 
 /// We use this wrapper struct for the left and right hashes of our recursive siblings. This is needed so a user knows the position of
 /// their own hash when hashing.
@@ -177,6 +171,13 @@ impl RecursiveHashes {
 
         PoseidonHash::hash_no_pad(inputs.as_slice())
     }
+}
+
+/// Hashes for a given users merkle proof of inclusion siblings in the Global Merkle Sum Tree
+#[derive(Debug, Clone)]
+pub struct MerkleProof {
+    pub sum_tree_siblings: Vec<HashOut<F>>,
+    pub recursive_tree_siblings: Vec<RecursiveHashes>,
 }
 
 impl MerkleProof {
@@ -229,6 +230,7 @@ impl MerkleProof {
     }
 }
 
+
 /// Given the indexes for the MST siblings, get the hashes from the database for the merkle proof of inclusion.
 pub fn get_merkle_proof_hashes_from_indexes(
     indexes: &MerkleProofIndex,
@@ -253,7 +255,7 @@ pub fn get_merkle_proof_hashes_from_indexes(
 pub mod test {
     use crate::{
         global::{GlobalConfig, GlobalMst},
-        merkle_proof::{get_recursive_siblings_index, RecursiveIndex},
+        merkle_proof::{get_recursive_siblings_index, MerkleProofIndex, RecursiveIndex},
     };
 
     use super::get_mst_siblings_index;
@@ -353,6 +355,31 @@ pub mod test {
                 RecursiveIndex { left_indexes: vec![40], right_indexes: vec![42, 43] },
                 RecursiveIndex { left_indexes: vec![44], right_indexes: vec![46, 47] },
             ]
+        );
+    }
+
+    #[test]
+    pub fn test_get_new_merkle_index_from_user_index(){
+        let gmst = GlobalMst::new(GlobalConfig {
+            num_of_tokens: 100,
+            num_of_batches: 15,
+            batch_size: 4,
+            recursion_branchout_num: 4,
+        });
+
+        let global_index = 0;
+
+        let merkle_proof_indexes = MerkleProofIndex::new_from_user_index(global_index, &gmst);
+
+        assert_eq!(
+            merkle_proof_indexes,
+            MerkleProofIndex{
+                sum_tree_siblings:vec![1, 61],
+                recursive_tree_siblings: vec![
+                    RecursiveIndex { left_indexes: vec![], right_indexes: vec![91, 92, 93] },
+                    RecursiveIndex { left_indexes: vec![], right_indexes: vec![107, 108, 109] }
+                ] ,
+            }   
         );
     }
 }
