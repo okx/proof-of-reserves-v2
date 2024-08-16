@@ -7,7 +7,7 @@ use zk_por_core::{
     error::PoRError,
     global::GlobalConfig,
     merkle_proof::MerkleProof,
-    parser::{AccountParser, FilesCfg, FilesParser},
+    parser::{AccountParser, FileAccountReader, FileManager, FilesCfg},
 };
 
 use crate::constant::RECURSION_BRANCHOUT_NUM;
@@ -26,13 +26,17 @@ pub fn get_merkle_proof(
     let token_num = cfg.prover.num_of_tokens as usize;
 
     // the path to dump the final generated proof
-    let parser = FilesParser::new(FilesCfg {
-        dir: std::path::PathBuf::from_str(&cfg.prover.user_data_path).unwrap(),
-        batch_size: cfg.prover.batch_size,
-        num_of_tokens: cfg.prover.num_of_tokens,
-    });
-    parser.log_state();
-    let account_parser: Box<dyn AccountParser> = Box::new(parser);
+    let file_manager = FileManager {};
+    let account_parser = FileAccountReader::new(
+        FilesCfg {
+            dir: std::path::PathBuf::from_str(&cfg.prover.user_data_path).unwrap(),
+            batch_size: cfg.prover.batch_size,
+            num_of_tokens: cfg.prover.num_of_tokens,
+        },
+        &file_manager,
+    );
+    account_parser.log_state();
+    // let mut account_parser: Box<dyn AccountParser> = Box::new(parser);
 
     let batch_num = account_parser.total_num_of_users().div_ceil(batch_size);
 
