@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use hex::ToHex;
 use plonky2::{hash::hash_types::HashOut, plonk::config::GenericHashOut};
 use rand::Rng;
 use zk_por_db::LevelDb;
@@ -15,6 +16,27 @@ impl UserId {
         let mut rng = rand::thread_rng();
         rng.fill(&mut bytes);
         Self(bytes)
+    }
+
+    pub fn to_string(&self) -> String {
+        self.0.encode_hex()
+    }
+
+    pub fn from_hex_string(hex_str: String) -> Self {
+        if hex_str.len() != 64 {
+            tracing::error!("User Id: {:?} is not a valid id, length is not 256 bits", hex_str);
+        }
+        let mut arr = [0u8; 32];
+        for i in 0..32 {
+            let byte_str = &hex_str[2 * i..2 * i + 2];
+            let byte = u8::from_str_radix(byte_str, 16);
+            if byte.is_err() {
+                tracing::error!("User Id: {:?} is not a valid id, not in proper hex form", hex_str);
+            }
+            arr[i] = byte.unwrap();
+        }
+
+        UserId { 0: arr }
     }
 }
 

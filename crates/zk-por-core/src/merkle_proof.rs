@@ -1,11 +1,31 @@
+use itertools::Itertools;
+use plonky2::{
+    hash::{hash_types::HashOut, poseidon::PoseidonHash},
+    plonk::config::Hasher,
+};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use crate::global::GlobalMst;
+use crate::{
+    account::Account,
+    database::{DataBase, UserId},
+    global::GlobalMst,
+    merkle_sum_prover::utils::{hash_2_subhashes, hash_inputs},
+    types::{D, F},
+};
 
-#[derive(Debug, Clone)]
+/// We use this wrapper struct for the left and right indexes of our recursive siblings. This is needed so a user knows the position of
+/// their own hash when hashing.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RecursiveIndex {
+    left_indexes: Vec<usize>,
+    right_indexes: Vec<usize>,
+}
+
+/// Indexes for a given users merkle proof of inclusion siblings in the Global Merkle Sum Tree
+#[derive(Debug, Clone, PartialEq)]
 pub struct MerkleProofIndex {
     pub sum_tree_siblings: Vec<usize>,
-    pub recursive_tree_siblings: Vec<Vec<usize>>,
+    pub recursive_tree_siblings: Vec<RecursiveIndex>,
 }
 
 impl MerkleProofIndex {
@@ -49,7 +69,7 @@ pub fn get_mst_siblings_index(global_index: usize, global_mst: &GlobalMst) -> Ve
 pub fn get_recursive_siblings_index(
     global_index: usize,
     global_mst: &GlobalMst,
-) -> Vec<Vec<usize>> {
+) -> Vec<RecursiveIndex> {
     // Make sure our global index is within the number of leaves
     assert!(global_index < global_mst.get_num_of_leaves());
 
@@ -71,29 +91,45 @@ pub fn get_recursive_siblings_index(
         .ceil() as usize;
 
     for i in 0..layers {
-        let mut layer = Vec::new();
+        let mut left_layer = Vec::new();
+        let mut right_layer = Vec::new();
         if i == 0 {
             for j in 0..global_mst.cfg.recursion_branchout_num {
-                if j != recursive_offset {
+                if j < recursive_offset {
                     let index = first_mst_root_idx
                         + (global_mst.cfg.recursion_branchout_num * recursive_idx)
                         + j;
-                    layer.push(index);
+                    left_layer.push(index);
+                }
+
+                if j > recursive_offset {
+                    let index = first_mst_root_idx
+                        + (global_mst.cfg.recursion_branchout_num * recursive_idx)
+                        + j;
+                    right_layer.push(index);
                 }
             }
         } else {
             for j in 0..global_mst.cfg.recursion_branchout_num {
-                if j != recursive_offset {
+                if j < recursive_offset {
                     let index = global_mst.get_recursive_global_index(
                         i,
                         recursive_idx * global_mst.cfg.recursion_branchout_num + j,
                     );
-                    layer.push(index);
+                    left_layer.push(index);
+                }
+
+                if j > recursive_offset {
+                    let index = global_mst.get_recursive_global_index(
+                        i,
+                        recursive_idx * global_mst.cfg.recursion_branchout_num + j,
+                    );
+                    right_layer.push(index);
                 }
             }
         }
 
-        siblings.push(layer);
+        siblings.push(RecursiveIndex { left_indexes: left_layer, right_indexes: right_layer });
 
         recursive_offset = recursive_idx % global_mst.cfg.recursion_branchout_num;
         recursive_idx = recursive_idx / global_mst.cfg.recursion_branchout_num;
@@ -102,11 +138,122 @@ pub fn get_recursive_siblings_index(
     siblings
 }
 
+/// Hashes for a given users merkle proof of inclusion siblings in the Global Merkle Sum Tree
+#[derive(Debug, Clone)]
+pub struct MerkleProof {
+    pub sum_tree_siblings: Vec<HashOut<F>>,
+    pub recursive_tree_siblings: Vec<RecursiveHashes>,
+}
+
+/// We use this wrapper struct for the left and right hashes of our recursive siblings. This is needed so a user knows the position of
+/// their own hash when hashing.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RecursiveHashes {
+    left_hashes: Vec<HashOut<F>>,
+    right_hashes: Vec<HashOut<F>>,
+}
+
+impl RecursiveHashes {
+    pub fn new_from_index(indexes: &RecursiveIndex, db: &DataBase) -> Self {
+        let left_hashes = indexes
+            .left_indexes
+            .iter()
+            .map(|y| db.get_gmst_node_hash(*y as i32).unwrap())
+            .collect_vec();
+        let right_hashes = indexes
+            .right_indexes
+            .iter()
+            .map(|y| db.get_gmst_node_hash(*y as i32).unwrap())
+            .collect_vec();
+        RecursiveHashes { left_hashes, right_hashes }
+    }
+
+    pub fn get_calculated_hash(self, own_hash: HashOut<F>) -> HashOut<F> {
+        let mut hash_inputs = self.left_hashes;
+        hash_inputs.push(own_hash);
+        hash_inputs.extend(self.right_hashes);
+
+        let inputs: Vec<F> = hash_inputs.iter().map(|x| x.elements).flatten().collect();
+
+        PoseidonHash::hash_no_pad(inputs.as_slice())
+    }
+}
+
+impl MerkleProof {
+    pub fn new_from_user_id(user_id: UserId, db: &DataBase, global_mst: &GlobalMst) -> MerkleProof {
+        let user_index = db.get_user_index(user_id);
+        if user_index.is_none() {
+            tracing::error!("User with id: {:?} does not exist", user_id.to_string());
+        }
+
+        let indexes =
+            MerkleProofIndex::new_from_user_index(user_index.unwrap() as usize, global_mst);
+        let merkle_proof = get_merkle_proof_hashes_from_indexes(&indexes, db);
+        merkle_proof
+    }
+
+    pub fn verify_merkle_proof(
+        &self,
+        account: &Account,
+        db: DataBase,
+        gmst_root: HashOut<F>,
+    ) -> Result<Account, String> {
+        let account_hash = account.get_hash();
+        let user_index_res = db.get_user_index(UserId::from_hex_string(account.id.clone()));
+        if user_index_res.is_none() {
+            tracing::error!("User with id: {:?} does not exist", account.id.to_string());
+        }
+
+        let mut user_index = user_index_res.unwrap();
+
+        let calculated_mst_hash = self.sum_tree_siblings.iter().fold(account_hash, |acc, x| {
+            if user_index % 2 == 0 {
+                user_index /= 2;
+                hash_2_subhashes::<F, D>(x, &acc)
+            } else {
+                user_index /= 2;
+                hash_2_subhashes::<F, D>(&acc, x)
+            }
+        });
+
+        let calculated_hash = self
+            .recursive_tree_siblings
+            .iter()
+            .fold(calculated_mst_hash, |acc, x| x.clone().get_calculated_hash(acc));
+
+        if calculated_hash == gmst_root {
+            Ok(account.clone())
+        } else {
+            Err("Merkle Proof is not verified".to_string())
+        }
+    }
+}
+
+/// Given the indexes for the MST siblings, get the hashes from the database for the merkle proof of inclusion.
+pub fn get_merkle_proof_hashes_from_indexes(
+    indexes: &MerkleProofIndex,
+    db: &DataBase,
+) -> MerkleProof {
+    let mst_hashes: Vec<HashOut<F>> = indexes
+        .sum_tree_siblings
+        .iter()
+        .map(|x| db.get_gmst_node_hash(*x as i32).unwrap())
+        .collect();
+
+    let recursive_hashes: Vec<RecursiveHashes> = indexes
+        .recursive_tree_siblings
+        .iter()
+        .map(|x| RecursiveHashes::new_from_index(x, db))
+        .collect();
+
+    MerkleProof { sum_tree_siblings: mst_hashes, recursive_tree_siblings: recursive_hashes }
+}
+
 #[cfg(test)]
 pub mod test {
     use crate::{
         global::{GlobalConfig, GlobalMst},
-        merkle_proof::get_recursive_siblings_index,
+        merkle_proof::{get_recursive_siblings_index, RecursiveIndex},
     };
 
     use super::get_mst_siblings_index;
@@ -162,7 +309,14 @@ pub mod test {
         let global_index = 0;
 
         let siblings = get_recursive_siblings_index(global_index, &gmst);
-        assert_eq!(siblings, vec![vec![91, 92, 93], vec![107, 108, 109]]);
+
+        assert_eq!(
+            siblings,
+            vec![
+                RecursiveIndex { left_indexes: vec![], right_indexes: vec![91, 92, 93] },
+                RecursiveIndex { left_indexes: vec![], right_indexes: vec![107, 108, 109] }
+            ]
+        );
 
         let gmst = GlobalMst::new(GlobalConfig {
             num_of_tokens: 100,
@@ -174,7 +328,14 @@ pub mod test {
         let global_index = 163;
 
         let siblings = get_recursive_siblings_index(global_index, &gmst);
-        assert_eq!(siblings, vec![vec![441, 442, 443], vec![456, 458, 459], vec![460, 462, 463]]);
+        assert_eq!(
+            siblings,
+            vec![
+                RecursiveIndex { left_indexes: vec![], right_indexes: vec![441, 442, 443] },
+                RecursiveIndex { left_indexes: vec![456], right_indexes: vec![458, 459] },
+                RecursiveIndex { left_indexes: vec![460], right_indexes: vec![462, 463] }
+            ]
+        );
 
         let gmst = GlobalMst::new(GlobalConfig {
             num_of_tokens: 100,
@@ -186,6 +347,12 @@ pub mod test {
         let global_index = 20;
 
         let siblings = get_recursive_siblings_index(global_index, &gmst);
-        assert_eq!(siblings, vec![[40, 42, 43], [44, 46, 47]]);
+        assert_eq!(
+            siblings,
+            vec![
+                RecursiveIndex { left_indexes: vec![40], right_indexes: vec![42, 43] },
+                RecursiveIndex { left_indexes: vec![44], right_indexes: vec![46, 47] },
+            ]
+        );
     }
 }
