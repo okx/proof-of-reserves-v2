@@ -198,7 +198,7 @@ pub mod test {
     use crate::{
         circuit_utils::run_circuit_test,
         merkle_sum_prover::circuits::account_circuit::{AccountSumTargets, AccountTargets},
-        parser::read_json_into_accounts_vec,
+        parser::{FileManager, JsonFileManager},
     };
 
     use super::MerkleSumNodeTarget;
@@ -207,7 +207,8 @@ pub mod test {
     pub fn test_merkle_sum_node() {
         run_circuit_test(|builder, pw| {
             let path = "../../test-data/batch0.json";
-            let accounts = read_json_into_accounts_vec(path);
+            let fm = FileManager {};
+            let accounts = fm.read_json_into_accounts_vec(path);
 
             let account_target_1 =
                 AccountTargets::new_from_account(accounts.get(0).unwrap(), builder);

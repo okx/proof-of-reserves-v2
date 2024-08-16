@@ -83,7 +83,7 @@ pub mod test {
             circuits::merkle_sum_circuit::{build_merkle_sum_tree_circuit, MerkleSumNodeTarget},
             prover::MerkleSumTreeProver,
         },
-        parser::read_json_into_accounts_vec,
+        parser::{FileManager, JsonFileManager},
         types::F,
     };
     use plonky2::hash::hash_types::HashOut;
@@ -94,7 +94,8 @@ pub mod test {
     #[test]
     pub fn test_new_from_account() {
         let path = "../../test-data/batch0.json";
-        let accounts = read_json_into_accounts_vec(path);
+        let fm = FileManager {};
+        let accounts = fm.read_json_into_accounts_vec(path);
 
         let account = accounts.get(0).unwrap();
         let node = MerkleSumNode::new_from_account(account);
@@ -104,8 +105,9 @@ pub mod test {
 
     #[test]
     pub fn test_new_from_children_nodes() {
+        let fm = FileManager {};
         let path = "../../test-data/batch0.json";
-        let accounts = read_json_into_accounts_vec(path);
+        let accounts = fm.read_json_into_accounts_vec(path);
 
         let account1 = accounts.get(0).unwrap();
         let node1 = MerkleSumNode::new_from_account(account1);
@@ -121,8 +123,9 @@ pub mod test {
 
     #[test]
     pub fn test_new_tree_from_accounts() {
+        let fm = FileManager {};
         let path = "../../test-data/batch0.json";
-        let accounts = read_json_into_accounts_vec(path);
+        let accounts = fm.read_json_into_accounts_vec(path);
         let mut sum_equity = F::ZERO;
 
         for i in 0..accounts.len() {
