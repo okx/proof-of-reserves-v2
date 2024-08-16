@@ -40,6 +40,7 @@ num_cpus={workspace=true}
 db-key ={workspace=true}
 indicatif={workspace=true}
 hex={workspace=true}
+mockall={workspace=true}
 
 [build-dependencies]
 zk-por-tracing={path="../zk-por-tracing"}
