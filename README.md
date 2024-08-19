@@ -46,9 +46,9 @@ cargo run --release --package zk-por-cli --bin zk-por-cli get-merkle-proof --use
 global_root_path="global_proof.json"
 
 # optional. If not provided, will skip verifying the inclusion
-arg_inclusion_proof_path="--inclusion-proof-path inclusion_proof.json"
+inclusion_proof_path="merkle_proof.json"
 
-cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify --global-proof-path ${global_root_path} ${arg_inclusion_proof_path}
+cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify --global-proof-path ${global_root_path} --inclusion-proof-path ${inclusion_proof_path}
 ```
 
 ## cli
