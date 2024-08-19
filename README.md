@@ -55,7 +55,7 @@ cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin z
 ```
 ./target/release/zk-por-cli --help
 ./target/release/zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_path}
-./target/release/zk-por-cli get-merkle-proof --user-id 409e8a8f5a7e34e4fa13c4a44291e4d5a91bce1a4d90c549765b477fea03fdc5 --output-path merkle_proof.json --cfg-path config
+./target/release/zk-por-cli get-merkle-proof --account-path account.json --output-path merkle_proof.json --cfg-path config
 ```
 
 ## code coverage
