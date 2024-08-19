@@ -7,12 +7,15 @@ use zk_por_core::{
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
     error::PoRError,
+    merkle_proof::MerkleProof,
+    util::get_hash_from_hash_string,
     Proof,
 };
 
 pub fn verify(
     global_proof_path: PathBuf,
     merkle_inclusion_path: Option<PathBuf>,
+    root: Option<String>,
 ) -> Result<(), PoRError> {
     let proof_file = File::open(&global_proof_path).unwrap();
     let reader = std::io::BufReader::new(proof_file);
@@ -63,10 +66,28 @@ pub fn verify(
     }
     println!("successfully verify the global proof for round {}", round_num);
 
-    // TODO: verify the inclusion proof
     if let Some(merkle_inclusion_path) = merkle_inclusion_path {
-        _ = merkle_inclusion_path;
-        println!("successfully verify the inclusion proof for user for round {}", round_num);
+        let merkle_path = File::open(&merkle_inclusion_path).unwrap();
+        let reader = std::io::BufReader::new(merkle_path);
+
+        // Parse the JSON as Proof
+        let proof: MerkleProof = from_reader(reader).unwrap();
+
+        if root.is_none() {
+            return Err(PoRError::InvalidParameter(
+                "Require root for merkle proof verification".to_string(),
+            ));
+        }
+
+        let res = proof.verify_merkle_proof(get_hash_from_hash_string(root.unwrap()));
+
+        if res.is_err() {
+            let res_err = res.unwrap_err();
+            return Err(res_err);
+        } else {
+            println!("successfully verify the inclusion proof for user for round {}", round_num);
+            return Ok(());
+        }
     }
 
     Ok(())

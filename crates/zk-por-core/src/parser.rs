@@ -233,35 +233,36 @@ impl AccountParser for FileAccountReader {
 fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>) -> Vec<Account> {
     let mut accounts_data: Vec<Account> = Vec::new();
     for obj in parsed_data {
-        let mut account_id = "";
-        let mut inner_vec: Vec<F> = Vec::new();
-        for (key, value) in obj.iter() {
-            if key != "id" {
-                if let Some(number_str) = value.as_str() {
-                    match number_str.parse::<u64>() {
-                        Ok(number) => inner_vec.push(F::from_canonical_u64(number)),
-                        Err(e) => {
-                            error!("Error in parsing token value number: {:?}", e);
-                            panic!("Error in parsing token value number: {:?}", e);
-                        }
-                    }
-                } else {
-                    error!("Error in parsing string from json: {:?}", value);
-                    panic!("Error in parsing string from json: {:?}", value);
-                }
-            } else {
-                account_id = value.as_str().unwrap();
-            }
-        }
-        // todo:: currently, we fill debt all to zero
-        let asset_len = inner_vec.len();
-        accounts_data.push(Account {
-            id: account_id.into(),
-            equity: inner_vec,
-            debt: vec![F::ZERO; asset_len],
-        });
+        accounts_data.push(parse_account_state(obj));
     }
     accounts_data
+}
+
+/// Parses the exchanges state at some snapshot and returns.
+pub fn parse_account_state(parsed_data: &BTreeMap<String, Value>) -> Account {
+    let mut account_id = "";
+    let mut inner_vec: Vec<F> = Vec::new();
+    for (key, value) in parsed_data.iter() {
+        if key != "id" {
+            if let Some(number_str) = value.as_str() {
+                match number_str.parse::<u64>() {
+                    Ok(number) => inner_vec.push(F::from_canonical_u64(number)),
+                    Err(e) => {
+                        error!("Error in parsing token value number: {:?}", e);
+                        panic!("Error in parsing token value number: {:?}", e);
+                    }
+                }
+            } else {
+                error!("Error in parsing string from json: {:?}", value);
+                panic!("Error in parsing string from json: {:?}", value);
+            }
+        } else {
+            account_id = value.as_str().unwrap();
+        }
+    }
+    // todo:: currently, we fill debt all to zero
+    let asset_len = inner_vec.len();
+    Account { id: account_id.into(), equity: inner_vec, debt: vec![F::ZERO; asset_len] }
 }
 
 pub struct RandomAccountParser {
@@ -295,7 +296,7 @@ mod test {
 
     use crate::{
         account::Account,
-        parser::{FileManager, FilesCfg},
+        parser::{parse_exchange_state, FileManager, FilesCfg},
     };
     use mockall::*;
     use serde_json::Value;
@@ -305,7 +306,7 @@ mod test {
         str::FromStr,
     };
 
-    use super::{parse_exchange_state, AccountParser, FileAccountReader, JsonFileManager};
+    use super::{AccountParser, FileAccountReader, JsonFileManager};
 
     #[test]
     pub fn test_read_json_file_into_map() {

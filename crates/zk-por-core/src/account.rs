@@ -3,15 +3,20 @@ use plonky2::{
     plonk::config::Hasher,
 };
 use plonky2_field::types::Field;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::{collections::BTreeMap, fs::File, io::BufReader};
 
 use crate::{
     database::{DataBase, UserId},
+    error::PoRError,
+    parser::parse_account_state,
     types::F,
 };
 use rand::Rng;
 
 /// A struct representing a users account. It represents their equity and debt as a Vector of goldilocks field elements.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Account {
     pub id: String, // 256 bit hex string
     pub equity: Vec<F>,
@@ -32,6 +37,14 @@ impl Account {
             PoseidonHash::hash_no_pad(vec![id, vec![sum_equity, sum_debt]].concat().as_slice());
 
         hash
+    }
+
+    pub fn get_empty_account_with_user_id(user_id: String, num_of_tokens: usize) -> Account {
+        Self {
+            id: user_id,
+            equity: vec![F::default(); num_of_tokens],
+            debt: vec![F::default(); num_of_tokens],
+        }
     }
 
     pub fn get_empty_account(num_of_tokens: usize) -> Account {
@@ -59,6 +72,27 @@ impl Account {
             .map(|seg| F::from_canonical_u64(u64::from_str_radix(seg, 16).unwrap()))
             .collect::<Vec<F>>()
     }
+
+    /// Get a new account from a file path
+    pub fn new_from_file_path(path: String) -> Result<Self, PoRError> {
+        let file_res = File::open(path);
+
+        if file_res.is_err() {
+            return Err(PoRError::InvalidParameter("Invalid account json file path".to_string()));
+        }
+
+        let reader = BufReader::new(file_res.unwrap());
+        // Deserialize the json data to a struct
+        let account_map_res: Result<BTreeMap<String, Value>, _> = serde_json::from_reader(reader);
+
+        if account_map_res.is_err() {
+            return Err(PoRError::InvalidParameter("Invalid account json".to_string()));
+        }
+
+        let account = parse_account_state(&account_map_res.unwrap());
+
+        Ok(account)
+    }
 }
 
 pub fn persist_account_id_to_gmst_pos(
@@ -70,12 +104,9 @@ pub fn persist_account_id_to_gmst_pos(
         .iter()
         .enumerate()
         .map(|(i, acct)| {
-            let hex_decode = hex::decode(&acct.id).unwrap();
-            assert_eq!(hex_decode.len(), 32);
-            let mut array = [0u8; 32];
-            array.copy_from_slice(&hex_decode);
-
-            (UserId(array), (i + start_idx) as u32)
+            let user_id = UserId::from_hex_string(acct.id.to_string()).unwrap();
+            // tracing::debug!("persist account {:?} with index: {:?}", acct.id, i + start_idx);
+            (user_id, (i + start_idx) as u32)
         })
         .collect::<Vec<(UserId, u32)>>();
     db.add_batch_users(user_batch);
@@ -105,6 +136,10 @@ pub fn gen_accounts_with_random_data(num_accounts: usize, num_assets: usize) -> 
 }
 
 pub fn gen_empty_accounts(batch_size: usize, num_assets: usize) -> Vec<Account> {
-    let accounts = vec![Account::get_empty_account(num_assets); batch_size];
+    let accounts =
+        vec![
+            Account::get_empty_account_with_user_id(UserId::rand().to_string(), num_assets);
+            batch_size
+        ];
     accounts
 }

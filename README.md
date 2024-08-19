@@ -35,14 +35,27 @@ output_proof_path="global_proof.json"
 
 cargo run --release --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_path}
 ```
+
+- get-merkle-proof
+```
+cargo run --release --package zk-por-cli --bin zk-por-cli get-merkle-proof --account-path account.json --output-path merkle_proof.json --cfg-path config
+```
+
 - verify
 ```
 global_root_path="global_proof.json"
 
 # optional. If not provided, will skip verifying the inclusion
-arg_inclusion_proof_path="--inclusion-proof-path inclusion_proof.json"
+inclusion_proof_path="merkle_proof.json"
 
-cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify --global-proof-path ${global_root_path} ${arg_inclusion_proof_path}
+cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify --global-proof-path ${global_root_path} --inclusion-proof-path ${inclusion_proof_path} --root 11288199779358641579,2344540219612146741,6809171731163302525,17936043556479519168
+```
+
+## cli
+```
+./target/release/zk-por-cli --help
+./target/release/zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_path}
+./target/release/zk-por-cli get-merkle-proof --account-path account.json --output-path merkle_proof.json --cfg-path config
 ```
 
 ## code coverage
