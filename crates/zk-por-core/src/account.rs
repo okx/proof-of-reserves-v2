@@ -8,7 +8,10 @@ use serde_json::Value;
 use std::{collections::BTreeMap, fs::File, io::BufReader};
 
 use crate::{
-    database::{DataBase, UserId}, error::PoRError, parser::parse_account_state, types::F
+    database::{DataBase, UserId},
+    error::PoRError,
+    parser::parse_account_state,
+    types::F,
 };
 use rand::Rng;
 
@@ -87,7 +90,7 @@ impl Account {
         }
 
         let account = parse_account_state(&account_map_res.unwrap());
-        
+
         Ok(account)
     }
 }

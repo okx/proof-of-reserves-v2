@@ -238,7 +238,6 @@ fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>) -> Vec<Accou
     accounts_data
 }
 
-
 /// Parses the exchanges state at some snapshot and returns.
 pub fn parse_account_state(parsed_data: &BTreeMap<String, Value>) -> Account {
     let mut account_id = "";
@@ -263,11 +262,7 @@ pub fn parse_account_state(parsed_data: &BTreeMap<String, Value>) -> Account {
     }
     // todo:: currently, we fill debt all to zero
     let asset_len = inner_vec.len();
-    Account {
-        id: account_id.into(),
-        equity: inner_vec,
-        debt: vec![F::ZERO; asset_len],
-    }
+    Account { id: account_id.into(), equity: inner_vec, debt: vec![F::ZERO; asset_len] }
 }
 
 pub struct RandomAccountParser {
