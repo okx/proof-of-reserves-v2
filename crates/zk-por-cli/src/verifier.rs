@@ -8,7 +8,6 @@ use zk_por_core::{
     circuit_registry::registry::CircuitRegistry,
     error::PoRError,
     merkle_proof::MerkleProof,
-    types::F,
     util::get_hash_from_hash_string,
     Proof,
 };
