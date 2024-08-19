@@ -56,7 +56,7 @@ pub fn get_merkle_proof(
     }
 
     let merkle_proof = MerkleProof::new_from_account(&account.unwrap(), &database, &global_cfg)
-        .expect("Unable to generate merkle proof");
+        .expect("Una ble to generate merkle proof");
 
     let mut file = File::create(output_path.clone())
         .expect(format!("fail to create proof file at {:#?}", output_path).as_str());

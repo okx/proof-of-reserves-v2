@@ -7,14 +7,16 @@ use zk_por_core::{
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
     error::PoRError,
-    global::GLOBAL_MST,
     merkle_proof::MerkleProof,
+    types::F,
+    util::get_hash_from_hash_string,
     Proof,
 };
 
 pub fn verify(
     global_proof_path: PathBuf,
     merkle_inclusion_path: Option<PathBuf>,
+    root: Option<String>,
 ) -> Result<(), PoRError> {
     let proof_file = File::open(&global_proof_path).unwrap();
     let reader = std::io::BufReader::new(proof_file);
@@ -72,11 +74,13 @@ pub fn verify(
         // Parse the JSON as Proof
         let proof: MerkleProof = from_reader(reader).unwrap();
 
-        let global_mst = GLOBAL_MST.get().unwrap();
-        let mut _g = global_mst.read().expect("unable to get a lock");
-        let gmst_root = _g.inner.last().unwrap();
+        if root.is_none() {
+            return Err(PoRError::InvalidParameter(
+                "Require root for merkle proof verification".to_string(),
+            ));
+        }
 
-        let res = proof.verify_merkle_proof(*gmst_root);
+        let res = proof.verify_merkle_proof(get_hash_from_hash_string(root.unwrap()));
 
         if res.is_err() {
             let res_err = res.unwrap_err();
