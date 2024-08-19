@@ -9,7 +9,7 @@ of user's assets. These tools will allow you to independently audit OKX's Proof 
 exceed the exchange's known liabilities to users, in order to confirm the solvency of OKX.
 
 ## Technical Specs
-details of the [technical spec](./doc/technical_spec.md) 
+details of the [technical spec](./docs/technical_spec.md) 
 
 ## Liabilities
 OKX's PoR uses zk Merkle Sum Tree technology to allow each user to independently review OKX's digital asset reserve on the
