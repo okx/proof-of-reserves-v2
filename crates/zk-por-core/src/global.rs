@@ -52,6 +52,10 @@ impl GlobalMst {
         &self.inner[range]
     }
 
+    pub fn get_root(){
+        
+    }
+
     /// convert a mst node inner index to global index in gmst.
     /// For a mst, the inner index is level-by-level, e.g.,
     ///       14

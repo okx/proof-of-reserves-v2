@@ -3,6 +3,7 @@ use plonky2::{
     plonk::config::Hasher,
 };
 use plonky2_field::types::Field;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     database::{DataBase, UserId},
@@ -11,7 +12,7 @@ use crate::{
 use rand::Rng;
 
 /// A struct representing a users account. It represents their equity and debt as a Vector of goldilocks field elements.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Account {
     pub id: String, // 256 bit hex string
     pub equity: Vec<F>,

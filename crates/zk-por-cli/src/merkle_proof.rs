@@ -47,7 +47,8 @@ pub fn get_merkle_proof(
         recursion_branchout_num: RECURSION_BRANCHOUT_NUM,
     };
 
-    let merkle_proof = MerkleProof::new_from_user_id(user_id, &database, &global_cfg);
+    let merkle_proof = MerkleProof::new_from_user_id(user_id, &database, &global_cfg).expect("Unable to generate merkle proof");
+    
     let mut file = File::create(output_path.clone())
         .expect(format!("fail to create proof file at {:#?}", output_path).as_str());
     file.write_all(json!(merkle_proof).to_string().as_bytes())

@@ -4,14 +4,10 @@ use plonky2::{
     plonk::config::Hasher,
 };
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    account::Account,
-    database::{DataBase, UserId},
-    global::{GlobalConfig, GlobalMst},
-    merkle_sum_prover::utils::hash_2_subhashes,
-    types::{D, F},
+    account::Account, database::{DataBase, UserId}, error::PoRError, global::{GlobalConfig, GlobalMst}, merkle_sum_prover::utils::hash_2_subhashes, types::{D, F}
 };
 
 /// We use this wrapper struct for the left and right indexes of our recursive siblings. This is needed so a user knows the position of
@@ -40,15 +36,15 @@ impl MerkleProofIndex {
 
 /// Get the siblings index for the merkle proof of inclusion given a leaf index of a binary merkle sum tree.
 /// We get the parent index of a leaf using the formula: parent = index / 2 + num_leaves
-pub fn get_mst_siblings_index(global_index: usize, cfg: &GlobalConfig) -> Vec<usize> {
+pub fn get_mst_siblings_index(global_leaf_index: usize, cfg: &GlobalConfig) -> Vec<usize> {
     // Make sure our global index is within the number of leaves
-    assert!(global_index < GlobalMst::get_num_of_leaves(cfg));
+    assert!(global_leaf_index < GlobalMst::get_num_of_leaves(cfg));
 
-    let batch_idx = global_index / cfg.batch_size;
+    let batch_idx = global_leaf_index / cfg.batch_size;
     let mut siblings = Vec::new();
 
     // This is the index in the local mst tree
-    let mut local_index = global_index % cfg.batch_size;
+    let mut local_index = global_leaf_index % cfg.batch_size;
 
     while local_index < (cfg.batch_size * 2 - 2) {
         if local_index % 2 == 1 {
@@ -144,7 +140,7 @@ pub fn get_recursive_siblings_index(
 
 /// We use this wrapper struct for the left and right hashes of our recursive siblings. This is needed so a user knows the position of
 /// their own hash when hashing.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecursiveHashes {
     left_hashes: Vec<HashOut<F>>,
     right_hashes: Vec<HashOut<F>>,
@@ -165,6 +161,7 @@ impl RecursiveHashes {
         RecursiveHashes { left_hashes, right_hashes }
     }
 
+    /// Left hashes || own hash || Right hashes
     pub fn get_calculated_hash(self, own_hash: HashOut<F>) -> HashOut<F> {
         let mut hash_inputs = self.left_hashes;
         hash_inputs.push(own_hash);
@@ -177,7 +174,7 @@ impl RecursiveHashes {
 }
 
 /// Hashes for a given users merkle proof of inclusion siblings in the Global Merkle Sum Tree
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MerkleProof {
     pub index: usize,
     pub sum_tree_siblings: Vec<HashOut<F>>,
@@ -189,27 +186,34 @@ impl MerkleProof {
         user_id_string: String,
         db: &DataBase,
         cfg: &GlobalConfig,
-    ) -> MerkleProof {
-        let user_id = UserId::from_hex_string(user_id_string);
-        let user_index = db.get_user_index(user_id);
+    ) -> Result<MerkleProof, PoRError> {
+        let user_id_res = UserId::from_hex_string(user_id_string);
+        if user_id_res.is_err(){
+            return Err(user_id_res.unwrap_err());
+        }
+
+        let user_id = user_id_res.unwrap();
+
+        let user_index = db.get_user_index(user_id.clone());
         if user_index.is_none() {
             tracing::error!("User with id: {:?} does not exist", user_id.to_string());
+            return Err(PoRError::InvalidParameter(user_id.to_string()))
         }
 
         let indexes = MerkleProofIndex::new_from_user_index(user_index.unwrap() as usize, cfg);
         let merkle_proof =
             get_merkle_proof_hashes_from_indexes(&indexes, user_index.unwrap() as usize, db);
-        merkle_proof
+        Ok(merkle_proof)
     }
 
     pub fn verify_merkle_proof(
         &self,
         account: &Account,
-        user_index: usize,
         gmst_root: HashOut<F>,
-    ) -> Result<Account, String> {
+    ) -> Result<(), PoRError> {
         let account_hash = account.get_hash();
-        let mut index = user_index;
+
+        let mut index = self.index;
 
         let calculated_mst_hash = self.sum_tree_siblings.iter().fold(account_hash, |acc, x| {
             if index % 2 == 0 {
@@ -227,9 +231,9 @@ impl MerkleProof {
             .fold(calculated_mst_hash, |acc, x| x.clone().get_calculated_hash(acc));
 
         if calculated_hash == gmst_root {
-            Ok(account.clone())
+            Ok(())
         } else {
-            Err("Merkle Proof is not verified".to_string())
+            Err(PoRError::InvalidMerkleProof)
         }
     }
 }
@@ -480,7 +484,6 @@ pub mod test {
                 equity: equity.clone(),
                 debt: debt.clone(),
             },
-            0,
             root,
         );
 

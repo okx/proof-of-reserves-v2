@@ -6,6 +6,9 @@ pub enum PoRError {
     #[error("Proof is not valid")]
     InvalidProof,
 
+    #[error("Merkle proof is not valid")]
+    InvalidMerkleProof,
+
     #[error("config error: {0}")]
     ConfigError(#[from] ConfigError),
 
@@ -20,4 +23,9 @@ pub enum PoRError {
 
     #[error("The verification circuit digest does not match the prover. ")]
     CircuitDigestMismatch,
+
+    #[error("User is not valid")]
+    InvalidUser,
+
+    
 }

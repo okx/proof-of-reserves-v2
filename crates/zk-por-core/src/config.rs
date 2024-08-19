@@ -32,7 +32,6 @@ pub struct ConfigProver {
     pub batch_size: usize,
     pub num_of_tokens: usize,
     pub user_data_path: String,
-    pub num_users: usize,
 }
 
 #[derive(Debug, Clone, Deserialize)]

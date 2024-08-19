@@ -5,7 +5,7 @@ use plonky2::{hash::hash_types::HashOut, plonk::config::GenericHashOut};
 use rand::Rng;
 use zk_por_db::LevelDb;
 
-use crate::types::F;
+use crate::{error::PoRError, types::F};
 
 #[derive(Debug, Clone, Copy)]
 pub struct UserId(pub [u8; 32]);
@@ -22,21 +22,24 @@ impl UserId {
         self.0.encode_hex()
     }
 
-    pub fn from_hex_string(hex_str: String) -> Self {
+    pub fn from_hex_string(hex_str: String) -> Result<Self, PoRError> {
         if hex_str.len() != 64 {
             tracing::error!("User Id: {:?} is not a valid id, length is not 256 bits", hex_str);
+            return Err(PoRError::InvalidParameter(hex_str));
         }
-        let mut arr = [0u8; 32];
-        for i in 0..32 {
-            let byte_str = &hex_str[2 * i..2 * i + 2];
-            let byte = u8::from_str_radix(byte_str, 16);
-            if byte.is_err() {
-                tracing::error!("User Id: {:?} is not a valid id, not in proper hex form", hex_str);
-            }
-            arr[i] = byte.unwrap();
+        
+        let decode_res = hex::decode(hex_str.clone());
+
+        if decode_res.is_err(){
+            tracing::error!("User Id: {:?} is not a valid id", hex_str);
+            return Err(PoRError::InvalidParameter(hex_str));
         }
 
-        UserId { 0: arr }
+        let mut arr = [0u8; 32];
+        arr.copy_from_slice(&decode_res.unwrap());
+
+
+        Ok(UserId { 0: arr })
     }
 }
 
