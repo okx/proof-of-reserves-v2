@@ -74,6 +74,7 @@ graph TD;
 - `square` means account node
 - `circle` means internal node
 - `tilt square` means padded node
+
 **note**: we pad by empty node whenever it is needed to form a binary tree or multi branch recursive tree.
 
 we divide all users into different batches. within each batch, we construct a binary tree, with each user's `account` as tree leaf. all roots of batch tree will form a `recursive_tree`, whose branch numbers can be configured (denotes by `Q`); Let `N` be the total number of users; and `M` be the batch size. in above's example, `N=24`, `M=4`, `Q=4`;
