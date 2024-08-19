@@ -78,7 +78,6 @@ pub fn persist_account_id_to_gmst_pos(
         .iter()
         .enumerate()
         .map(|(i, acct)| {
- 
             let user_id = UserId::from_hex_string(acct.id.to_string());
             tracing::debug!("persist account {:?} with index: {:?}", acct.id, i + start_idx);
             (user_id, (i + start_idx) as u32)
@@ -111,6 +110,10 @@ pub fn gen_accounts_with_random_data(num_accounts: usize, num_assets: usize) -> 
 }
 
 pub fn gen_empty_accounts(batch_size: usize, num_assets: usize) -> Vec<Account> {
-    let accounts = vec![Account::get_empty_account_with_user_id(UserId::rand().to_string(), num_assets); batch_size];
+    let accounts =
+        vec![
+            Account::get_empty_account_with_user_id(UserId::rand().to_string(), num_assets);
+            batch_size
+        ];
     accounts
 }

@@ -294,7 +294,9 @@ impl AccountParser for RandomAccountParser {
 mod test {
 
     use crate::{
-        account::Account, database::UserId, parser::{FileManager, FilesCfg}
+        account::Account,
+        database::UserId,
+        parser::{FileManager, FilesCfg},
     };
     use mockall::*;
     use serde_json::Value;
@@ -377,15 +379,17 @@ mod test {
             Ok(paths)
         });
 
-        let doc_0: Vec<Account> = (0..4).into_iter().map(|_| {
-            Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20)
-        }).collect();
+        let doc_0: Vec<Account> = (0..4)
+            .into_iter()
+            .map(|_| Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20))
+            .collect();
         let doc_0_clone = doc_0.clone();
         mock_file_manager.expect_read_json_into_accounts_vec().times(1).return_const(doc_0_clone);
 
-        let doc_5: Vec<Account> = (0..3).into_iter().map(|_| {
-            Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20)
-        }).collect();
+        let doc_5: Vec<Account> = (0..3)
+            .into_iter()
+            .map(|_| Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20))
+            .collect();
 
         let doc_5_clone = doc_5.clone();
         mock_file_manager.expect_read_json_into_accounts_vec().times(1).return_const(doc_5_clone);
@@ -398,12 +402,13 @@ mod test {
         );
         assert_eq!(file_acct_reader.total_num_of_users(), 23);
 
-        let doc_1: Vec<Account> = (0..4).into_iter().map(|_| {
-            Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20)
-        }).collect();
+        let doc_1: Vec<Account> = (0..4)
+            .into_iter()
+            .map(|_| Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20))
+            .collect();
 
         let doc_1_clone = doc_1.clone();
-        mock_file_manager.expect_read_json_into_accounts_vec().times(1).return_const( doc_1_clone);
+        mock_file_manager.expect_read_json_into_accounts_vec().times(1).return_const(doc_1_clone);
         let users = file_acct_reader.read_n_accounts(0, 8, &mock_file_manager);
         assert_eq!(users.len(), 8);
         assert_eq!(file_acct_reader.file_idx, 1);
@@ -414,9 +419,9 @@ mod test {
             assert_eq!(actual.id, expect.id);
         });
 
-
         mock_file_manager.expect_read_json_into_accounts_vec().times(1).returning(|_| {
-            let accounts = vec![Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20); 4];
+            let accounts =
+                vec![Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20); 4];
             accounts
         });
         let users = file_acct_reader.read_n_accounts(8, 4, &mock_file_manager);
@@ -424,7 +429,8 @@ mod test {
         assert_eq!(file_acct_reader.file_idx, 2);
         assert_eq!(file_acct_reader.offset, 4);
         mock_file_manager.expect_read_json_into_accounts_vec().times(3).returning(|_| {
-            let accounts = vec![Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20); 4];
+            let accounts =
+                vec![Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20); 4];
             accounts
         });
         let users = file_acct_reader.read_n_accounts(12, 12, &mock_file_manager);
@@ -432,6 +438,4 @@ mod test {
         assert_eq!(file_acct_reader.offset, 3);
         assert_eq!(users.len(), 11);
     }
-
-    
 }
