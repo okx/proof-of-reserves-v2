@@ -110,7 +110,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
             accounts.resize(account_num + pad_num, Account::get_empty_account(token_num));
         }
 
-        assert_eq!(account_num % batch_size, 0);
+        assert_eq!(accounts.len() % batch_size, 0);
 
         tracing::debug!(
             "parse {} times, with number of accounts {}, number of batches {}",

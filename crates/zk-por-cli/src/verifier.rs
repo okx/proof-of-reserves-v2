@@ -4,7 +4,6 @@ use std::{fs::File, path::PathBuf};
 // Assuming Proof is defined in lib.rs and lib.rs is in the same crate
 use super::constant::RECURSION_BRANCHOUT_NUM;
 use zk_por_core::{
-    account::Account,
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
     error::PoRError,
@@ -71,13 +70,13 @@ pub fn verify(
         let reader = std::io::BufReader::new(merkle_path);
 
         // Parse the JSON as Proof
-        let (proof, account): (MerkleProof, Account) = from_reader(reader).unwrap();
+        let proof: MerkleProof = from_reader(reader).unwrap();
 
         let global_mst = GLOBAL_MST.get().unwrap();
         let mut _g = global_mst.read().expect("unable to get a lock");
         let gmst_root = _g.inner.last().unwrap();
 
-        let res = proof.verify_merkle_proof(&account, *gmst_root);
+        let res = proof.verify_merkle_proof(*gmst_root);
 
         if res.is_err() {
             let res_err = res.unwrap_err();
