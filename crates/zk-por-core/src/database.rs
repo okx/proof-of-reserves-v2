@@ -27,17 +27,16 @@ impl UserId {
             tracing::error!("User Id: {:?} is not a valid id, length is not 256 bits", hex_str);
             return Err(PoRError::InvalidParameter(hex_str));
         }
-        
+
         let decode_res = hex::decode(hex_str.clone());
 
-        if decode_res.is_err(){
+        if decode_res.is_err() {
             tracing::error!("User Id: {:?} is not a valid id", hex_str);
             return Err(PoRError::InvalidParameter(hex_str));
         }
 
         let mut arr = [0u8; 32];
         arr.copy_from_slice(&decode_res.unwrap());
-
 
         Ok(UserId { 0: arr })
     }

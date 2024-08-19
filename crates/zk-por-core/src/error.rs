@@ -26,6 +26,4 @@ pub enum PoRError {
 
     #[error("User is not valid")]
     InvalidUser,
-
-    
 }

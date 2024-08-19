@@ -7,7 +7,12 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    account::Account, database::{DataBase, UserId}, error::PoRError, global::{GlobalConfig, GlobalMst}, merkle_sum_prover::utils::hash_2_subhashes, types::{D, F}
+    account::Account,
+    database::{DataBase, UserId},
+    error::PoRError,
+    global::{GlobalConfig, GlobalMst},
+    merkle_sum_prover::utils::hash_2_subhashes,
+    types::{D, F},
 };
 
 /// We use this wrapper struct for the left and right indexes of our recursive siblings. This is needed so a user knows the position of
@@ -188,7 +193,7 @@ impl MerkleProof {
         cfg: &GlobalConfig,
     ) -> Result<MerkleProof, PoRError> {
         let user_id_res = UserId::from_hex_string(user_id_string);
-        if user_id_res.is_err(){
+        if user_id_res.is_err() {
             return Err(user_id_res.unwrap_err());
         }
 
@@ -197,7 +202,7 @@ impl MerkleProof {
         let user_index = db.get_user_index(user_id.clone());
         if user_index.is_none() {
             tracing::error!("User with id: {:?} does not exist", user_id.to_string());
-            return Err(PoRError::InvalidParameter(user_id.to_string()))
+            return Err(PoRError::InvalidParameter(user_id.to_string()));
         }
 
         let indexes = MerkleProofIndex::new_from_user_index(user_index.unwrap() as usize, cfg);
