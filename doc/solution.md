@@ -71,11 +71,15 @@ graph TD;
     style n23 fill:#55ff33,stroke:#333,stroke-width:2px;
     style root fill:#33d1ff,stroke:#333,stroke-width:2px;
 ```
+- square means account node
+- circle means internal node
+- tilt square means padded node
+**note**: we pad by empty if the actual users number does not fit to a perfect GMST.
 
-we divide all users into different batches.  Let `N` be the total number of users; and `M` be the `batch_size`. 
+we divide all users into different batches. within each batch, we construct a binary tree, with each user's `account` as tree leaf. all roots of batch tree will form a `recursive_tree`, whose branch numbers can be configured (denotes by `Q`); Let `N` be the total number of users; and `M` be the batch size. in above's example, `N=24`, `M=4`, `Q=4`;
 
 ### batch tree
-within each batch, we construct a binary tree, with each user's `account` as tree leaf. the data strucure of one `account` would be 
+ the data strucure of one `account` would be 
 ```rust
 pub struct Account {
     pub id: String, // 256 bit hex string
@@ -95,3 +99,39 @@ let node_debt= left_child.debt + right_child.debt
 ```
 
 ### recursive tree
+for recursive tree, we calculate the node hash and node equity & debt similar to the method in batch tree; the only difference is that the tree branching number might not be 2; the actual value is configurable.
+```rust
+let node_hash = PoseidonHash::hash_no_pad([...children.hash]);
+let node_equity = sum([...children.equity])
+let node_debt= sum([...children.debt])
+```
+At last, the tree node hash will represent the commitment of all user's assets info. the tree node's equity & debt will be the total equity & debt of the exchange.
+
+### merkle proof
+for each given account, we can generate a merkle inclusion proof for that user. for example as in the above graph, the merkle proof for account `A5` would be
+```json
+{
+     "index": 6,
+         "sum_tree_siblings": [
+        "A4", "27"
+    ],
+    "recursive_tree_siblings": [
+        {
+            "left_hashes": [
+                "36", 
+            ],
+            "right_hashes": ["38", "39"]
+        }  ,
+        {
+            "left_hashes": [
+            ],
+            "right_hashes": ["45", "46", "47"]
+        }      
+    ]
+
+}
+```
+
+## ZKP
+During the construction of batch tree, we generate ZK proof that the batch tree is constructed correctly; and during the construction of recursion 
+tree, we generate ZK proof that the children tree's proof is correct and the recursion building logic is constrained. We will provide another document detailing the circuit constraints; the reader might refer to this doc if wants to know more [details](https://okg-block.larksuite.com/docx/RzDcdkmvwo5FJJxD9gKuGttjsod)
