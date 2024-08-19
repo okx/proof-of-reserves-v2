@@ -4,12 +4,11 @@ use plonky2::{
 };
 use plonky2_field::types::Field;
 use serde::{Deserialize, Serialize};
-use std::{fs::File, io::BufReader};
+use serde_json::Value;
+use std::{collections::BTreeMap, fs::File, io::BufReader};
 
 use crate::{
-    database::{DataBase, UserId},
-    error::PoRError,
-    types::F,
+    database::{DataBase, UserId}, error::PoRError, parser::parse_account_state, types::F
 };
 use rand::Rng;
 
@@ -71,6 +70,7 @@ impl Account {
             .collect::<Vec<F>>()
     }
 
+    /// Get a new account from a file path
     pub fn new_from_file_path(path: String) -> Result<Self, PoRError> {
         let file_res = File::open(path);
 
@@ -80,13 +80,15 @@ impl Account {
 
         let reader = BufReader::new(file_res.unwrap());
         // Deserialize the json data to a struct
-        let account_res: Result<Account, _> = serde_json::from_reader(reader);
+        let account_map_res: Result<BTreeMap<String, Value>, _> = serde_json::from_reader(reader);
 
-        if account_res.is_err() {
+        if account_map_res.is_err() {
             return Err(PoRError::InvalidParameter("Invalid account json".to_string()));
         }
 
-        Ok(account_res.unwrap())
+        let account = parse_account_state(&account_map_res.unwrap());
+        
+        Ok(account)
     }
 }
 

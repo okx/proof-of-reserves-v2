@@ -48,6 +48,7 @@ pub fn get_merkle_proof(
         recursion_branchout_num: RECURSION_BRANCHOUT_NUM,
     };
 
+    // the account json format is a map of tokens to token values, wheras the format in the merkle proof is given by a vec of token values.
     let account = Account::new_from_file_path(account_path);
 
     if account.is_err() {
