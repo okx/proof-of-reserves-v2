@@ -307,7 +307,10 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
     // persist gmst to database
 
     let global_mst = GLOBAL_MST.get().unwrap();
+
     let _g = global_mst.read().expect("unable to get a lock");
+    let root_hash = _g.get_root().expect("no root");
+    tracing::info!("root hash is {:?}", root_hash);
     let start = std::time::Instant::now();
     _g.persist(&mut database);
     tracing::info!("persist gmst to db in {:?}", start.elapsed());
