@@ -2,6 +2,7 @@ use std::{fs::File, io::Write, str::FromStr};
 
 use serde_json::json;
 use zk_por_core::{
+    account::Account,
     config::ProverConfig,
     database::{DataBase, DbOption},
     error::PoRError,
@@ -13,7 +14,7 @@ use zk_por_core::{
 use crate::constant::RECURSION_BRANCHOUT_NUM;
 
 pub fn get_merkle_proof(
-    user_id: String,
+    account_path: String,
     cfg: ProverConfig,
     output_path: String,
 ) -> Result<(), PoRError> {
@@ -47,8 +48,15 @@ pub fn get_merkle_proof(
         recursion_branchout_num: RECURSION_BRANCHOUT_NUM,
     };
 
-    let merkle_proof = MerkleProof::new_from_user_id(user_id, &database, &global_cfg)
-        .expect("Unable to generate merkle proof");
+    // the account json format is a map of tokens to token values, wheras the format in the merkle proof is given by a vec of token values.
+    let account = Account::new_from_file_path(account_path);
+
+    if account.is_err() {
+        return Err(account.unwrap_err());
+    }
+
+    let merkle_proof = MerkleProof::new_from_account(&account.unwrap(), &database, &global_cfg)
+        .expect("Una ble to generate merkle proof");
 
     let mut file = File::create(output_path.clone())
         .expect(format!("fail to create proof file at {:#?}", output_path).as_str());

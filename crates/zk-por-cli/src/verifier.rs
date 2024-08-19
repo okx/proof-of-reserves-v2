@@ -4,18 +4,18 @@ use std::{fs::File, path::PathBuf};
 // Assuming Proof is defined in lib.rs and lib.rs is in the same crate
 use super::constant::RECURSION_BRANCHOUT_NUM;
 use zk_por_core::{
-    account::Account,
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
     error::PoRError,
-    global::GLOBAL_MST,
     merkle_proof::MerkleProof,
+    util::get_hash_from_hash_string,
     Proof,
 };
 
 pub fn verify(
     global_proof_path: PathBuf,
     merkle_inclusion_path: Option<PathBuf>,
+    root: Option<String>,
 ) -> Result<(), PoRError> {
     let proof_file = File::open(&global_proof_path).unwrap();
     let reader = std::io::BufReader::new(proof_file);
@@ -71,15 +71,23 @@ pub fn verify(
         let reader = std::io::BufReader::new(merkle_path);
 
         // Parse the JSON as Proof
-        let (proof, account): (MerkleProof, Account) = from_reader(reader).unwrap();
+        let proof: MerkleProof = from_reader(reader).unwrap();
 
-        let global_mst = GLOBAL_MST.get().unwrap();
-        let mut _g = global_mst.read().expect("unable to get a lock");
-        let gmst_root = _g.inner.last().unwrap();
+        if root.is_none() {
+            return Err(PoRError::InvalidParameter(
+                "Require root for merkle proof verification".to_string(),
+            ));
+        }
 
-        let _ = proof.verify_merkle_proof(&account, *gmst_root).expect("Invalid Merkle Proof");
+        let res = proof.verify_merkle_proof(get_hash_from_hash_string(root.unwrap()));
 
-        println!("successfully verify the inclusion proof for user for round {}", round_num);
+        if res.is_err() {
+            let res_err = res.unwrap_err();
+            return Err(res_err);
+        } else {
+            println!("successfully verify the inclusion proof for user for round {}", round_num);
+            return Ok(());
+        }
     }
 
     Ok(())

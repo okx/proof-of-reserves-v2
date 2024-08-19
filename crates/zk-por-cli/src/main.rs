@@ -27,7 +27,7 @@ pub enum ZkPorCommitCommands {
         #[arg(short, long)]
         cfg_path: String, // path to config file
         #[arg(short, long)]
-        user_id: String,
+        account_path: String,
         #[arg(short, long)]
         output_path: String, // path to output file
     },
@@ -36,6 +36,8 @@ pub enum ZkPorCommitCommands {
         global_proof_path: String,
         #[arg(short, long)]
         inclusion_proof_path: Option<String>,
+        #[arg(short, long)]
+        root: Option<String>,
     },
 }
 
@@ -49,17 +51,17 @@ impl Execute for ZkPorCommitCommands {
                 let output_file = PathBuf::from_str(&output_path).unwrap();
                 prove(prover_cfg, output_file)
             }
-            ZkPorCommitCommands::GetMerkleProof { cfg_path, user_id, output_path } => {
+            ZkPorCommitCommands::GetMerkleProof { cfg_path, account_path, output_path } => {
                 let cfg = zk_por_core::config::ProverConfig::load(&cfg_path)
                     .map_err(|e| PoRError::ConfigError(e))?;
                 let prover_cfg: ProverConfig = cfg.try_deserialize().unwrap();
-                get_merkle_proof(user_id.to_string(), prover_cfg, output_path.to_string())
+                get_merkle_proof(account_path.to_string(), prover_cfg, output_path.to_string())
             }
-            ZkPorCommitCommands::Verify { global_proof_path, inclusion_proof_path } => {
+            ZkPorCommitCommands::Verify { global_proof_path, inclusion_proof_path, root } => {
                 let global_proof_path = PathBuf::from_str(&global_proof_path).unwrap();
                 let inclusion_proof_path =
                     inclusion_proof_path.as_ref().map(|p| PathBuf::from_str(&p).unwrap());
-                verify(global_proof_path, inclusion_proof_path)
+                verify(global_proof_path, inclusion_proof_path, root.clone())
             }
         }
     }

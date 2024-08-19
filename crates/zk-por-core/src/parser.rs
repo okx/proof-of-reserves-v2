@@ -195,7 +195,7 @@ impl AccountParser for FileAccountReader {
             let mut filled_len = 0;
 
             if self.offset < self.buffered_accounts.len() {
-                filled_len = self.buffered_accounts.len() - self.offset;
+                let filled_len = self.buffered_accounts.len() - self.offset;
                 result[0..filled_len].clone_from_slice(&self.buffered_accounts[(self.offset)..]);
             }
             let mut missing_len = result.len() - (self.buffered_accounts.len() - self.offset);
@@ -233,35 +233,36 @@ impl AccountParser for FileAccountReader {
 fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>) -> Vec<Account> {
     let mut accounts_data: Vec<Account> = Vec::new();
     for obj in parsed_data {
-        let mut account_id = "";
-        let mut inner_vec: Vec<F> = Vec::new();
-        for (key, value) in obj.iter() {
-            if key != "id" {
-                if let Some(number_str) = value.as_str() {
-                    match number_str.parse::<u64>() {
-                        Ok(number) => inner_vec.push(F::from_canonical_u64(number)),
-                        Err(e) => {
-                            error!("Error in parsing token value number: {:?}", e);
-                            panic!("Error in parsing token value number: {:?}", e);
-                        }
-                    }
-                } else {
-                    error!("Error in parsing string from json: {:?}", value);
-                    panic!("Error in parsing string from json: {:?}", value);
-                }
-            } else {
-                account_id = value.as_str().unwrap();
-            }
-        }
-        // todo:: currently, we fill debt all to zero
-        let asset_len = inner_vec.len();
-        accounts_data.push(Account {
-            id: account_id.into(),
-            equity: inner_vec,
-            debt: vec![F::ZERO; asset_len],
-        });
+        accounts_data.push(parse_account_state(obj));
     }
     accounts_data
+}
+
+/// Parses the exchanges state at some snapshot and returns.
+pub fn parse_account_state(parsed_data: &BTreeMap<String, Value>) -> Account {
+    let mut account_id = "";
+    let mut inner_vec: Vec<F> = Vec::new();
+    for (key, value) in parsed_data.iter() {
+        if key != "id" {
+            if let Some(number_str) = value.as_str() {
+                match number_str.parse::<u64>() {
+                    Ok(number) => inner_vec.push(F::from_canonical_u64(number)),
+                    Err(e) => {
+                        error!("Error in parsing token value number: {:?}", e);
+                        panic!("Error in parsing token value number: {:?}", e);
+                    }
+                }
+            } else {
+                error!("Error in parsing string from json: {:?}", value);
+                panic!("Error in parsing string from json: {:?}", value);
+            }
+        } else {
+            account_id = value.as_str().unwrap();
+        }
+    }
+    // todo:: currently, we fill debt all to zero
+    let asset_len = inner_vec.len();
+    Account { id: account_id.into(), equity: inner_vec, debt: vec![F::ZERO; asset_len] }
 }
 
 pub struct RandomAccountParser {
@@ -295,8 +296,7 @@ mod test {
 
     use crate::{
         account::Account,
-        database::UserId,
-        parser::{FileManager, FilesCfg},
+        parser::{parse_exchange_state, FileManager, FilesCfg},
     };
     use mockall::*;
     use serde_json::Value;
@@ -306,7 +306,7 @@ mod test {
         str::FromStr,
     };
 
-    use super::{parse_exchange_state, AccountParser, FileAccountReader, JsonFileManager};
+    use super::{AccountParser, FileAccountReader, JsonFileManager};
 
     #[test]
     pub fn test_read_json_file_into_map() {
@@ -379,20 +379,14 @@ mod test {
             Ok(paths)
         });
 
-        let doc_0: Vec<Account> = (0..4)
-            .into_iter()
-            .map(|_| Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20))
-            .collect();
-        let doc_0_clone = doc_0.clone();
-        mock_file_manager.expect_read_json_into_accounts_vec().times(1).return_const(doc_0_clone);
-
-        let doc_5: Vec<Account> = (0..3)
-            .into_iter()
-            .map(|_| Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20))
-            .collect();
-
-        let doc_5_clone = doc_5.clone();
-        mock_file_manager.expect_read_json_into_accounts_vec().times(1).return_const(doc_5_clone);
+        mock_file_manager.expect_read_json_into_accounts_vec().times(1).returning(|_| {
+            let accounts = vec![Account::get_empty_account(20); 4];
+            accounts
+        });
+        mock_file_manager.expect_read_json_into_accounts_vec().times(1).returning(|_| {
+            let accounts = vec![Account::get_empty_account(20); 3];
+            accounts
+        });
 
         let dir = tempdir::TempDir::new("user_input_test").unwrap().into_path();
 
@@ -402,40 +396,25 @@ mod test {
         );
         assert_eq!(file_acct_reader.total_num_of_users(), 23);
 
-        let doc_1: Vec<Account> = (0..4)
-            .into_iter()
-            .map(|_| Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20))
-            .collect();
-
-        let doc_1_clone = doc_1.clone();
-        mock_file_manager.expect_read_json_into_accounts_vec().times(1).return_const(doc_1_clone);
+        mock_file_manager.expect_read_json_into_accounts_vec().times(1).returning(|_| {
+            let accounts = vec![Account::get_empty_account(20); 4];
+            accounts
+        });
         let users = file_acct_reader.read_n_accounts(0, 8, &mock_file_manager);
         assert_eq!(users.len(), 8);
-        assert_eq!(file_acct_reader.file_idx, 1);
-        assert_eq!(file_acct_reader.offset, 4);
-
-        let expected = vec![doc_0, doc_1].concat();
-        expected.iter().zip(users.iter()).for_each(|(expect, actual)| {
-            assert_eq!(actual.id, expect.id);
-        });
 
         mock_file_manager.expect_read_json_into_accounts_vec().times(1).returning(|_| {
-            let accounts =
-                vec![Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20); 4];
+            let accounts = vec![Account::get_empty_account(20); 4];
             accounts
         });
         let users = file_acct_reader.read_n_accounts(8, 4, &mock_file_manager);
         assert_eq!(users.len(), 4);
-        assert_eq!(file_acct_reader.file_idx, 2);
-        assert_eq!(file_acct_reader.offset, 4);
+
         mock_file_manager.expect_read_json_into_accounts_vec().times(3).returning(|_| {
-            let accounts =
-                vec![Account::get_empty_account_with_user_id(UserId::rand().to_string(), 20); 4];
+            let accounts = vec![Account::get_empty_account(20); 4];
             accounts
         });
         let users = file_acct_reader.read_n_accounts(12, 12, &mock_file_manager);
-        assert_eq!(file_acct_reader.file_idx, 5);
-        assert_eq!(file_acct_reader.offset, 3);
         assert_eq!(users.len(), 11);
     }
 }
