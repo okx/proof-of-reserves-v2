@@ -1,5 +1,5 @@
 # technical specs
-the goal of the project is to generate a ZK proof proving that our published total equity & debt is calculated correctly by summing over all OKX's users equity & debt. We can also provide each individual user a merkle inclusion proof that its asset is part of the committed total asset of exchange. We achive this by constructing a global merkle sum tree (GMST) and generates ZK proof that the construction is correctly constructed.
+the goal of the project is to prove that the total equity & debt of an exchange is correct and verifiable. We achive this by constructing a global merkle sum tree (GMST) and generates ZK proof that the construction is correctly constructed. the root of the GMST will represent a commitment of the CEX's total equity & debt. We provide individual user a merkle inclusion proof that its asset is part of the committed total asset of exchange. 
 
 
 ## GMST
@@ -71,10 +71,10 @@ graph TD;
     style n23 fill:#55ff33,stroke:#333,stroke-width:2px;
     style root fill:#33d1ff,stroke:#333,stroke-width:2px;
 ```
-- square means account node
-- circle means internal node
-- tilt square means padded node
-**note**: we pad by empty if the actual users number does not fit to a perfect GMST.
+- `square` means account node
+- `circle` means internal node
+- `tilt square` means padded node
+**note**: we pad by empty node whenever it is needed to form a binary tree or multi branch recursive tree.
 
 we divide all users into different batches. within each batch, we construct a binary tree, with each user's `account` as tree leaf. all roots of batch tree will form a `recursive_tree`, whose branch numbers can be configured (denotes by `Q`); Let `N` be the total number of users; and `M` be the batch size. in above's example, `N=24`, `M=4`, `Q=4`;
 
