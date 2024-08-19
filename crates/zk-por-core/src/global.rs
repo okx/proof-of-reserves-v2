@@ -21,7 +21,7 @@ pub struct GlobalConfig {
 pub static GLOBAL_MST: OnceCell<RwLock<GlobalMst>> = OnceCell::new();
 
 pub struct GlobalMst {
-    inner: Vec<HashOut<F>>,
+    pub inner: Vec<HashOut<F>>,
     top_recursion_level: usize,
     pub cfg: GlobalConfig,
 }
@@ -53,7 +53,7 @@ impl GlobalMst {
     }
 
     pub fn get_root(){
-        
+
     }
 
     /// convert a mst node inner index to global index in gmst.

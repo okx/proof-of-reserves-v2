@@ -79,7 +79,7 @@ pub fn persist_account_id_to_gmst_pos(
         .iter()
         .enumerate()
         .map(|(i, acct)| {
-            let user_id = UserId::from_hex_string(acct.id.to_string());
+            let user_id = UserId::from_hex_string(acct.id.to_string()).unwrap();
             // tracing::debug!("persist account {:?} with index: {:?}", acct.id, i + start_idx);
             (user_id, (i + start_idx) as u32)
         })
