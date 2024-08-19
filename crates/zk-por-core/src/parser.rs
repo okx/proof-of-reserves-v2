@@ -1,5 +1,5 @@
 use super::account::{gen_accounts_with_random_data, Account};
-use crate::{database::UserId, types::F};
+use crate::{ types::F};
 use plonky2_field::types::Field;
 use serde_json::Value;
 use std::{

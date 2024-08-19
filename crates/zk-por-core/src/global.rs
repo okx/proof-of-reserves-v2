@@ -249,7 +249,7 @@ impl GlobalMst {
             let batches = (i..end)
                 .into_iter()
                 .enumerate()
-                .map(|(chunk_idx, j)| ((i + j).try_into().unwrap(), nodes[chunk_idx]))
+                .map(|(chunk_idx, j)| ((j).try_into().unwrap(), nodes[chunk_idx]))
                 .collect::<Vec<(i32, HashOut<F>)>>();
             db.add_batch_gmst_nodes(batches);
             i += chunk_size;

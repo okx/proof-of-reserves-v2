@@ -240,7 +240,6 @@ pub fn get_merkle_proof_hashes_from_indexes(
     user_index: usize,
     db: &DataBase,
 ) -> MerkleProof {
-    // println!("get merkle proof hash for index: {:?}, indexes: {:?}", user_index, indexes);
     let mst_hashes: Vec<HashOut<F>> = indexes
         .sum_tree_siblings
         .iter()
