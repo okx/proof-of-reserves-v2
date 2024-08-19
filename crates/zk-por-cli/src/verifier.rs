@@ -1,4 +1,3 @@
-use plonky2::fri::verifier;
 use serde_json::from_reader;
 use std::{fs::File, path::PathBuf};
 
@@ -78,10 +77,16 @@ pub fn verify(
         let mut _g = global_mst.read().expect("unable to get a lock");
         let gmst_root = _g.inner.last().unwrap();
 
-        let merkle_inlcusion_proof_res =
-            proof.verify_merkle_proof(&account, *gmst_root).expect("Invalid Merkle Proof");
-
-        println!("successfully verify the inclusion proof for user for round {}", round_num);
+        let res =
+            proof.verify_merkle_proof(&account, *gmst_root);
+        
+        if res.is_err(){
+            let res_err = res.unwrap_err();
+            return Err(res_err);
+        }else{
+            println!("successfully verify the inclusion proof for user for round {}", round_num); 
+            return Ok(())
+        }
     }
 
     Ok(())

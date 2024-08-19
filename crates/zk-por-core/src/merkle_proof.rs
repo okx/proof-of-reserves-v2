@@ -45,7 +45,7 @@ pub fn get_mst_siblings_index(global_leaf_index: usize, cfg: &GlobalConfig) -> V
     // Make sure our global index is within the number of leaves
     assert!(global_leaf_index < GlobalMst::get_num_of_leaves(cfg));
 
-    let batch_idx = global_leaf_index / cfg.batch_size;
+    let batch_id = global_leaf_index / cfg.batch_size;
     let mut siblings = Vec::new();
 
     // This is the index in the local mst tree
@@ -60,13 +60,13 @@ pub fn get_mst_siblings_index(global_leaf_index: usize, cfg: &GlobalConfig) -> V
             siblings.push(sibling_index);
         }
 
-        let parent = local_index / 2 + cfg.batch_size;
-        local_index = parent;
+        let local_parent_index = local_index / 2 + cfg.batch_size;
+        local_index = local_parent_index;
     }
 
     siblings
         .par_iter()
-        .map(|x| GlobalMst::get_batch_tree_global_index(cfg, batch_idx, *x))
+        .map(|x| GlobalMst::get_batch_tree_global_index(cfg, batch_id, *x))
         .collect()
 }
 
@@ -205,9 +205,9 @@ impl MerkleProof {
             return Err(PoRError::InvalidParameter(user_id.to_string()));
         }
 
-        let indexes = MerkleProofIndex::new_from_user_index(user_index.unwrap() as usize, cfg);
+        let merkle_proof_indexes = MerkleProofIndex::new_from_user_index(user_index.unwrap() as usize, cfg);
         let merkle_proof =
-            get_merkle_proof_hashes_from_indexes(&indexes, user_index.unwrap() as usize, db);
+            get_merkle_proof_hashes_from_indexes(&merkle_proof_indexes, user_index.unwrap() as usize, db);
         Ok(merkle_proof)
     }
 
