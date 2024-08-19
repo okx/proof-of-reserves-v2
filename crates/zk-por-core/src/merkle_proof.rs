@@ -64,10 +64,7 @@ pub fn get_mst_siblings_index(global_leaf_index: usize, cfg: &GlobalConfig) -> V
         local_index = local_parent_index;
     }
 
-    siblings
-        .par_iter()
-        .map(|x| GlobalMst::get_batch_tree_global_index(cfg, batch_id, *x))
-        .collect()
+    siblings.par_iter().map(|x| GlobalMst::get_batch_tree_global_index(cfg, batch_id, *x)).collect()
 }
 
 /// Gets the recursive siblings indexes (recursive tree is n-ary tree) as a Vec of vecs, each inner vec is one layer of siblings.
@@ -166,7 +163,7 @@ impl RecursiveHashes {
         RecursiveHashes { left_hashes, right_hashes }
     }
 
-    /// Left hashes || own hash || Right hashes
+    /// Calculated Hash = Left hashes || own hash || Right hashes
     pub fn get_calculated_hash(self, own_hash: HashOut<F>) -> HashOut<F> {
         let mut hash_inputs = self.left_hashes;
         hash_inputs.push(own_hash);
@@ -178,21 +175,23 @@ impl RecursiveHashes {
     }
 }
 
-/// Hashes for a given users merkle proof of inclusion siblings in the Global Merkle Sum Tree
+/// Hashes for a given users merkle proof of inclusion siblings in the Global Merkle Sum Tree, also includes account data as it is needed for the verification
+/// of the merkle proof (needed to calculate own hash)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MerkleProof {
+    pub account: Account,
     pub index: usize,
     pub sum_tree_siblings: Vec<HashOut<F>>,
     pub recursive_tree_siblings: Vec<RecursiveHashes>,
 }
 
 impl MerkleProof {
-    pub fn new_from_user_id(
-        user_id_string: String,
+    pub fn new_from_account(
+        account: &Account,
         db: &DataBase,
         cfg: &GlobalConfig,
     ) -> Result<MerkleProof, PoRError> {
-        let user_id_res = UserId::from_hex_string(user_id_string);
+        let user_id_res = UserId::from_hex_string(account.id.clone());
         if user_id_res.is_err() {
             return Err(user_id_res.unwrap_err());
         }
@@ -205,18 +204,22 @@ impl MerkleProof {
             return Err(PoRError::InvalidParameter(user_id.to_string()));
         }
 
-        let merkle_proof_indexes = MerkleProofIndex::new_from_user_index(user_index.unwrap() as usize, cfg);
-        let merkle_proof =
-            get_merkle_proof_hashes_from_indexes(&merkle_proof_indexes, user_index.unwrap() as usize, db);
+        let merkle_proof_indexes =
+            MerkleProofIndex::new_from_user_index(user_index.unwrap() as usize, cfg);
+        let merkle_proof = get_merkle_proof_hashes_from_indexes(
+            account,
+            &merkle_proof_indexes,
+            user_index.unwrap() as usize,
+            db,
+        );
         Ok(merkle_proof)
     }
 
     pub fn verify_merkle_proof(
         &self,
-        account: &Account,
         gmst_root: HashOut<F>,
     ) -> Result<(), PoRError> {
-        let account_hash = account.get_hash();
+        let account_hash = self.account.get_hash();
 
         let mut index = self.index;
 
@@ -245,6 +248,7 @@ impl MerkleProof {
 
 /// Given the indexes for the MST siblings, get the hashes from the database for the merkle proof of inclusion.
 pub fn get_merkle_proof_hashes_from_indexes(
+    account: &Account,
     indexes: &MerkleProofIndex,
     user_index: usize,
     db: &DataBase,
@@ -262,6 +266,7 @@ pub fn get_merkle_proof_hashes_from_indexes(
         .collect();
 
     MerkleProof {
+        account: account.clone(),
         sum_tree_siblings: mst_hashes,
         recursive_tree_siblings: recursive_hashes,
         index: user_index,
@@ -415,6 +420,9 @@ pub mod test {
             recursion_branchout_num: 4,
         });
 
+        let equity = vec![3, 3, 3].iter().map(|x| F::from_canonical_u32(*x)).collect_vec();
+        let debt = vec![1, 1, 1].iter().map(|x| F::from_canonical_u32(*x)).collect_vec();
+
         let sum_tree_siblings = vec![HashOut::from_vec(
             vec![
                 7609058119952049295,
@@ -466,7 +474,14 @@ pub mod test {
             ],
         }];
 
-        let merkle_proof = MerkleProof { sum_tree_siblings, recursive_tree_siblings, index: 0 };
+        let account = Account {
+            id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33ad".to_string(),
+            equity: equity.clone(),
+            debt: debt.clone(),
+        };
+
+        let merkle_proof =
+            MerkleProof { account, sum_tree_siblings, recursive_tree_siblings, index: 0 };
 
         let root = HashOut::from_vec(
             vec![
@@ -480,15 +495,7 @@ pub mod test {
             .collect::<Vec<F>>(),
         );
 
-        let equity = vec![3, 3, 3].iter().map(|x| F::from_canonical_u32(*x)).collect_vec();
-        let debt = vec![1, 1, 1].iter().map(|x| F::from_canonical_u32(*x)).collect_vec();
-
         let res = merkle_proof.verify_merkle_proof(
-            &Account {
-                id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33ad".to_string(),
-                equity: equity.clone(),
-                debt: debt.clone(),
-            },
             root,
         );
 

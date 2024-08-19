@@ -77,15 +77,14 @@ pub fn verify(
         let mut _g = global_mst.read().expect("unable to get a lock");
         let gmst_root = _g.inner.last().unwrap();
 
-        let res =
-            proof.verify_merkle_proof(&account, *gmst_root);
-        
-        if res.is_err(){
+        let res = proof.verify_merkle_proof(&account, *gmst_root);
+
+        if res.is_err() {
             let res_err = res.unwrap_err();
             return Err(res_err);
-        }else{
-            println!("successfully verify the inclusion proof for user for round {}", round_num); 
-            return Ok(())
+        } else {
+            println!("successfully verify the inclusion proof for user for round {}", round_num);
+            return Ok(());
         }
     }
 
