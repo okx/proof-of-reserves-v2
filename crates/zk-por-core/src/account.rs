@@ -1,13 +1,15 @@
-use std::{fs::File, io::BufReader};
 use plonky2::{
     hash::{hash_types::HashOut, poseidon::PoseidonHash},
     plonk::config::Hasher,
 };
 use plonky2_field::types::Field;
 use serde::{Deserialize, Serialize};
+use std::{fs::File, io::BufReader};
 
 use crate::{
-    database::{DataBase, UserId}, error::PoRError, types::F
+    database::{DataBase, UserId},
+    error::PoRError,
+    types::F,
 };
 use rand::Rng;
 
@@ -69,18 +71,18 @@ impl Account {
             .collect::<Vec<F>>()
     }
 
-    pub fn new_from_file_path(path: String)-> Result<Self, PoRError>{
+    pub fn new_from_file_path(path: String) -> Result<Self, PoRError> {
         let file_res = File::open(path);
 
-        if file_res.is_err(){
+        if file_res.is_err() {
             return Err(PoRError::InvalidParameter("Invalid account json file path".to_string()));
         }
 
         let reader = BufReader::new(file_res.unwrap());
         // Deserialize the json data to a struct
-        let account_res: Result<Account, _>  = serde_json::from_reader(reader);
+        let account_res: Result<Account, _> = serde_json::from_reader(reader);
 
-        if account_res.is_err(){
+        if account_res.is_err() {
             return Err(PoRError::InvalidParameter("Invalid account json".to_string()));
         }
 

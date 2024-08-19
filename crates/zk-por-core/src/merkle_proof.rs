@@ -215,10 +215,7 @@ impl MerkleProof {
         Ok(merkle_proof)
     }
 
-    pub fn verify_merkle_proof(
-        &self,
-        gmst_root: HashOut<F>,
-    ) -> Result<(), PoRError> {
+    pub fn verify_merkle_proof(&self, gmst_root: HashOut<F>) -> Result<(), PoRError> {
         let account_hash = self.account.get_hash();
 
         let mut index = self.index;
@@ -495,9 +492,7 @@ pub mod test {
             .collect::<Vec<F>>(),
         );
 
-        let res = merkle_proof.verify_merkle_proof(
-            root,
-        );
+        let res = merkle_proof.verify_merkle_proof(root);
 
         res.unwrap();
     }

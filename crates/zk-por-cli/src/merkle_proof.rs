@@ -2,7 +2,13 @@ use std::{fs::File, io::Write, str::FromStr};
 
 use serde_json::json;
 use zk_por_core::{
-    account::Account, config::ProverConfig, database::{DataBase, DbOption}, error::PoRError, global::GlobalConfig, merkle_proof::MerkleProof, parser::{AccountParser, FileAccountReader, FileManager, FilesCfg}
+    account::Account,
+    config::ProverConfig,
+    database::{DataBase, DbOption},
+    error::PoRError,
+    global::GlobalConfig,
+    merkle_proof::MerkleProof,
+    parser::{AccountParser, FileAccountReader, FileManager, FilesCfg},
 };
 
 use crate::constant::RECURSION_BRANCHOUT_NUM;
@@ -44,7 +50,7 @@ pub fn get_merkle_proof(
 
     let account = Account::new_from_file_path(account_path);
 
-    if account.is_err(){
+    if account.is_err() {
         return Err(account.unwrap_err());
     }
 
