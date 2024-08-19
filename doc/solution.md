@@ -1,4 +1,8 @@
-# gmst
+# technical specs
+the goal of the project is to generate a ZK proof proving that our published total equity & debt is calculated correctly by summing over all OKX's users equity & debt. We can also provide each individual user a merkle inclusion proof that its asset is part of the committed total asset of exchange. We achive this by constructing a global merkle sum tree (GMST) and generates ZK proof that the construction is correctly constructed.
+
+
+## GMST
 
 ```mermaid
 graph TD;
@@ -67,3 +71,27 @@ graph TD;
     style n23 fill:#55ff33,stroke:#333,stroke-width:2px;
     style root fill:#33d1ff,stroke:#333,stroke-width:2px;
 ```
+
+we divide all users into different batches.  Let `N` be the total number of users; and `M` be the `batch_size`. 
+
+### batch tree
+within each batch, we construct a binary tree, with each user's `account` as tree leaf. the data strucure of one `account` would be 
+```rust
+pub struct Account {
+    pub id: String, // 256 bit hex string
+    pub equity: Vec<F>, // vector of user's token equity, vector index will be 1-to-1 maped to a token, e.g `BTC` or `ETH`
+    pub debt: Vec<F>, // vector of user's token debt
+}
+```
+the `leaf_hash` is obtained by Poseidon Hashing users' account
+```rust
+let account_hash = PoseidonHash::hash_no_pad(vec![id, vec![sum_equity, sum_debt]]);
+```
+the binary tree internal node's hash & equity&debt sum is obtained by
+```rust
+let node_hash = PoseidonHash::hash_no_pad([left_child.hash, right_child.hash]);
+let node_equity = left_child.equity + right_child.equity
+let node_debt= left_child.debt + right_child.debt
+```
+
+### recursive tree
