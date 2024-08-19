@@ -34,6 +34,14 @@ impl Account {
         hash
     }
 
+    pub fn get_empty_account_with_user_id(user_id: String, num_of_tokens: usize) -> Account {
+        Self {
+            id: user_id,
+            equity: vec![F::default(); num_of_tokens],
+            debt: vec![F::default(); num_of_tokens],
+        }
+    }
+
     pub fn get_empty_account(num_of_tokens: usize) -> Account {
         Self {
             id: "0".repeat(64),
@@ -70,12 +78,10 @@ pub fn persist_account_id_to_gmst_pos(
         .iter()
         .enumerate()
         .map(|(i, acct)| {
-            let hex_decode = hex::decode(&acct.id).unwrap();
-            assert_eq!(hex_decode.len(), 32);
-            let mut array = [0u8; 32];
-            array.copy_from_slice(&hex_decode);
-
-            (UserId(array), (i + start_idx) as u32)
+ 
+            let user_id = UserId::from_hex_string(acct.id.to_string());
+            tracing::debug!("persist account {:?} with index: {:?}", acct.id, i + start_idx);
+            (user_id, (i + start_idx) as u32)
         })
         .collect::<Vec<(UserId, u32)>>();
     db.add_batch_users(user_batch);
@@ -105,6 +111,6 @@ pub fn gen_accounts_with_random_data(num_accounts: usize, num_assets: usize) -> 
 }
 
 pub fn gen_empty_accounts(batch_size: usize, num_assets: usize) -> Vec<Account> {
-    let accounts = vec![Account::get_empty_account(num_assets); batch_size];
+    let accounts = vec![Account::get_empty_account_with_user_id(UserId::rand().to_string(), num_assets); batch_size];
     accounts
 }
