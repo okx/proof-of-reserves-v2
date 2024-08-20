@@ -80,6 +80,105 @@ graph TD;
 we divide all users into different batches. within each batch, we construct a binary tree, with each user's `account` as tree leaf. all roots of batch tree will form a `recursive_tree`, whose branch numbers can be configured (denotes by `Q`); Let `N` be the total number of users; and `M` be the batch size. in above's example, `N=24`, `M=4`, `Q=4`;
 
 ### batch tree
+```mermaid
+flowchart BT
+    subgraph Account0 ["Alice"]
+       style Account0 fill:#3390ff,stroke:#333,stroke-width:2px
+       ID0[id]
+       Es0[equities]
+       Ds0[debs]
+    end
+
+    subgraph Account1 ["Bob"]
+       style Account1 fill:#3390ff,stroke:#333,stroke-width:2px
+       ID1[id]
+       Es1[equities]
+       Ds1[debs]
+    end
+
+
+    subgraph Account2 ["Cindy"]
+       style Account2 fill:#3390ff,stroke:#333,stroke-width:2px
+       ID2[id]
+       Es2[equities]
+       Ds2[debs]
+    end
+
+
+    subgraph Account3 ["David"]
+    style Account3 fill:#3390ff,stroke:#333,stroke-width:2px
+       ID3[id]
+       Es3[equities]
+       Ds3[debs]
+    end
+   
+
+    subgraph Leaf0 ["Leaf"]
+
+        H0[hash]
+        E0[equity]
+        D0[debt]
+    end
+
+    subgraph Leaf1 ["Leaf"]
+        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
+        H1[hash]
+        E1[equity]
+        D1[debt]
+    end
+
+    subgraph Leaf2 ["Leaf"]
+        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
+        H2[hash]
+        E2[equity]
+        D2[debt]
+    end
+
+    subgraph Leaf3 ["Leaf"]
+        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
+        H3[hash]
+        E3[equity]
+        D3[debt]
+    end
+
+    subgraph Node0 ["node"]
+        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
+        N0_H[hash]
+        N0_E[equity]
+        N0_D[debt]
+    end
+
+    subgraph Node1 ["node"]
+        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
+        N1_H[hash]
+        N1_E[equity]
+        N1_D[debt]
+    end
+
+    subgraph Root ["root"]
+        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
+        R_H[hash]
+        R_E[equity]
+        R_D[debt]
+    end
+
+    %% subgraph Group2 ["Group 2"]
+    %%     style Group2 fill:#ccf,stroke:#333,stroke-width:2px
+    %%     C[Component C]
+    %%     D[Component D]
+    %% end
+
+    Account0 --> Leaf0
+    Account1 --> Leaf1
+    Account2 --> Leaf2
+    Account3 --> Leaf3
+    Leaf0 --> Node0
+    Leaf1 --> Node0
+    Leaf2 --> Node1
+    Leaf3 --> Node1
+    Node0 --> Root
+    Node1 --> Root
+```
  the data strucure of one `account` would be 
 ```rust
 pub struct Account {
@@ -92,47 +191,151 @@ the `leaf_hash` is obtained by Poseidon Hashing users' account
 ```rust
 let account_hash = PoseidonHash::hash_no_pad(vec![id, vec![sum_equity, sum_debt]]);
 ```
-the binary tree internal node's hash & equity&debt sum is obtained by
+the binary tree internal node's hash, equity&debt sum is obtained by
 ```rust
 let node_hash = PoseidonHash::hash_no_pad([left_child.hash, right_child.hash]);
-let node_equity = left_child.equity + right_child.equity
-let node_debt= left_child.debt + right_child.debt
+let node_equity = left_child.equity + right_child.equity;
+let node_debt= left_child.debt + right_child.debt;
 ```
 
 ### recursive tree
-for recursive tree, we calculate the node hash and node equity & debt similar to the method in batch tree; the only difference is that the tree branching number might not be 2; the actual value is configurable.
+for recursive tree, we calculate the node hash, node equity & debt similar to the method in batch tree; the only difference is that the tree branching number might not be 2. the actual value is configurable.
 ```rust
 let node_hash = PoseidonHash::hash_no_pad([...children.hash]);
 let node_equity = sum([...children.equity])
 let node_debt= sum([...children.debt])
 ```
-At last, the tree node hash will represent the commitment of all user's assets info. the tree node's equity & debt will be the total equity & debt of the exchange.
+
+### root
+- the root node hash represents the commitment of all user's assets info. 
+- the root node's equity & debt will be the total equity & debt of the exchange.
 
 ### merkle proof
 for each given account, we can generate a merkle inclusion proof for that user. for example as in the above graph, the merkle proof for account `A5` would be
 ```json
 {
-     "index": 6,
-         "sum_tree_siblings": [
-        "A4", "27"
-    ],
+    "index": 6,
+    "account": {
+        "debt": [
+            0,
+            0,
+            0, // ...
+        ],
+        "equity": [
+            13497160,
+            194918,
+            12864849, // ...
+        ],
+        "id": "7f560c5e8193157ba9a327df47f002fe2c648738ae843ce342f92e821a2bdb47"
+    },
+    "sum_tree_siblings": ["A4", "27"],
     "recursive_tree_siblings": [
         {
-            "left_hashes": [
-                "36", 
-            ],
+            "left_hashes": ["36", ],
             "right_hashes": ["38", "39"]
         }  ,
         {
-            "left_hashes": [
-            ],
+            "left_hashes": [],
             "right_hashes": ["45", "46", "47"]
         }      
     ]
-
 }
 ```
 
 ## ZKP
 During the construction of batch tree, we generate ZK proof that the batch tree is constructed correctly; and during the construction of recursion 
-tree, we generate ZK proof that the children tree's proof is correct and the recursion building logic is constrained. We will provide another document detailing the circuit constraints; the reader might refer to this doc if wants to know more [details](https://okg-block.larksuite.com/docx/RzDcdkmvwo5FJJxD9gKuGttjsod)
+tree, we generate ZK proof that the children tree's proof is correct and the recursion building logic is constrained. 
+
+### batch circuit
+
+We will provide another document detailing the circuit constraints; the reader might refer to this doc if wants to know more [details](https://okg-block.larksuite.com/docx/RzDcdkmvwo5FJJxD9gKuGttjsod)
+
+
+```mermaid
+flowchart BT
+    subgraph Account0 ["Alice"]
+       ID0[id]
+       Es0[equities]
+       Ds0[debs]
+    end
+
+      subgraph Account1 ["Bob"]
+       ID1[id]
+       Es1[equities]
+       Ds1[debs]
+    end
+
+
+      subgraph Account2 ["Cindy"]
+       ID2[id]
+       Es2[equities]
+       Ds2[debs]
+    end
+
+
+      subgraph Account3 ["David"]
+       ID3[id]
+       Es3[equities]
+       Ds3[debs]
+    end
+   
+
+    subgraph Leaf0 ["Leaf"]
+        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
+        H0[hash]
+        E0[equity]
+        D0[debt]
+    end
+
+    subgraph Leaf1 ["Leaf"]
+        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
+        H1[hash]
+        E1[equity]
+        D1[debt]
+    end
+
+    subgraph Leaf2 ["Leaf"]
+        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
+        H2[hash]
+        E2[equity]
+        D2[debt]
+    end
+
+    subgraph Leaf3 ["Leaf"]
+        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
+        H3[hash]
+        E3[equity]
+        D3[debt]
+    end
+
+    subgraph Node0 ["node"]
+        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
+        N0_H[hash]
+        N0_E[equity]
+        N0_D[debt]
+    end
+
+      subgraph Node1 ["node"]
+        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
+        N1_H[hash]
+        N1_E[equity]
+        N1_D[debt]
+    end
+
+    %% subgraph Group2 ["Group 2"]
+    %%     style Group2 fill:#ccf,stroke:#333,stroke-width:2px
+    %%     C[Component C]
+    %%     D[Component D]
+    %% end
+
+    Account0 --> Leaf0
+    Account1 --> Leaf1
+    Account2 --> Leaf2
+    Account3 --> Leaf3
+    Leaf0 --> Node0
+    Leaf1 --> Node0
+    Leaf2 --> Node1
+    Leaf3 --> Node1
+    %% B --> D
+
+```
