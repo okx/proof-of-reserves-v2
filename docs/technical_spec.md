@@ -304,7 +304,7 @@ $$(Node|Root).Hash == Poseidon(leftChild.Hash || rightChild.Hash)$$
 
 $$(Node|Root).Equity == Sum(leftChild.Equity || rightChild.Equity)$$
 
-$$(Node|Root).Debt == Poseidon(leftChild.Debt || rightChild.Debt)$$
+$$(Node|Root).Debt == Sum(leftChild.Debt || rightChild.Debt)$$
 
 where 
 $$j \in [0,M), i \in [0,N)$$
