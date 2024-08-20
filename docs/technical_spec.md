@@ -236,7 +236,39 @@ let node_debt= left_child.debt + right_child.debt;
 ```
 
 ### recursive tree
-for recursive tree, we calculate the node hash, node equity & debt similar to the method in batch tree; the only difference is that the tree branching number might not be 2. the actual value is configurable.
+```mermaid
+graph BT;
+    n12((36));
+     n12((36));
+    n13((37));
+     n13((37));
+     n14((38));
+     n14((38));
+     n15((39));
+     n15((39));
+     n16((40));
+     n16((40));
+    n17((41));
+
+    n17((41));
+    n18{42};
+    n19{43};
+    n12 --> n20((44));
+    n13 --> n20((44));
+    n14 --> n20((44));
+    n15 --> n20((44));
+    n16 --> n21((45));
+    n17 --> n21((45));
+    n18 --> n21((45));
+    n19 --> n21((45));
+    n22{46};
+    n23{47};
+    n20 --> root((48));
+    n21 --> root((48));
+    n22 --> root((48));
+    n23 --> root((48));
+```
+for recursive tree, we calculate the node hash, node equity & debt similar to the method in batch tree; the only difference is that the tree branching number might not be 2, and the actual value is configurable.
 ```rust
 let node_hash = PoseidonHash::hash_no_pad([...children.hash]);
 let node_equity = sum([...children.equity])
