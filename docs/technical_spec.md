@@ -324,13 +324,13 @@ tree, we generate ZK proof that the children tree's proof is correct and the rec
 
 **circuit constraints**
 
-$$Account_{i}.Equity == \sum_j^{Q} Asset_{j}.Equity$$
+$$Account_{i}.Equity == \sum_{j=0}^{Q} Asset_{j}.Equity$$
 
-$$Account_{i}.Debt == \sum_j^{Q} Asset_{j}.Debt$$
+$$Account_{i}.Debt == \sum_{j}^{Q} Asset_{j}.Debt$$
 
 $$Account_{i}.Equity \ge Account_{i}.Debt$$
 
-$$Leaf_{i}.Hash == Poseidon(accounts)$$
+$$Leaf_{i}.Hash == Poseidon(accounts_i)$$
 
 $$(Node|Root).Hash == Poseidon(leftChild.Hash || rightChild.Hash)$$
 
