@@ -299,6 +299,7 @@ $$Account_{i}.Debt == \sum_j^{M} Asset_{j}.Debt$$
 $$Account_{i}.Equity \ge Account_{i}.Debt$$
 
 $$Leaf_{i}.Hash == Poseidon(accounts)$$
+
 where 
 $$j \in [0,M), i \in [0,N)$$
 and `M` is total number of assets; `N` istotal number of users in one batch
