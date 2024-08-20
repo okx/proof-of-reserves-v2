@@ -321,6 +321,7 @@ and `M` is total number of assets; `N` istotal number of users in one batch
 - batch tree root debt
 
 **circuit constraints**
+
 $$ Verify(Proof_i) == True $$
 
 $$(Node).Hash == Poseidon([child.Hash; B])$$
