@@ -310,4 +310,28 @@ where
 $$j \in [0,M), i \in [0,N)$$
 and `M` is total number of assets; `N` istotal number of users in one batch
 
+### recursive circuit
+**public input**
+- recursive tree root hash
+
+**private input**
+- batch tree proof
+- batch tree root hash
+- batch tree root equity
+- batch tree root debt
+
+**circuit constraints**
+$$ Verify(Proof_i) == True $$
+
+$$(Node).Hash == Poseidon([child.Hash; B])$$
+
+$$(Node).Equity == Sum([child.Equity; B])$$
+
+$$(Node).Debt == Sum([child.Debt; B])$$
+
+where 
+$$i \in [0,B)$$
+
+and `B` is the branching number of recursive tree
+
 
