@@ -77,7 +77,7 @@ graph BT;
 
 **note**: we pad by empty node whenever it is needed to form a binary tree or multi branch recursive tree.
 
-we divide all users into different batches. within each batch, we construct a binary tree, with each user's `account` as tree leaf. all roots of batch tree will form a `recursive_tree`, whose branch numbers can be configured (denotes by `Q`); Let `N` be the total number of users; and `M` be the batch size. in above's example, `N=24`, `M=4`, `Q=4`;
+we divide all users into different batches. within each batch, we construct a binary tree, with each user's `account` as tree leaf. all roots of batch tree will form a `recursive_tree`, whose branch numbers can be configured (denotes by `B`); Let `N` be the total number of users; and `M` be the batch size. in above's example, `N=24`, `M=4`, `B=4`;
 
 ### batch tree
 ```mermaid
@@ -292,9 +292,9 @@ tree, we generate ZK proof that the children tree's proof is correct and the rec
 
 **circuit constraints**
 
-$$Account_{i}.Equity == \sum_j^{M} Asset_{j}.Equity$$
+$$Account_{i}.Equity == \sum_j^{Q} Asset_{j}.Equity$$
 
-$$Account_{i}.Debt == \sum_j^{M} Asset_{j}.Debt$$
+$$Account_{i}.Debt == \sum_j^{Q} Asset_{j}.Debt$$
 
 $$Account_{i}.Equity \ge Account_{i}.Debt$$
 
@@ -307,8 +307,8 @@ $$(Node|Root).Equity == Sum(leftChild.Equity || rightChild.Equity)$$
 $$(Node|Root).Debt == Sum(leftChild.Debt || rightChild.Debt)$$
 
 where 
-$$j \in [0,M), i \in [0,N)$$
-and `M` is total number of assets; `N` istotal number of users in one batch
+$$j \in [0,Q), i \in [0,M)$$
+and `Q` is total number of assets; `M` is the number of users in one batch
 
 ### recursive circuit
 **public input**
