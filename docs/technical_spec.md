@@ -284,5 +284,19 @@ During the construction of batch tree, we generate ZK proof that the batch tree 
 tree, we generate ZK proof that the children tree's proof is correct and the recursion building logic is constrained. 
 
 ### batch circuit
+**public input**
+- batch root hash
 
-We will provide another document detailing the circuit constraints; the reader might refer to this doc if wants to know more [details](https://okg-block.larksuite.com/docx/RzDcdkmvwo5FJJxD9gKuGttjsod)
+**private input**
+- users account info
+
+**circuit constraints**
+$$Account_{i}.Equity == \sum_j^{M} Asset_{j}.Equity$$
+$$Account_{i}.Debt == \sum_j^{M} Asset_{j}.Debt$$
+$$Account_{i}.Equity \ge Account_{i}.Debt$$
+$$Leaf_{i}.Hash == Poseidon(accounts)$$
+where 
+$$j \in [0,M), i \in [0,N)$$
+and `M` is total number of assets; `N` istotal number of users in one batch
+
+
