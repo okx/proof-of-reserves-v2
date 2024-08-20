@@ -8,14 +8,16 @@ use zk_por_core::{
     circuit_registry::registry::CircuitRegistry,
     error::PoRError,
     merkle_proof::MerkleProof,
-    util::get_hash_from_hash_string,
+    recursive_prover::recursive_circuit::RecursiveTargets,
+    types::F,
     Proof,
 };
+
+use plonky2::hash::hash_types::HashOut;
 
 pub fn verify(
     global_proof_path: PathBuf,
     merkle_inclusion_path: Option<PathBuf>,
-    root: Option<String>,
 ) -> Result<(), PoRError> {
     let proof_file = File::open(&global_proof_path).unwrap();
     let reader = std::io::BufReader::new(proof_file);
@@ -60,7 +62,8 @@ pub fn verify(
         round_num,
         start.elapsed()
     );
-
+    let hash_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_hash_offset();
+    let root_hash = HashOut::<F>::from_partial(&proof.proof.public_inputs[hash_offset]);
     if !root_circuit.verify(proof.proof).is_ok() {
         return Err(PoRError::InvalidProof);
     }
@@ -73,13 +76,7 @@ pub fn verify(
         // Parse the JSON as Proof
         let proof: MerkleProof = from_reader(reader).unwrap();
 
-        if root.is_none() {
-            return Err(PoRError::InvalidParameter(
-                "Require root for merkle proof verification".to_string(),
-            ));
-        }
-
-        let res = proof.verify_merkle_proof(get_hash_from_hash_string(root.unwrap()));
+        let res = proof.verify_merkle_proof(root_hash);
 
         if res.is_err() {
             let res_err = res.unwrap_err();
