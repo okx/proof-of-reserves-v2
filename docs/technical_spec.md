@@ -264,7 +264,7 @@ for each given account, we can generate a merkle inclusion proof for that user. 
     "sum_tree_siblings": ["A4", "27"],
     "recursive_tree_siblings": [
         {
-            "left_hashes": ["36", ],
+            "left_hashes": ["36"],
             "right_hashes": ["38", "39"]
         }  ,
         {
