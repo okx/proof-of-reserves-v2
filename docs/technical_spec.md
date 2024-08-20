@@ -329,7 +329,7 @@ During the construction of a batch tree, we generate a ZK proof that the batch t
 
 $$Account_{i}.Equity == \sum_{j=0}^{Q} Asset_{j}.Equity$$
 
-$$Account_{i}.Debt == \sum_{j}^{Q} Asset_{j}.Debt$$
+$$Account_{i}.Debt == \sum_{j=0}^{Q} Asset_{j}.Debt$$
 
 $$Account_{i}.Equity \ge Account_{i}.Debt$$
 
