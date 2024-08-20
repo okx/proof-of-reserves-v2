@@ -232,7 +232,7 @@ A `leaf_hash` is obtained via Poseidon hashing a user's account:
 let account_hash = PoseidonHash::hash_no_pad(vec![id, vec![sum_equity, sum_debt]]);
 ```
 
-The hash, sum of equity, and sum of debt for an internat tree node are obtained, respectively:
+The hash, sum of equity, and sum of debt for an internal tree node are obtained, respectively:
 ```rust
 let node_hash = PoseidonHash::hash_no_pad([left_child.hash, right_child.hash]);
 let node_equity = left_child.equity + right_child.equity;
