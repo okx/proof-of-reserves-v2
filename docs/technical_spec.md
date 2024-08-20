@@ -1,5 +1,6 @@
-# technical specs
-the goal of the project is to prove that the total equity & debt of an exchange is correct and verifiable. We achive this by constructing a global merkle sum tree (GMST) and generates ZK proof that the construction is correctly constructed. the root of the GMST will represent a commitment of the CEX's total equity & debt. We provide individual user a merkle inclusion proof that its asset is part of the committed total asset of exchange. 
+# Technical Specs
+
+The goal of this project is to prove that the total equity & debt of a Centralize Exchange (CEX) is correct and verifiable. We achieve this by constructing a Global Merkle Sum Tree (GMST) and generating a Zero-knowledge (ZK) proof of the construction of this tree. The root of the GMST represents a commitment of the CEX's total equity & debt. We also provide every individual user with a Merkle inclusion proof that its assets are part of the committed total assets of the CEX.
 
 
 ## GMST
@@ -71,15 +72,16 @@ graph BT;
     style n23 fill:#55ff33,stroke:#333,stroke-width:2px;
     style root fill:#33d1ff,stroke:#333,stroke-width:2px;
 ```
-- `square` means account node
-- `circle` means internal node
-- `tilt square` means padded node
+- `square` represents account node
+- `circle` represents internal node
+- `tilt square` represents padded node
 
-**note**: we pad by empty node whenever it is needed to form a binary tree or multi branch recursive tree.
+**Note**: We pad with empty nodes whenever it is needed to form a binary tree or multi-branch recursive tree.
 
-we divide all users into different batches. within each batch, we construct a binary tree, with each user's `account` as tree leaf. all roots of `batch_tree` will form a `recursive_tree`, whose branch numbers can be configured (denoted by `B`); Let `N` be the total number of users; and `M` be the batch size. in above's example, `N=24`, `M=4`, `B=4`;
+We split the users into batches. Within each batch, we construct a binary tree, with each user's `account` as a tree's leaf. The roots of the batch trees form a `recursive_tree`, whose branch number can be configured (denoted by `B`). Let `N` be the total number of users and `M` be the batch size. In the above example: `N=24`, `M=4`, `B=4`.
 
-### batch tree
+### Batch Tree
+
 ```mermaid
 flowchart BT
     subgraph Account0 ["Alice"]
@@ -111,7 +113,7 @@ flowchart BT
        Es3[equities]
        Ds3[debs]
     end
-   
+
 
     subgraph Leaf0 ["Leaf"]
       E0[equity]
@@ -122,7 +124,7 @@ flowchart BT
 
     subgraph Leaf1 ["Leaf"]
         %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
- 
+
         E1[equity]
                H1[hash]
         D1[debt]
@@ -130,7 +132,7 @@ flowchart BT
 
     subgraph Leaf2 ["Leaf"]
         %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
-      
+
         E2[equity]
           H2[hash]
         D2[debt]
@@ -138,7 +140,7 @@ flowchart BT
 
     subgraph Leaf3 ["Leaf"]
         %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
- 
+
         E3[equity]
                H3[hash]
         D3[debt]
@@ -153,7 +155,7 @@ flowchart BT
 
     subgraph Node1 ["node"]
         %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
-      
+
         N1_E[equity]
           N1_H[hash]
         N1_D[debt]
@@ -196,7 +198,7 @@ flowchart BT
     N1_E -.-> R_E
     N0_D -.-> R_D
     N1_D -.-> R_D
- 
+
     linkStyle 8 stroke:#00ff00,stroke-width:2px;
     linkStyle 9 stroke:#00ff00,stroke-width:2px;
     linkStyle 10 stroke:#00ff00,stroke-width:2px;
@@ -214,9 +216,9 @@ flowchart BT
 ```
 - solid black line represents Hashing relationship
 - dash line represents Sum relationship
-- dash green line is for summation relationship of equities; while dash purple line is for summation relationship of debts.
+- dash green line is for summation relationship of equities, while dash purple line is for summation relationship of debts.
 
- the data strucure of one `account` would be 
+The data strucure of an `account` is:
 ```rust
 pub struct Account {
     pub id: String, // 256 bit hex string
@@ -224,11 +226,13 @@ pub struct Account {
     pub debt: Vec<F>, // vector of user's token debt
 }
 ```
-the `leaf_hash` is obtained by Poseidon Hashing users' account
+
+A `leaf_hash` is obtained via Poseidon hashing a user's account:
 ```rust
 let account_hash = PoseidonHash::hash_no_pad(vec![id, vec![sum_equity, sum_debt]]);
 ```
-the binary tree internal node's hash, equity&debt sum is obtained by
+
+The hash, sum of equity, and sum of debt for an internat tree node are obtained, respectively:
 ```rust
 let node_hash = PoseidonHash::hash_no_pad([left_child.hash, right_child.hash]);
 let node_equity = left_child.equity + right_child.equity;
@@ -275,12 +279,12 @@ let node_equity = sum([...children.equity])
 let node_debt= sum([...children.debt])
 ```
 
-### root
-- the root node hash represents the commitment of all user's assets info. 
-- the root node's equity & debt will be the total equity & debt of the exchange.
+### Root
 
-### merkle proof
-for each given account, we can generate a merkle inclusion proof for that user. for example as in the above graph, the merkle proof for account `A5` would be
+The root node hash represents the commitment of all users' assets info. The root node's equity & debt is the total equity & debt of the exchange.
+
+### Merkle Proof
+For a given user account, we can generate a Merkle inclusion proof. Taking the above graph as an example, the merkle proof for account `A5` is:
 ```json
 {
     "index": 6,
@@ -306,14 +310,13 @@ for each given account, we can generate a merkle inclusion proof for that user. 
         {
             "left_hashes": [],
             "right_hashes": ["45", "46", "47"]
-        }      
+        }
     ]
 }
 ```
 
 ## ZKP
-During the construction of batch tree, we generate ZK proof that the batch tree is constructed correctly; and during the construction of recursion 
-tree, we generate ZK proof that the children tree's proof is correct and the recursion building logic is constrained. 
+During the construction of a batch tree, we generate a ZK proof that the batch tree is constructed correctly. During the construction of a recursion tree, we generate a ZK proof that the children proofs are correct and the recursion building logic is constrained.
 
 ### batch circuit
 **public input**
@@ -338,9 +341,9 @@ $$(Node|Root).Equity == Sum(leftChild.Equity || rightChild.Equity)$$
 
 $$(Node|Root).Debt == Sum(leftChild.Debt || rightChild.Debt)$$
 
-where 
+where `Q` is total number of assets, `M` is the number of users in one batch, and
 $$j \in [0,Q), i \in [0,M)$$
-and `Q` is total number of assets; `M` is the number of users in one batch
+
 
 ### recursive circuit
 **public input**
@@ -362,9 +365,9 @@ $$(Node).Equity == Sum([child.Equity; B])$$
 
 $$(Node).Debt == Sum([child.Debt; B])$$
 
-where 
+where `B` is the branching number of the recursive tree and
 $$i \in [0,B)$$
 
-and `B` is the branching number of recursive tree
+
 
 
