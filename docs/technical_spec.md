@@ -287,7 +287,7 @@ The root node hash represents the commitment of all users' assets info. The root
 For a given user account, we can generate a Merkle inclusion proof. Taking the above graph as an example, the merkle proof for account `A5` is:
 ```json
 {
-    "index": 6,
+    "index": 5,
     "account": {
         "debt": [
             0,
