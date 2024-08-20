@@ -171,7 +171,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
             start.elapsed()
         );
         bar.inc(account_num as u64);
-        offset += account_num_read;
+        offset += per_parse_account_num;
     }
     bar.finish();
 

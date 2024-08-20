@@ -4,6 +4,9 @@ use clap::{Parser, Subcommand};
 use zk_por_cli::{prover::prove, verifier::verify};
 use zk_por_core::error::PoRError;
 
+#[cfg(feature="cuda")]
+use cryptography_cuda::init_cuda_rs;
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Cli {
@@ -61,6 +64,9 @@ impl Execute for ZkPorCommitCommands {
 }
 
 fn main() -> std::result::Result<(), PoRError> {
+    #[cfg(feature="cuda")]
+    init_cuda_rs();
+
     let cli = Cli::parse();
     let start = std::time::Instant::now();
     let result = cli.command.execute();
