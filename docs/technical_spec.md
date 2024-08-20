@@ -293,6 +293,7 @@ tree, we generate ZK proof that the children tree's proof is correct and the rec
 **circuit constraints**
 
 $$Account_{i}.Equity == \sum_j^{M} Asset_{j}.Equity$$
+
 $$Account_{i}.Debt == \sum_j^{M} Asset_{j}.Debt$$
 $$Account_{i}.Equity \ge Account_{i}.Debt$$
 $$Leaf_{i}.Hash == Poseidon(accounts)$$
