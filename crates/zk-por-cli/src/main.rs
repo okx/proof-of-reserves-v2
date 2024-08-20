@@ -36,8 +36,6 @@ pub enum ZkPorCommitCommands {
         global_proof_path: String,
         #[arg(short, long)]
         inclusion_proof_path: Option<String>,
-        #[arg(short, long)]
-        root: Option<String>,
     },
 }
 
@@ -57,11 +55,11 @@ impl Execute for ZkPorCommitCommands {
                 let prover_cfg: ProverConfig = cfg.try_deserialize().unwrap();
                 get_merkle_proof(account_path.to_string(), prover_cfg, output_path.to_string())
             }
-            ZkPorCommitCommands::Verify { global_proof_path, inclusion_proof_path, root } => {
+            ZkPorCommitCommands::Verify { global_proof_path, inclusion_proof_path } => {
                 let global_proof_path = PathBuf::from_str(&global_proof_path).unwrap();
                 let inclusion_proof_path =
                     inclusion_proof_path.as_ref().map(|p| PathBuf::from_str(&p).unwrap());
-                verify(global_proof_path, inclusion_proof_path, root.clone())
+                verify(global_proof_path, inclusion_proof_path)
             }
         }
     }

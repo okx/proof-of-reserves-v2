@@ -21,6 +21,10 @@ per_file_account_num=131072 # multiple of 1024, the batch size
 
 # test data will be generated to ./test-data/user-data
 python3 scripts/gen_test_data.py ${file_num} ${per_file_account_num}
+
+# extract the first account to generate merkle inclusion proof later. 
+account0_path="./test-data/account0.json"
+jq '.[0]' ./test-data/user-data/batch0.json > ${account0_path} 
 ```
 - prove
 ```
@@ -38,17 +42,17 @@ cargo run --release --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg
 
 - get-merkle-proof
 ```
-cargo run --release --package zk-por-cli --bin zk-por-cli get-merkle-proof --account-path account.json --output-path merkle_proof.json --cfg-path config
+inclusion_proof_path="account0_merkle_proof.json"
+cargo run --release --package zk-por-cli --bin zk-por-cli get-merkle-proof --account-path ${account0_path} --output-path ${inclusion_proof_path} --cfg-path ${cfg_dir_path}
 ```
 
 - verify
 ```
 global_root_path="global_proof.json"
 
-# optional. If not provided, will skip verifying the inclusion
-inclusion_proof_path="merkle_proof.json"
+# parameter `inclusion-proof-path` is optional. If skipped, verification for an account's merkle inclusion is skipped. 
 
-cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify --global-proof-path ${global_root_path} --inclusion-proof-path ${inclusion_proof_path} --root 11288199779358641579,2344540219612146741,6809171731163302525,17936043556479519168
+cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify --global-proof-path ${global_root_path} --inclusion-proof-path ${inclusion_proof_path}
 ```
 
 ## cli
