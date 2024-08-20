@@ -5,7 +5,7 @@ the goal of the project is to prove that the total equity & debt of an exchange 
 ## GMST
 
 ```mermaid
-graph TD;
+graph BT;
     A0-->n0(( 24));
     A1-->n0(( 24));
     A2-->n1((25 ));
@@ -197,20 +197,20 @@ flowchart BT
     N0_D -.-> R_D
     N1_D -.-> R_D
  
- linkStyle 8 stroke:#00ff00,stroke-width:2px;
- linkStyle 9 stroke:#00ff00,stroke-width:2px;
- linkStyle 10 stroke:#00ff00,stroke-width:2px;
- linkStyle 11 stroke:#00ff00,stroke-width:2px;
+    linkStyle 8 stroke:#00ff00,stroke-width:2px;
+    linkStyle 9 stroke:#00ff00,stroke-width:2px;
+    linkStyle 10 stroke:#00ff00,stroke-width:2px;
+    linkStyle 11 stroke:#00ff00,stroke-width:2px;
 
-     linkStyle 12 stroke:#ff33f3,stroke-width:2px;
-  linkStyle 13 stroke:#ff33f3,stroke-width:2px;
-  linkStyle 14 stroke:#ff33f3,stroke-width:2px;
-  linkStyle 15 stroke:#ff33f3,stroke-width:2px;
+    linkStyle 12 stroke:#ff33f3,stroke-width:2px;
+    linkStyle 13 stroke:#ff33f3,stroke-width:2px;
+    linkStyle 14 stroke:#ff33f3,stroke-width:2px;
+    linkStyle 15 stroke:#ff33f3,stroke-width:2px;
 
-   linkStyle 18 stroke:#00ff00,stroke-width:2px;
- linkStyle 19 stroke:#00ff00,stroke-width:2px;
-     linkStyle 20 stroke:#ff33f3,stroke-width:2px;
-  linkStyle 21 stroke:#ff33f3,stroke-width:2px;
+    linkStyle 18 stroke:#00ff00,stroke-width:2px;
+    linkStyle 19 stroke:#00ff00,stroke-width:2px;
+    linkStyle 20 stroke:#ff33f3,stroke-width:2px;
+    linkStyle 21 stroke:#ff33f3,stroke-width:2px;
 ```
  the data strucure of one `account` would be 
 ```rust
