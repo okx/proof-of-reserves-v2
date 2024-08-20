@@ -300,6 +300,12 @@ $$Account_{i}.Equity \ge Account_{i}.Debt$$
 
 $$Leaf_{i}.Hash == Poseidon(accounts)$$
 
+$$(Node|Root).Hash == Poseidon(leftChild.Hash || rightChild.Hash)$$
+
+$$(Node|Root).Equity == Sum(leftChild.Equity || rightChild.Equity)$$
+
+$$(Node|Root).Debt == Poseidon(leftChild.Debt || rightChild.Debt)$$
+
 where 
 $$j \in [0,M), i \in [0,N)$$
 and `M` is total number of assets; `N` istotal number of users in one batch
