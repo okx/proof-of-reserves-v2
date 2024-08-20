@@ -114,30 +114,33 @@ flowchart BT
    
 
     subgraph Leaf0 ["Leaf"]
-
+      E0[equity]
         H0[hash]
-        E0[equity]
+
         D0[debt]
     end
 
     subgraph Leaf1 ["Leaf"]
         %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
-        H1[hash]
+ 
         E1[equity]
+               H1[hash]
         D1[debt]
     end
 
     subgraph Leaf2 ["Leaf"]
         %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
-        H2[hash]
+      
         E2[equity]
+          H2[hash]
         D2[debt]
     end
 
     subgraph Leaf3 ["Leaf"]
         %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
-        H3[hash]
+ 
         E3[equity]
+               H3[hash]
         D3[debt]
     end
 
@@ -150,34 +153,64 @@ flowchart BT
 
     subgraph Node1 ["node"]
         %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
-        N1_H[hash]
+      
         N1_E[equity]
+          N1_H[hash]
         N1_D[debt]
     end
 
     subgraph Root ["root"]
         %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
+                R_E[equity]
         R_H[hash]
-        R_E[equity]
+
         R_D[debt]
     end
 
-    %% subgraph Group2 ["Group 2"]
-    %%     style Group2 fill:#ccf,stroke:#333,stroke-width:2px
-    %%     C[Component C]
-    %%     D[Component D]
-    %% end
 
-    Account0 --> Leaf0
-    Account1 --> Leaf1
-    Account2 --> Leaf2
-    Account3 --> Leaf3
-    Leaf0 --> Node0
-    Leaf1 --> Node0
-    Leaf2 --> Node1
-    Leaf3 --> Node1
-    Node0 --> Root
-    Node1 --> Root
+
+    Account0 ===> H0
+    Account1 ===> H1
+    Account2 ===> H2
+    Account3 ===> H3
+
+
+    H0 ===> N0_H
+    H1 ===> N0_H
+    H2 ===> N1_H
+    H3 ===> N1_H
+
+    E0 -.-> N0_E
+    E1 -.-> N0_E
+    E2 -.-> N1_E
+    E3 -.-> N1_E
+
+    D0 -.-> N0_D
+    D1 -.-> N0_D
+    D2 -.-> N1_D
+    D3 -.-> N1_D
+
+    N0_H ===> R_H
+    N1_H ===> R_H
+    N0_E -.-> R_E
+    N1_E -.-> R_E
+    N0_D -.-> R_D
+    N1_D -.-> R_D
+ 
+ linkStyle 8 stroke:#00ff00,stroke-width:2px;
+ linkStyle 9 stroke:#00ff00,stroke-width:2px;
+ linkStyle 10 stroke:#00ff00,stroke-width:2px;
+ linkStyle 11 stroke:#00ff00,stroke-width:2px;
+
+     linkStyle 12 stroke:#ff33f3,stroke-width:2px;
+  linkStyle 13 stroke:#ff33f3,stroke-width:2px;
+  linkStyle 14 stroke:#ff33f3,stroke-width:2px;
+  linkStyle 15 stroke:#ff33f3,stroke-width:2px;
+
+   linkStyle 18 stroke:#00ff00,stroke-width:2px;
+ linkStyle 19 stroke:#00ff00,stroke-width:2px;
+     linkStyle 20 stroke:#ff33f3,stroke-width:2px;
+  linkStyle 21 stroke:#ff33f3,stroke-width:2px;
 ```
  the data strucure of one `account` would be 
 ```rust
@@ -249,93 +282,3 @@ tree, we generate ZK proof that the children tree's proof is correct and the rec
 ### batch circuit
 
 We will provide another document detailing the circuit constraints; the reader might refer to this doc if wants to know more [details](https://okg-block.larksuite.com/docx/RzDcdkmvwo5FJJxD9gKuGttjsod)
-
-
-```mermaid
-flowchart BT
-    subgraph Account0 ["Alice"]
-       ID0[id]
-       Es0[equities]
-       Ds0[debs]
-    end
-
-      subgraph Account1 ["Bob"]
-       ID1[id]
-       Es1[equities]
-       Ds1[debs]
-    end
-
-
-      subgraph Account2 ["Cindy"]
-       ID2[id]
-       Es2[equities]
-       Ds2[debs]
-    end
-
-
-      subgraph Account3 ["David"]
-       ID3[id]
-       Es3[equities]
-       Ds3[debs]
-    end
-   
-
-    subgraph Leaf0 ["Leaf"]
-        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
-        H0[hash]
-        E0[equity]
-        D0[debt]
-    end
-
-    subgraph Leaf1 ["Leaf"]
-        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
-        H1[hash]
-        E1[equity]
-        D1[debt]
-    end
-
-    subgraph Leaf2 ["Leaf"]
-        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
-        H2[hash]
-        E2[equity]
-        D2[debt]
-    end
-
-    subgraph Leaf3 ["Leaf"]
-        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
-        H3[hash]
-        E3[equity]
-        D3[debt]
-    end
-
-    subgraph Node0 ["node"]
-        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
-        N0_H[hash]
-        N0_E[equity]
-        N0_D[debt]
-    end
-
-      subgraph Node1 ["node"]
-        %% style Group1 fill:#f9f,stroke:#333,stroke-width:2px
-        N1_H[hash]
-        N1_E[equity]
-        N1_D[debt]
-    end
-
-    %% subgraph Group2 ["Group 2"]
-    %%     style Group2 fill:#ccf,stroke:#333,stroke-width:2px
-    %%     C[Component C]
-    %%     D[Component D]
-    %% end
-
-    Account0 --> Leaf0
-    Account1 --> Leaf1
-    Account2 --> Leaf2
-    Account3 --> Leaf3
-    Leaf0 --> Node0
-    Leaf1 --> Node0
-    Leaf2 --> Node1
-    Leaf3 --> Node1
-    %% B --> D
-
-```
