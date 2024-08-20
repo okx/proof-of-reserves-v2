@@ -318,7 +318,7 @@ For a given user account, we can generate a Merkle inclusion proof. Taking the a
 ## ZKP
 During the construction of a batch tree, we generate a ZK proof that the batch tree is constructed correctly. During the construction of a recursion tree, we generate a ZK proof that the children proofs are correct and the recursion building logic is constrained.
 
-### batch circuit
+### Batch Circuit
 **public input**
 - batch root hash
 
@@ -345,7 +345,7 @@ where `Q` is total number of assets, `M` is the number of users in one batch, an
 $$j \in [0,Q), i \in [0,M)$$
 
 
-### recursive circuit
+### Recursive Circuit
 **public input**
 - recursive tree root hash
 
@@ -367,7 +367,4 @@ $$(Node).Debt == Sum([child.Debt; B])$$
 
 where `B` is the branching number of the recursive tree and
 $$i \in [0,B)$$
-
-
-
 
