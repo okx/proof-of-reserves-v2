@@ -291,6 +291,7 @@ tree, we generate ZK proof that the children tree's proof is correct and the rec
 - users account info
 
 **circuit constraints**
+
 $$Account_{i}.Equity == \sum_j^{M} Asset_{j}.Equity$$
 $$Account_{i}.Debt == \sum_j^{M} Asset_{j}.Debt$$
 $$Account_{i}.Equity \ge Account_{i}.Debt$$
