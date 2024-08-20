@@ -212,6 +212,10 @@ flowchart BT
     linkStyle 20 stroke:#ff33f3,stroke-width:2px;
     linkStyle 21 stroke:#ff33f3,stroke-width:2px;
 ```
+- solid black line represents Hashing relationship
+- dash line represents Sum relationship
+- dash green line is for summation relationship of equities; while dash purple line is for summation relationship of debts.
+
  the data strucure of one `account` would be 
 ```rust
 pub struct Account {
