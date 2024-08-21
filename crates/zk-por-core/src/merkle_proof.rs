@@ -238,7 +238,7 @@ impl MerkleProof {
         if calculated_hash == gmst_root {
             Ok(())
         } else {
-            Err(PoRError::InvalidMerkleProof)
+            Err(PoRError::InvalidMerkleProof(self.account.id.clone()))
         }
     }
 }

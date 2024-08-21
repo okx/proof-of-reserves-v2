@@ -1,7 +1,7 @@
 use std::{path::PathBuf, str::FromStr};
 
 use clap::{Parser, Subcommand};
-use zk_por_cli::{prover::prove, verifier::verify};
+use zk_por_cli::{prover::prove, verifier::verify_global, verifier::verify_user};
 use zk_por_core::error::PoRError;
 
 #[derive(Parser)]
@@ -23,11 +23,16 @@ pub enum ZkPorCommitCommands {
         #[arg(short, long)]
         output_path: String, // path to output file
     },
-    Verify {
+    VerifyGlobal {
+        #[arg(short, long)]
+        proof_path: String,
+    },
+
+    VerifyUser {
         #[arg(short, long)]
         global_proof_path: String,
         #[arg(short, long)]
-        inclusion_proof_path: Option<String>,
+        user_proof_path_pattern: String,
     },
 }
 
@@ -41,11 +46,15 @@ impl Execute for ZkPorCommitCommands {
                 let output_file = PathBuf::from_str(&output_path).unwrap();
                 prove(prover_cfg, output_file)
             }
-            ZkPorCommitCommands::Verify { global_proof_path, inclusion_proof_path } => {
+
+            ZkPorCommitCommands::VerifyGlobal { proof_path: global_proof_path,  } => {
                 let global_proof_path = PathBuf::from_str(&global_proof_path).unwrap();
-                let inclusion_proof_path =
-                    inclusion_proof_path.as_ref().map(|p| PathBuf::from_str(&p).unwrap());
-                verify(global_proof_path, inclusion_proof_path)
+                verify_global(global_proof_path)
+            }
+
+            ZkPorCommitCommands::VerifyUser { global_proof_path, user_proof_path_pattern } => {
+                let global_proof_path = PathBuf::from_str(&global_proof_path).unwrap();
+                verify_user(global_proof_path, user_proof_path_pattern)
             }
         }
     }

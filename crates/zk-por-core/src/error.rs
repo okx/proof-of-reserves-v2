@@ -6,8 +6,8 @@ pub enum PoRError {
     #[error("Proof is not valid")]
     InvalidProof,
 
-    #[error("Merkle proof is not valid")]
-    InvalidMerkleProof,
+    #[error("Merkle proof is not valid for accountID {0}")]
+    InvalidMerkleProof(String),
 
     #[error("config error: {0}")]
     ConfigError(#[from] ConfigError),

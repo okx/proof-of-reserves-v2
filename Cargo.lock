@@ -2531,6 +2531,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "criterion",
+ "glob",
  "hex",
  "indicatif",
  "jemallocator",

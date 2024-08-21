@@ -44,7 +44,8 @@ impl ConfigDb {
     pub fn load(dir: &str) -> Result<Config, ConfigError> {
         let env = std::env::var("ENV").unwrap_or("default".into());
         Config::builder()
-            // .add_source(File::with_name(&format!("{}/default", dir)))
+            .set_default("prover.batch_size", 1024)?
+            .add_source(File::with_name(&format!("{}/default", dir)))
             .add_source(File::with_name(&format!("{}/{}", dir, env)).required(false))
             .add_source(File::with_name(&format!("{}/local", dir)).required(false))
             .add_source(config::Environment::with_prefix("ZKPOR"))
