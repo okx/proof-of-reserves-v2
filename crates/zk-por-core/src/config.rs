@@ -30,7 +30,7 @@ impl From<ConfigLog> for TraceConfig {
 pub struct ConfigProver {
     pub round_no: usize,
     pub batch_size: usize,
-    pub num_of_tokens: usize,
+    pub tokens: Vec<String>,
     pub user_data_path: String,
 }
 

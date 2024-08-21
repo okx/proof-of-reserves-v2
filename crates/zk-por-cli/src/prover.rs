@@ -34,7 +34,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
     });
 
     let batch_size = cfg.prover.batch_size as usize;
-    let token_num = cfg.prover.num_of_tokens as usize;
+    let token_num = cfg.prover.tokens.len();
 
     // the path to dump the final generated proof
     let file_manager = FileManager {};
@@ -42,7 +42,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
         FilesCfg {
             dir: std::path::PathBuf::from_str(&cfg.prover.user_data_path).unwrap(),
             batch_size: cfg.prover.batch_size,
-            num_of_tokens: cfg.prover.num_of_tokens,
+            tokens: cfg.prover.tokens.clone(),
         },
         &file_manager,
     );
