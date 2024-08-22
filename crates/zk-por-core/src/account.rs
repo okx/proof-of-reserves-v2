@@ -5,7 +5,7 @@ use plonky2::{
 use plonky2_field::types::Field;
 use serde::{Deserialize, Serialize};
 use crate::{
-    database::{DataBase, UserId},
+    database::{PoRDB, UserId},
     types::F,
 };
 use rand::Rng;
@@ -70,7 +70,7 @@ impl Account {
 }
 
 pub fn persist_account_id_to_gmst_pos(
-    db: &mut DataBase,
+    db: &mut Box::<dyn PoRDB>,
     accounts: &Vec<Account>,
     start_idx: usize,
 ) {

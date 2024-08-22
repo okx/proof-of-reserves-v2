@@ -1,5 +1,5 @@
 use crate::{
-    database::DataBase,
+    database::PoRDB,
     merkle_sum_prover::utils::hash_2_subhashes,
     recursive_prover::prover::hash_n_subhashes,
     types::{D, F},
@@ -242,7 +242,7 @@ impl GlobalMst {
         visited_global_idx.iter().all(|&v| v)
     }
 
-    pub fn persist(&self, db: &mut DataBase) {
+    pub fn persist(&self, db: &mut Box<dyn PoRDB>) {
         let length = self.get_tree_length();
         tracing::info!("start to persist gmst into db of size: {:?}", length);
         let chunk_size = 1 << 12;

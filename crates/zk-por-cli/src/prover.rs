@@ -11,7 +11,7 @@ use zk_por_core::{
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
     config::ProverConfig,
-    database::{DataBase, DbOption},
+    database::{PoRLevelDB, PoRLevelDBOption},
     e2e::{batch_prove_accounts, prove_subproofs},
     error::PoRError,
     global::{GlobalConfig, GlobalMst, GLOBAL_MST},
@@ -28,7 +28,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
     let trace_cfg: TraceConfig = cfg.log.into();
     let _g = init_tracing(trace_cfg);
 
-    let mut database = DataBase::new(DbOption {
+    let mut database = PoRLevelDB::new(PoRLevelDBOption {
         user_map_dir: cfg.db.level_db_user_path.to_string(),
         gmst_dir: cfg.db.level_db_gmst_path.to_string(),
     });
