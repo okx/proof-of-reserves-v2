@@ -125,7 +125,9 @@ pub mod test {
         let node3 = MerkleSumNode::new_from_children_nodes(&node1, &node2);
         assert_eq!(
             node3.sum_equity,
-            F::from_canonical_u64(acc1_btc_amount + acc1_eth_amount + acc2_btc_amount + acc2_eth_amount),
+            F::from_canonical_u64(
+                acc1_btc_amount + acc1_eth_amount + acc2_btc_amount + acc2_eth_amount
+            ),
         );
         assert_eq!(node3.sum_debt, F::from_canonical_u64(0));
     }

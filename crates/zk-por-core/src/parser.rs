@@ -34,7 +34,7 @@ pub struct FileManager {}
 
 pub trait JsonFileManager {
     fn list_json_files(&self, dir: &Path) -> std::io::Result<Vec<PathBuf>>;
-    fn read_json_into_accounts_vec(&self, path: &str, tokens : &Vec<String>) -> Vec<Account>;
+    fn read_json_into_accounts_vec(&self, path: &str, tokens: &Vec<String>) -> Vec<Account>;
     fn read_json_file_into_map(&self, path: &str) -> Vec<BTreeMap<String, Value>>;
 }
 
@@ -62,7 +62,7 @@ impl JsonFileManager for FileManager {
 
     /// Read a json file and return the vec of associated accounts.
     /// tokens is a list of all possible token names. It is used to fill the account with zero for missing tokens.
-    fn read_json_into_accounts_vec(&self, path: &str, tokens : &Vec<String>) -> Vec<Account> {
+    fn read_json_into_accounts_vec(&self, path: &str, tokens: &Vec<String>) -> Vec<Account> {
         let parsed_data = self.read_json_file_into_map(path);
         parse_exchange_state(&parsed_data, tokens)
     }
@@ -139,8 +139,10 @@ impl FileAccountReader {
                 parser.file_idx = 0;
 
                 if doc_len > 1 {
-                    let last_doc_accounts =
-                        fm.read_json_into_accounts_vec(parser.docs[doc_len - 1].to_str().unwrap(), &cfg.tokens);
+                    let last_doc_accounts = fm.read_json_into_accounts_vec(
+                        parser.docs[doc_len - 1].to_str().unwrap(),
+                        &cfg.tokens,
+                    );
                     assert!(last_doc_accounts.len() <= first_doc_accounts_len);
                     parser.last_doc_accounts = last_doc_accounts;
                 }
@@ -213,8 +215,10 @@ impl AccountParser for FileAccountReader {
                 if self.file_idx < (self.num_of_docs - 1) {
                     // load the next file; TODO: assert_eq!(accounts_len, last_doc_account_num);
                     self.file_idx += 1;
-                    self.buffered_accounts =
-                        fm.read_json_into_accounts_vec(self.docs[self.file_idx].to_str().unwrap(), &self.cfg.tokens);
+                    self.buffered_accounts = fm.read_json_into_accounts_vec(
+                        self.docs[self.file_idx].to_str().unwrap(),
+                        &self.cfg.tokens,
+                    );
                     result[filled_len..(filled_len + to_read)]
                         .clone_from_slice(&self.buffered_accounts[0..to_read]);
                     filled_len += to_read;
@@ -231,7 +235,10 @@ impl AccountParser for FileAccountReader {
 }
 
 /// Parses the exchanges state at some snapshot and returns.
-fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>, tokens : &Vec<String>) -> Vec<Account> {
+fn parse_exchange_state(
+    parsed_data: &Vec<BTreeMap<String, Value>>,
+    tokens: &Vec<String>,
+) -> Vec<Account> {
     let mut accounts_data: Vec<Account> = Vec::new();
     for obj in parsed_data {
         accounts_data.push(parse_account_state(obj, tokens));
@@ -240,33 +247,44 @@ fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>, tokens : &Ve
 }
 
 /// Parses the exchanges state at some snapshot and returns.
-pub fn parse_account_state(parsed_data: &BTreeMap<String, Value>, tokens : &Vec<String>) -> Account {
-    let account_id = parsed_data.get("id").expect(format!("Account {:?} dont have key `id`", parsed_data).as_str()).as_str().unwrap();
-    let token_num = tokens.len();
+pub fn parse_account_state(parsed_data: &BTreeMap<String, Value>, tokens: &Vec<String>) -> Account {
+    let account_id = parsed_data
+        .get("id")
+        .expect(format!("Account {:?} dont have key `id`", parsed_data).as_str())
+        .as_str()
+        .unwrap();
 
-    let equities = parsed_data.get("equity").expect(format!("Account {:?} dont have key `equity`", parsed_data).as_str()).as_object().unwrap();
+    let equities = parsed_data
+        .get("equity")
+        .expect(format!("Account {:?} dont have key `equity`", parsed_data).as_str())
+        .as_object()
+        .unwrap();
     let mut parsed_equities = Vec::new();
     for token in tokens.iter() {
         if let Some(val) = equities.get(token) {
-            let parsed_equity = F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap());
+            let parsed_equity =
+                F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap());
             parsed_equities.push(parsed_equity);
         } else {
             panic!("fail to find equity for token: {:?} in accountID {:?}", token, account_id);
         }
     }
 
-    // if there is no debt, we fill it with zero
-    let mut parsed_debts = vec![F::ZERO; token_num];
+    let mut parsed_debts = Vec::new();
     if let Some(debts) = parsed_data.get("debt") {
         let debts = debts.as_object().unwrap();
         for token in tokens.iter() {
             if let Some(val) = debts.get(token) {
-                let parsed_debt = F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap());
+                let parsed_debt =
+                    F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap());
                 parsed_debts.push(parsed_debt);
             } else {
                 panic!("fail to find debt for token: {:?} in accountID {:?}", token, account_id);
             }
         }
+    } else {
+        // if there is no debt, we fill it with zero
+        parsed_debts = vec![F::ZERO; parsed_equities.len()];
     }
 
     Account { id: account_id.into(), equity: parsed_equities, debt: parsed_debts }
@@ -400,7 +418,7 @@ mod test {
         let dir = tempdir::TempDir::new("user_input_test").unwrap().into_path();
 
         let mut file_acct_reader = FileAccountReader::new(
-            FilesCfg { dir, batch_size: 4, tokens : vec!["BTC".to_owned(), "ETH".to_owned()] },
+            FilesCfg { dir, batch_size: 4, tokens: vec!["BTC".to_owned(), "ETH".to_owned()] },
             &mock_file_manager,
         );
         assert_eq!(file_acct_reader.total_num_of_users(), 23);

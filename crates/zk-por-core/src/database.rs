@@ -6,7 +6,7 @@ use rand::Rng;
 use zk_por_db::LevelDb;
 
 use crate::{error::PoRError, types::F};
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::RwLock};
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct UserId(pub [u8; 32]);
 
@@ -58,7 +58,7 @@ impl db_key::Key for UserId {
     }
 }
 
-pub trait PoRDB{
+pub trait PoRDB: Sync + Send {
     fn add_batch_users(&mut self, batches: Vec<(UserId, u32)>);
     fn get_user_index(&self, user_id: UserId) -> Option<u32>;
     fn add_batch_gmst_nodes(&mut self, batches: Vec<(i32, HashOut<F>)>);
@@ -131,32 +131,29 @@ pub struct PoRMemoryDB {
 
 impl PoRMemoryDB {
     pub fn new() -> Self {
-        Self {
-            user_map: HashMap::new(),
-            gmst_map: HashMap::new(),
-        }
+        Self { user_map: HashMap::new(), gmst_map: HashMap::new() }
     }
 }
 
-impl PoRDB for PoRMemoryDB {
+impl PoRDB for RwLock<PoRMemoryDB> {
     fn add_batch_users(&mut self, batches: Vec<(UserId, u32)>) {
         for (id, idx) in batches {
-            self.user_map.insert(id, idx);
+            self.write().unwrap().user_map.insert(id, idx);
         }
     }
 
     fn get_user_index(&self, user_id: UserId) -> Option<u32> {
-        self.user_map.get(&user_id).map(|x| *x)
+        self.read().unwrap().user_map.get(&user_id).map(|x| *x)
     }
 
     fn add_batch_gmst_nodes(&mut self, batches: Vec<(i32, HashOut<F>)>) {
         for (id, hash) in batches {
-            self.gmst_map.insert(id, hash);
+            self.write().unwrap().gmst_map.insert(id, hash);
         }
     }
 
     fn get_gmst_node_hash(&self, node_idx: i32) -> Option<HashOut<F>> {
-        self.gmst_map.get(&node_idx).map(|x| *x)
+        self.read().unwrap().gmst_map.get(&node_idx).map(|x| *x)
     }
 }
 
@@ -166,10 +163,12 @@ mod test {
     use tempdir::TempDir;
 
     use crate::{
-        database::{PoRLevelDB, PoRLevelDBOption, UserId, PoRDB, PoRMemoryDB},
+        database::{PoRDB, PoRLevelDB, PoRLevelDBOption, PoRMemoryDB, UserId},
         types::F,
     };
-    fn test_database(mut db : Box<dyn PoRDB>) {
+    use std::sync::RwLock;
+
+    fn test_database(mut db: Box<dyn PoRDB>) {
         let batches_user = (0..4)
             .into_iter()
             .map(|i| {
@@ -208,6 +207,6 @@ mod test {
     #[test]
     fn test_memorydb() {
         let db = PoRMemoryDB::new();
-        test_database(Box::new(db));
+        test_database(Box::new(RwLock::new(db)));
     }
 }

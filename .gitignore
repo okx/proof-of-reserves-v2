@@ -6,6 +6,7 @@ plonky2/
 config/local.toml
 config/prod.toml
 test-data/user-data*/
+test-data/proofs*/
 my_permanent_leveldb/
 *level_db*/
 *.json

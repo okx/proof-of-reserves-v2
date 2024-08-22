@@ -1,7 +1,10 @@
 use std::{path::PathBuf, str::FromStr};
 
 use clap::{Parser, Subcommand};
-use zk_por_cli::{prover::prove, verifier::verify_global, verifier::verify_user};
+use zk_por_cli::{
+    prover::prove,
+    verifier::{verify_global, verify_user},
+};
 use zk_por_core::error::PoRError;
 
 #[derive(Parser)]
@@ -47,7 +50,7 @@ impl Execute for ZkPorCommitCommands {
                 prove(prover_cfg, output_file)
             }
 
-            ZkPorCommitCommands::VerifyGlobal { proof_path: global_proof_path,  } => {
+            ZkPorCommitCommands::VerifyGlobal { proof_path: global_proof_path } => {
                 let global_proof_path = PathBuf::from_str(&global_proof_path).unwrap();
                 verify_global(global_proof_path)
             }

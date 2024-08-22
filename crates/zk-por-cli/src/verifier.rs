@@ -1,7 +1,7 @@
+use indicatif::ProgressBar;
 use rayon::iter::IntoParallelRefIterator;
 use serde_json::from_reader;
 use std::{fs::File, path::PathBuf};
-use indicatif::ProgressBar;
 
 // Assuming Proof is defined in lib.rs and lib.rs is in the same crate
 use super::constant::{RECURSION_BRANCHOUT_NUM, USER_VERIFICATION_THREADS_NUM};
@@ -43,11 +43,13 @@ pub fn verify_user(
     let reader = std::io::BufReader::new(proof_file);
 
     // Parse the JSON as Proof
-    let proof: Proof = from_reader(reader).expect(format!("fail to parse global proof from path {:?}", global_proof_path).as_str());
+    let proof: Proof = from_reader(reader)
+        .expect(format!("fail to parse global proof from path {:?}", global_proof_path).as_str());
 
     let hash_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_hash_offset();
     let root_hash = HashOut::<F>::from_partial(&proof.proof.public_inputs[hash_offset]);
-    let user_proof_paths = find_matching_files(user_proof_path_pattern).map_err(|e|{PoRError::Io(e)})?;
+    let user_proof_paths =
+        find_matching_files(user_proof_path_pattern).map_err(|e| PoRError::Io(e))?;
     let proof_file_num = user_proof_paths.len();
     println!("successfully identify {} user proof files", proof_file_num);
 
@@ -58,21 +60,25 @@ pub fn verify_user(
             let merkle_path = File::open(&user_proof_path).unwrap();
             let reader = std::io::BufReader::new(merkle_path);
             let proof: MerkleProof = from_reader(reader).unwrap();
-            if let Err(e)= proof.verify_merkle_proof(root_hash) {
-                panic!("fail to verify the user proof on path {:?} due to error {:?}", user_proof_path, e)
+            if let Err(e) = proof.verify_merkle_proof(root_hash) {
+                panic!(
+                    "fail to verify the user proof on path {:?} due to error {:?}",
+                    user_proof_path, e
+                )
             }
         });
         bar.inc(chunks.len() as u64);
     });
     bar.finish();
-    println!("successfully verify {} user proofs with file pattern {}", proof_file_num, user_proof_path_pattern);
+    println!(
+        "successfully verify {} user proofs with file pattern {}",
+        proof_file_num, user_proof_path_pattern
+    );
 
     Ok(())
 }
 
-pub fn verify_global(
-    global_proof_path: PathBuf,
-) -> Result<(), PoRError> {
+pub fn verify_global(global_proof_path: PathBuf) -> Result<(), PoRError> {
     let proof_file = File::open(&global_proof_path).unwrap();
     let reader = std::io::BufReader::new(proof_file);
 

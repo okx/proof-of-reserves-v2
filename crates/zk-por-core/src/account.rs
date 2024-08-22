@@ -1,14 +1,14 @@
+use crate::{
+    database::{PoRDB, UserId},
+    types::F,
+};
 use plonky2::{
     hash::{hash_types::HashOut, poseidon::PoseidonHash},
     plonk::config::Hasher,
 };
 use plonky2_field::types::Field;
-use serde::{Deserialize, Serialize};
-use crate::{
-    database::{PoRDB, UserId},
-    types::F,
-};
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
 /// A struct representing a users account. It represents their equity and debt as a Vector of goldilocks field elements.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -70,7 +70,7 @@ impl Account {
 }
 
 pub fn persist_account_id_to_gmst_pos(
-    db: &mut Box::<dyn PoRDB>,
+    db: &mut Box<dyn PoRDB>,
     accounts: &Vec<Account>,
     start_idx: usize,
 ) {
