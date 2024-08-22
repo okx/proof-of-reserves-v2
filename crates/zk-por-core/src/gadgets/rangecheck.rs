@@ -1,5 +1,5 @@
 use plonky2::{
-    field::types::{Field},
+    field::types::Field,
     iop::{
         target::Target,
         witness::{PartialWitness, WitnessWrite},
@@ -7,9 +7,7 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 
-use crate::{
-    types::{D, F},
-};
+use crate::types::{D, F};
 
 #[derive(Debug, Clone)]
 pub struct RangeCheckTargets {
@@ -23,7 +21,6 @@ impl RangeCheckTargets {
         let low = builder.add_virtual_target();
         let mid = builder.add_virtual_target();
         let high = builder.add_virtual_target();
-
 
         builder.add_lookup_from_index(low, lut_index);
         builder.add_lookup_from_index(mid, lut_index);
@@ -44,7 +41,6 @@ impl RangeCheckTargets {
     }
 }
 
-
 #[cfg(test)]
 pub mod test {
     use plonky2::field::types::{Field, Field64};
@@ -53,7 +49,7 @@ pub mod test {
     use crate::{
         circuit_utils::run_circuit_test,
         parser::{FileManager, JsonFileManager},
-        U16_TABLE
+        U16_TABLE,
     };
 
     use super::RangeCheckTargets;
