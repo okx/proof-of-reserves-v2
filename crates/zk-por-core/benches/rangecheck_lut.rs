@@ -38,7 +38,7 @@ fn gen_rand(max: u64) -> u64 {
     random_number
 }
 
-const SIZE: usize = 1024 * 220;
+const SIZE: usize = 1024;
 const MAX_VAL: u64 = 1 << 48;
 /// Benchmark the range check numbers using lookup table of multiple inputs
 pub fn bench_lut_rangecheck(c: &mut Criterion) {
