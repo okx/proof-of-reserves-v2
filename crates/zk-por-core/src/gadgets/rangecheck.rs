@@ -1,6 +1,5 @@
 use plonky2::{
-    field::types::{Field, Field64},
-    hash::{hash_types::HashOutTarget, poseidon::PoseidonHash},
+    field::types::{Field},
     iop::{
         target::Target,
         witness::{PartialWitness, WitnessWrite},
@@ -9,10 +8,7 @@ use plonky2::{
 };
 
 use crate::{
-    account::Account,
-    circuit_utils::assert_non_negative_unsigned,
     types::{D, F},
-    U16_TABLE,
 };
 
 #[derive(Debug, Clone)]
