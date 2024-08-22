@@ -13,11 +13,14 @@ pub mod error;
 pub mod global;
 pub mod merkle_proof;
 pub mod merkle_sum_prover;
+pub mod gadgets;
 pub mod merkle_sum_tree;
 pub mod parser;
 pub mod recursive_prover;
 pub mod types;
 pub mod util;
+
+include!(concat!(env!("OUT_DIR"), "/u16_array.rs"));
 
 #[derive(Serialize, Deserialize)]
 pub struct General {
