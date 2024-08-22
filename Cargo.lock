@@ -504,7 +504,7 @@ dependencies = [
 [[package]]
 name = "cryptography_cuda"
 version = "0.1.0"
-source = "git+ssh://git@github.com/okx/cryptography_cuda.git?rev=a0f9925ad9c8aa94c34b36ae7bd4ae91ab93b2d8#a0f9925ad9c8aa94c34b36ae7bd4ae91ab93b2d8"
+source = "git+ssh://git@github.com/okx/cryptography_cuda.git?rev=8cc0188e429c865149dde67e2446cbf21d2cd05e#8cc0188e429c865149dde67e2446cbf21d2cd05e"
 dependencies = [
  "bindgen",
  "bit_reverse",
@@ -1534,7 +1534,7 @@ checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 [[package]]
 name = "plonky2"
 version = "0.2.0"
-source = "git+https://github.com/okx/plonky2?rev=86dabae997c3c177c2ec93c21876d02aa8d405a6#86dabae997c3c177c2ec93c21876d02aa8d405a6"
+source = "git+https://github.com/okx/plonky2?rev=20bf2e849399419d24d3a50b81eb282712b1e875#20bf2e849399419d24d3a50b81eb282712b1e875"
 dependencies = [
  "ahash 0.8.11",
  "anyhow",
@@ -1562,7 +1562,7 @@ dependencies = [
 [[package]]
 name = "plonky2_field"
 version = "0.2.0"
-source = "git+https://github.com/okx/plonky2?rev=86dabae997c3c177c2ec93c21876d02aa8d405a6#86dabae997c3c177c2ec93c21876d02aa8d405a6"
+source = "git+https://github.com/okx/plonky2?rev=20bf2e849399419d24d3a50b81eb282712b1e875#20bf2e849399419d24d3a50b81eb282712b1e875"
 dependencies = [
  "anyhow",
  "itertools 0.11.0",
@@ -1581,7 +1581,7 @@ dependencies = [
 [[package]]
 name = "plonky2_maybe_rayon"
 version = "0.2.0"
-source = "git+https://github.com/okx/plonky2?rev=86dabae997c3c177c2ec93c21876d02aa8d405a6#86dabae997c3c177c2ec93c21876d02aa8d405a6"
+source = "git+https://github.com/okx/plonky2?rev=20bf2e849399419d24d3a50b81eb282712b1e875#20bf2e849399419d24d3a50b81eb282712b1e875"
 dependencies = [
  "rayon",
 ]
@@ -1589,7 +1589,7 @@ dependencies = [
 [[package]]
 name = "plonky2_util"
 version = "0.2.0"
-source = "git+https://github.com/okx/plonky2?rev=86dabae997c3c177c2ec93c21876d02aa8d405a6#86dabae997c3c177c2ec93c21876d02aa8d405a6"
+source = "git+https://github.com/okx/plonky2?rev=20bf2e849399419d24d3a50b81eb282712b1e875#20bf2e849399419d24d3a50b81eb282712b1e875"
 
 [[package]]
 name = "portable-atomic"

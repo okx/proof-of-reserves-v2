@@ -5,7 +5,7 @@ use zk_por_cli::{merkle_proof::get_merkle_proof, prover::prove, verifier::verify
 use zk_por_core::{config::ProverConfig, error::PoRError};
 
 #[cfg(feature="cuda")]
-use cryptography_cuda::init_cuda_rs;
+use cryptography_cuda::init_cuda_degree_rs;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -70,7 +70,7 @@ impl Execute for ZkPorCommitCommands {
 
 fn main() -> std::result::Result<(), PoRError> {
     #[cfg(feature="cuda")]
-    init_cuda_rs();
+    init_cuda_degree_rs(22);
 
     let cli = Cli::parse();
     let start = std::time::Instant::now();
