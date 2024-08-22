@@ -10,8 +10,8 @@ use zk_por_core::{
     account::{persist_account_id_to_gmst_pos, Account},
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
-    config::ProverConfig,
-    database::{PoRLevelDB, PoRLevelDBOption},
+    config::{ConfigLog, ProverConfig},
+    database::{PoRDB, PoRLevelDB, PoRLevelDBOption, PoRMemoryDB},
     e2e::{batch_prove_accounts, prove_subproofs},
     error::PoRError,
     global::{GlobalConfig, GlobalMst, GLOBAL_MST},
@@ -25,23 +25,34 @@ use zk_por_core::{
 use zk_por_tracing::{init_tracing, TraceConfig};
 
 pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRError> {
-    let trace_cfg: TraceConfig = cfg.log.into();
+    let trace_cfg: TraceConfig = cfg.log.unwrap_or(ConfigLog {
+        file_name_prefix: "zkpor".to_string(),
+        dir: "logs/".to_string(),
+        level: "info".to_string(),
+        console: true,
+        flame: false,
+    }).into();
+
     let _g = init_tracing(trace_cfg);
 
-    let mut database = PoRLevelDB::new(PoRLevelDBOption {
-        user_map_dir: cfg.db.level_db_user_path.to_string(),
-        gmst_dir: cfg.db.level_db_gmst_path.to_string(),
-    });
+    let mut database : Box<dyn PoRDB>;
+    if let Some(level_db_config) = cfg.db {
+        database = Box::new(PoRLevelDB::new(PoRLevelDBOption {
+            user_map_dir: level_db_config.level_db_user_path.to_string(),
+            gmst_dir: level_db_config.level_db_gmst_path.to_string(),
+        }));
+    } else {
+        database = Box::new(PoRMemoryDB::new());
+    }
 
-    let batch_size = cfg.prover.batch_size as usize;
+    let batch_size = cfg.prover.batch_size.unwrap_or(1024);
     let token_num = cfg.prover.tokens.len();
-
     // the path to dump the final generated proof
     let file_manager = FileManager {};
     let mut account_parser = FileAccountReader::new(
         FilesCfg {
             dir: std::path::PathBuf::from_str(&cfg.prover.user_data_path).unwrap(),
-            batch_size: cfg.prover.batch_size,
+            batch_size: batch_size,
             tokens: cfg.prover.tokens.clone(),
         },
         &file_manager,

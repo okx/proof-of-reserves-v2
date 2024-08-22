@@ -29,7 +29,7 @@ impl From<ConfigLog> for TraceConfig {
 #[derive(Debug, Clone, Deserialize)]
 pub struct ConfigProver {
     pub round_no: usize,
-    pub batch_size: usize,
+    pub batch_size: Option<usize>,
     pub tokens: Vec<String>,
     pub user_data_path: String,
 }
@@ -44,7 +44,6 @@ impl ConfigDb {
     pub fn load(dir: &str) -> Result<Config, ConfigError> {
         let env = std::env::var("ENV").unwrap_or("default".into());
         Config::builder()
-            .set_default("prover.batch_size", 1024)?
             .add_source(File::with_name(&format!("{}/default", dir)))
             .add_source(File::with_name(&format!("{}/{}", dir, env)).required(false))
             .add_source(File::with_name(&format!("{}/local", dir)).required(false))
@@ -53,15 +52,16 @@ impl ConfigDb {
     }
     pub fn try_new() -> Result<Self, ConfigError> {
         let config = Self::load("config")?;
+        println!("config {:?}", config);
         config.try_deserialize()
     }
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ProverConfig {
-    pub log: ConfigLog,
+    pub log: Option<ConfigLog>,
     pub prover: ConfigProver,
-    pub db: ConfigDb,
+    pub db: Option<ConfigDb>,
 }
 
 impl ProverConfig {
