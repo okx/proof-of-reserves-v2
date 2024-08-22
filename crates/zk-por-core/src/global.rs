@@ -10,7 +10,7 @@ use plonky2::{hash::hash_types::HashOut, util::log2_strict};
 use std::{ops::Div, sync::RwLock};
 use tracing::debug;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct GlobalConfig {
     pub num_of_tokens: usize,
     pub num_of_batches: usize,
@@ -21,7 +21,7 @@ pub struct GlobalConfig {
 pub static GLOBAL_MST: OnceCell<RwLock<GlobalMst>> = OnceCell::new();
 
 pub struct GlobalMst {
-    inner: Vec<HashOut<F>>,
+    pub inner: Vec<HashOut<F>>,
     top_recursion_level: usize,
     pub cfg: GlobalConfig,
 }
@@ -34,7 +34,7 @@ impl GlobalMst {
         let mst_vec = vec![HashOut::default(); 0]; // will resize later
         let mut mst = Self { inner: mst_vec, top_recursion_level: top_level, cfg: cfg };
         // the number of hash is one smaller to the index of the root node of the last recursion level.
-        let root_node_idx = mst.get_recursive_global_index(top_level, 0);
+        let root_node_idx = GlobalMst::get_recursive_global_index(&cfg, top_level, 0);
         let tree_size = root_node_idx + 1;
         mst.inner.resize(tree_size, HashOut::default());
         mst
@@ -44,12 +44,16 @@ impl GlobalMst {
         self.inner.len()
     }
 
-    pub fn get_num_of_leaves(&self) -> usize {
-        self.cfg.batch_size * self.cfg.num_of_batches
+    pub fn get_num_of_leaves(cfg: &GlobalConfig) -> usize {
+        cfg.batch_size * cfg.num_of_batches
     }
 
     pub fn get_nodes(&self, range: std::ops::Range<usize>) -> &[HashOut<F>] {
         &self.inner[range]
+    }
+
+    pub fn get_root(&self) -> Option<&HashOut<F>> {
+        self.inner.last()
     }
 
     /// convert a mst node inner index to global index in gmst.
@@ -58,14 +62,18 @@ impl GlobalMst {
     ///   12      13
     ///  8-9,   10-11
     /// 0 - 3,  4 - 7
-    pub fn get_batch_tree_global_index(&self, batch_idx: usize, inner_tree_idx: usize) -> usize {
-        let batch_size = self.cfg.batch_size;
+    pub fn get_batch_tree_global_index(
+        cfg: &GlobalConfig,
+        batch_idx: usize,
+        inner_tree_idx: usize,
+    ) -> usize {
+        let batch_size = cfg.batch_size;
         let tree_depth = log2_strict(batch_size);
         let batch_tree_level = get_node_level(batch_size, inner_tree_idx);
 
         let level_from_bottom = tree_depth - batch_tree_level;
 
-        let numeritor = 2 * batch_size * self.cfg.num_of_batches;
+        let numeritor = 2 * batch_size * cfg.num_of_batches;
         let global_tree_vertical_offset = numeritor - numeritor.div(1 << level_from_bottom); // the gmst idx of the first node at {level_from_bottom} level
 
         let level_node_counts = batch_size.div(1 << level_from_bottom);
@@ -83,21 +91,21 @@ impl GlobalMst {
 
     // mst root node at level 0,
     pub fn get_recursive_global_index(
-        &self,
+        cfg: &GlobalConfig,
         recursive_level: usize,
         inner_level_idx: usize,
     ) -> usize {
-        let mst_node_num = 2 * self.cfg.batch_size - 1;
-        let batch_num = self.cfg.num_of_batches;
-        let branchout_num = self.cfg.recursion_branchout_num;
+        let mst_node_num = 2 * cfg.batch_size - 1;
+        let batch_num = cfg.num_of_batches;
+        let branchout_num = cfg.recursion_branchout_num;
         if recursive_level == 0 {
             // level of merkle sum tree root
-            if inner_level_idx < self.cfg.num_of_batches {
+            if inner_level_idx < cfg.num_of_batches {
                 // the global index of the root of the batch tree
                 let mst_root_idx = mst_node_num - 1;
-                return self.get_batch_tree_global_index(inner_level_idx, mst_root_idx);
+                return GlobalMst::get_batch_tree_global_index(cfg, inner_level_idx, mst_root_idx);
             } else {
-                return batch_num * mst_node_num + (inner_level_idx - self.cfg.num_of_batches);
+                return batch_num * mst_node_num + (inner_level_idx - cfg.num_of_batches);
             }
         }
 
@@ -115,9 +123,9 @@ impl GlobalMst {
 
         let mut level = recursive_level;
         while level > 1 {
-            let mut this_level_node_num = last_level_node_num / self.cfg.recursion_branchout_num;
+            let mut this_level_node_num = last_level_node_num / cfg.recursion_branchout_num;
             this_level_node_num =
-                pad_to_multiple_of(this_level_node_num, self.cfg.recursion_branchout_num);
+                pad_to_multiple_of(this_level_node_num, cfg.recursion_branchout_num);
 
             recursive_offset += this_level_node_num;
 
@@ -132,14 +140,18 @@ impl GlobalMst {
     /// `batch_idx`: index indicating the batch index
     /// `i`: the sub batch tree index; e.g the batch tree is of size 1<<10; i \in [0, 2*batch_size)
     pub fn set_batch_hash(&mut self, batch_idx: usize, i: usize, hash: HashOut<F>) {
-        let global_mst_idx = self.get_batch_tree_global_index(batch_idx, i);
+        let global_mst_idx = GlobalMst::get_batch_tree_global_index(&self.cfg, batch_idx, i);
         self.inner[global_mst_idx] = hash;
     }
 
     pub fn get_batch_root_hash(&self, batch_idx: usize) -> HashOut<F> {
         debug!("get batch root hash, batch_idx: {:?}", batch_idx);
         assert!(batch_idx < self.cfg.num_of_batches);
-        let root_idx = self.get_batch_tree_global_index(batch_idx, 2 * self.cfg.batch_size - 2);
+        let root_idx = GlobalMst::get_batch_tree_global_index(
+            &self.cfg,
+            batch_idx,
+            2 * self.cfg.batch_size - 2,
+        );
         self.inner[root_idx]
     }
 
@@ -149,7 +161,7 @@ impl GlobalMst {
             "set_recursive_hash, recursive_level: {:?}, index: {:?}, hash: {:?}",
             recursive_level, index, hash
         );
-        let idx = self.get_recursive_global_index(recursive_level, index);
+        let idx = GlobalMst::get_recursive_global_index(&self.cfg, recursive_level, index);
         self.inner[idx] = hash;
     }
 
@@ -164,11 +176,18 @@ impl GlobalMst {
                 let inner_left_child_idx = 2 * (inner_tree_idx - leaf_size);
                 let inner_right_child_idx = 2 * (inner_tree_idx - leaf_size) + 1;
 
-                let global_parent_idx = self.get_batch_tree_global_index(tree_idx, inner_tree_idx);
-                let global_left_child_idx =
-                    self.get_batch_tree_global_index(tree_idx, inner_left_child_idx);
-                let global_right_child_idx =
-                    self.get_batch_tree_global_index(tree_idx, inner_right_child_idx);
+                let global_parent_idx =
+                    GlobalMst::get_batch_tree_global_index(&self.cfg, tree_idx, inner_tree_idx);
+                let global_left_child_idx = GlobalMst::get_batch_tree_global_index(
+                    &self.cfg,
+                    tree_idx,
+                    inner_left_child_idx,
+                );
+                let global_right_child_idx = GlobalMst::get_batch_tree_global_index(
+                    &self.cfg,
+                    tree_idx,
+                    inner_right_child_idx,
+                );
 
                 visited_global_idx[global_left_child_idx] = true;
                 visited_global_idx[global_right_child_idx] = true;
@@ -191,11 +210,12 @@ impl GlobalMst {
                 let inner_child_indexes = (0..branchout_num)
                     .map(|i| inner_idx * branchout_num + i)
                     .collect::<Vec<usize>>();
-                let global_idx = self.get_recursive_global_index(level, inner_idx);
+                let global_idx = GlobalMst::get_recursive_global_index(&self.cfg, level, inner_idx);
                 let global_child_indexes = inner_child_indexes
                     .iter()
                     .map(|&i| {
-                        let child_global_idx = self.get_recursive_global_index(level - 1, i);
+                        let child_global_idx =
+                            GlobalMst::get_recursive_global_index(&self.cfg, level - 1, i);
                         visited_global_idx[child_global_idx] = true;
                         child_global_idx
                     })
@@ -215,7 +235,8 @@ impl GlobalMst {
                 last_level_node_count = pad_to_multiple_of(this_level_node_count, branchout_num);
             }
         }
-        let global_root_idx = self.get_recursive_global_index(self.top_recursion_level, 0);
+        let global_root_idx =
+            GlobalMst::get_recursive_global_index(&self.cfg, self.top_recursion_level, 0);
         visited_global_idx[global_root_idx] = true;
 
         visited_global_idx.iter().all(|&v| v)
@@ -232,7 +253,7 @@ impl GlobalMst {
             let batches = (i..end)
                 .into_iter()
                 .enumerate()
-                .map(|(chunk_idx, j)| ((i + j).try_into().unwrap(), nodes[chunk_idx]))
+                .map(|(chunk_idx, j)| ((j).try_into().unwrap(), nodes[chunk_idx]))
                 .collect::<Vec<(i32, HashOut<F>)>>();
             db.add_batch_gmst_nodes(batches);
             i += chunk_size;
@@ -274,20 +295,20 @@ mod test {
         assert_eq!(total_len, 97);
         assert_eq!(gmst.top_recursion_level, 2);
 
-        assert_eq!(gmst.get_batch_tree_global_index(0, 1), 1);
-        assert_eq!(gmst.get_batch_tree_global_index(0, 14), 84);
-        assert_eq!(gmst.get_batch_tree_global_index(1, 1), 9);
-        assert_eq!(gmst.get_batch_tree_global_index(1, 14), 85);
-        assert_eq!(gmst.get_batch_tree_global_index(5, 7), 47);
-        assert_eq!(gmst.get_batch_tree_global_index(5, 14), 89);
+        assert_eq!(GlobalMst::get_batch_tree_global_index(&gmst.cfg, 0, 1), 1);
+        assert_eq!(GlobalMst::get_batch_tree_global_index(&gmst.cfg, 0, 14), 84);
+        assert_eq!(GlobalMst::get_batch_tree_global_index(&gmst.cfg, 1, 1), 9);
+        assert_eq!(GlobalMst::get_batch_tree_global_index(&gmst.cfg, 1, 14), 85);
+        assert_eq!(GlobalMst::get_batch_tree_global_index(&gmst.cfg, 5, 7), 47);
+        assert_eq!(GlobalMst::get_batch_tree_global_index(&gmst.cfg, 5, 14), 89);
 
-        assert_eq!(gmst.get_recursive_global_index(0, 7), 91);
-        assert_eq!(gmst.get_recursive_global_index(0, 1), 85);
-        assert_eq!(gmst.get_recursive_global_index(1, 0), 92);
-        assert_eq!(gmst.get_recursive_global_index(1, 1), 93);
-        assert_eq!(gmst.get_recursive_global_index(1, 2), 94);
-        assert_eq!(gmst.get_recursive_global_index(1, 3), 95);
-        assert_eq!(gmst.get_recursive_global_index(2, 0), 96);
+        assert_eq!(GlobalMst::get_recursive_global_index(&gmst.cfg, 0, 7), 91);
+        assert_eq!(GlobalMst::get_recursive_global_index(&gmst.cfg, 0, 1), 85);
+        assert_eq!(GlobalMst::get_recursive_global_index(&gmst.cfg, 1, 0), 92);
+        assert_eq!(GlobalMst::get_recursive_global_index(&gmst.cfg, 1, 1), 93);
+        assert_eq!(GlobalMst::get_recursive_global_index(&gmst.cfg, 1, 2), 94);
+        assert_eq!(GlobalMst::get_recursive_global_index(&gmst.cfg, 1, 3), 95);
+        assert_eq!(GlobalMst::get_recursive_global_index(&gmst.cfg, 2, 0), 96);
     }
 
     #[test]
@@ -331,8 +352,11 @@ mod test {
             for inner_idx in 0..this_level_node_count {
                 let children_hashes = (0..branchout_num)
                     .map(|i| {
-                        let child_global_idx = gmst
-                            .get_recursive_global_index(level - 1, inner_idx * branchout_num + i);
+                        let child_global_idx = GlobalMst::get_recursive_global_index(
+                            &gmst.cfg,
+                            level - 1,
+                            inner_idx * branchout_num + i,
+                        );
                         gmst.inner[child_global_idx]
                     })
                     .collect::<Vec<HashOut<F>>>();

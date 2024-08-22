@@ -1,10 +1,11 @@
 use std::str::FromStr;
 
+use hex::ToHex;
 use plonky2::{hash::hash_types::HashOut, plonk::config::GenericHashOut};
 use rand::Rng;
 use zk_por_db::LevelDb;
 
-use crate::types::F;
+use crate::{error::PoRError, types::F};
 
 #[derive(Debug, Clone, Copy)]
 pub struct UserId(pub [u8; 32]);
@@ -15,6 +16,29 @@ impl UserId {
         let mut rng = rand::thread_rng();
         rng.fill(&mut bytes);
         Self(bytes)
+    }
+
+    pub fn to_string(&self) -> String {
+        self.0.encode_hex()
+    }
+
+    pub fn from_hex_string(hex_str: String) -> Result<Self, PoRError> {
+        if hex_str.len() != 64 {
+            tracing::error!("User Id: {:?} is not a valid id, length is not 256 bits", hex_str);
+            return Err(PoRError::InvalidParameter(hex_str));
+        }
+
+        let decode_res = hex::decode(hex_str.clone());
+
+        if decode_res.is_err() {
+            tracing::error!("User Id: {:?} is not a valid id", hex_str);
+            return Err(PoRError::InvalidParameter(hex_str));
+        }
+
+        let mut arr = [0u8; 32];
+        arr.copy_from_slice(&decode_res.unwrap());
+
+        Ok(UserId { 0: arr })
     }
 }
 

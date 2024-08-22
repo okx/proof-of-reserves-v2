@@ -36,6 +36,7 @@ impl MerkleSumNode {
 }
 
 /// Struct representing a merkle sum tree, it is represented as a vector of Merkle Sum Nodes.
+#[derive(Debug, Clone)]
 pub struct MerkleSumTree {
     pub merkle_sum_tree: Vec<MerkleSumNode>,
     pub tree_depth: usize,

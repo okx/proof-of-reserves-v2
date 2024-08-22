@@ -1,8 +1,8 @@
 use std::{path::PathBuf, str::FromStr};
 
 use clap::{Parser, Subcommand};
-use zk_por_cli::{prover::prove, verifier::verify};
-use zk_por_core::error::PoRError;
+use zk_por_cli::{merkle_proof::get_merkle_proof, prover::prove, verifier::verify};
+use zk_por_core::{config::ProverConfig, error::PoRError};
 
 #[cfg(feature="cuda")]
 use cryptography_cuda::init_cuda_rs;
@@ -28,7 +28,11 @@ pub enum ZkPorCommitCommands {
     },
     GetMerkleProof {
         #[arg(short, long)]
-        user_id: String,
+        cfg_path: String, // path to config file
+        #[arg(short, long)]
+        account_path: String,
+        #[arg(short, long)]
+        output_path: String, // path to output file
     },
     Verify {
         #[arg(short, long)]
@@ -48,10 +52,11 @@ impl Execute for ZkPorCommitCommands {
                 let output_file = PathBuf::from_str(&output_path).unwrap();
                 prove(prover_cfg, output_file)
             }
-            ZkPorCommitCommands::GetMerkleProof { user_id } => {
-                // TODO: implement this
-                _ = user_id;
-                Ok(())
+            ZkPorCommitCommands::GetMerkleProof { cfg_path, account_path, output_path } => {
+                let cfg = zk_por_core::config::ProverConfig::load(&cfg_path)
+                    .map_err(|e| PoRError::ConfigError(e))?;
+                let prover_cfg: ProverConfig = cfg.try_deserialize().unwrap();
+                get_merkle_proof(account_path.to_string(), prover_cfg, output_path.to_string())
             }
             ZkPorCommitCommands::Verify { global_proof_path, inclusion_proof_path } => {
                 let global_proof_path = PathBuf::from_str(&global_proof_path).unwrap();
