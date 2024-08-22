@@ -3,6 +3,11 @@
 value size: 1024*220 # batch_size * num_of_tokens
 on local mac: Apple M2 Max, with 32 GB RAM
 
+to reproduce results
+```
+cargo bench -p zk-por-core --bench rangecheck_lut
+```
+
 - do range checking by split into bits
 225280 `BaseSumGate` is used # checking the splited bits can sum to the original value
 Takes 23.091 seconds to prove
