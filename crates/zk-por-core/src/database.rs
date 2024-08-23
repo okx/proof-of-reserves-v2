@@ -178,6 +178,7 @@ impl PoRDB for PoRGMSTMemoryDB {
         self.user_db.get_user_index(user_id)
     }
 
+    #[inline(always)]
     fn add_batch_gmst_nodes(&mut self, _batches: Vec<(i32, HashOut<F>)>) {
         // do nothing as we assume GMST is already built.
         return;
