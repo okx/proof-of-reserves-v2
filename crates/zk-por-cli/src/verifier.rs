@@ -4,7 +4,7 @@ use serde_json::from_reader;
 use std::{fs::File, path::PathBuf};
 
 // Assuming Proof is defined in lib.rs and lib.rs is in the same crate
-use super::constant::{RECURSION_BRANCHOUT_NUM, USER_VERIFICATION_THREADS_NUM};
+use super::constant::{RECURSION_BRANCHOUT_NUM};
 use zk_por_core::{
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
@@ -54,8 +54,8 @@ pub fn verify_user(
     println!("successfully identify {} user proof files", proof_file_num);
 
     let bar = ProgressBar::new(proof_file_num as u64);
-    // user_proof_paths.chunk_by(pred)
-    user_proof_paths.chunks(USER_VERIFICATION_THREADS_NUM).for_each(|chunks| {
+    let chunk_size: usize = num_cpus::get();
+    user_proof_paths.chunks(chunk_size).for_each(|chunks| {
         chunks.par_iter().for_each(|user_proof_path| {
             let merkle_path = File::open(&user_proof_path).unwrap();
             let reader = std::io::BufReader::new(merkle_path);

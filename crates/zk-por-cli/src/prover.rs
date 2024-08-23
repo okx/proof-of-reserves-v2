@@ -1,6 +1,6 @@
 use super::constant::{
     BATCH_PROVING_THREADS_NUM, DEFAULT_BATCH_SIZE, GLOBAL_PROOF_FILENAME,
-    PROOF_GENERATION_THREADS_NUM, RECURSION_BRANCHOUT_NUM, RECURSIVE_PROVING_THREADS_NUM,
+    RECURSION_BRANCHOUT_NUM, RECURSIVE_PROVING_THREADS_NUM,
     USER_PROOF_DIRNAME,
 };
 use indicatif::ProgressBar;
@@ -397,13 +397,13 @@ fn dump_proofs(
     let bar = ProgressBar::new(user_num as u64);
     let per_parse_account_num = calculate_per_parse_account_num(batch_size);
 
-    // let d = *db;
     let cdb: Arc<dyn PoRDB> = Arc::from(db);
     let mut offset = 0;
+    let chunk_size: usize = num_cpus::get();
     while offset < account_reader.total_num_of_users() {
         let accounts: Vec<Account> =
             account_reader.read_n_accounts(offset, per_parse_account_num, &file_manager);
-        accounts.chunks(PROOF_GENERATION_THREADS_NUM).for_each(|chunk| {
+        accounts.chunks(chunk_size).for_each(|chunk| {
             chunk.par_iter().for_each(|account| {
                 let user_proof = MerkleProof::new_from_account(account, cdb.clone(), &global_cfg)
                     .expect(
