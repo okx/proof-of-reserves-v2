@@ -1,9 +1,8 @@
 use super::account::{gen_accounts_with_random_data, Account};
 use crate::types::F;
 use plonky2_field::types::Field;
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::{
-    collections::BTreeMap,
     fs,
     fs::File,
     io::BufReader,
@@ -16,7 +15,7 @@ use tracing::{debug, error, info};
 pub struct FilesCfg {
     pub dir: PathBuf,
     pub batch_size: usize,
-    pub num_of_tokens: usize,
+    pub tokens: Vec<String>,
 }
 
 pub trait AccountParser {
@@ -34,8 +33,8 @@ pub struct FileManager {}
 
 pub trait JsonFileManager {
     fn list_json_files(&self, dir: &Path) -> std::io::Result<Vec<PathBuf>>;
-    fn read_json_into_accounts_vec(&self, path: &str) -> Vec<Account>;
-    fn read_json_file_into_map(&self, path: &str) -> Vec<BTreeMap<String, Value>>;
+    fn read_json_into_accounts_vec(&self, path: &str, tokens: &Vec<String>) -> Vec<Account>;
+    fn read_json_file_into_map(&self, path: &str) -> Vec<Map<String, Value>>;
 }
 
 impl JsonFileManager for FileManager {
@@ -61,13 +60,14 @@ impl JsonFileManager for FileManager {
     }
 
     /// Read a json file and return the vec of associated accounts.
-    fn read_json_into_accounts_vec(&self, path: &str) -> Vec<Account> {
+    /// tokens is a list of all possible token names. It is used to fill the account with zero for missing tokens.
+    fn read_json_into_accounts_vec(&self, path: &str, tokens: &Vec<String>) -> Vec<Account> {
         let parsed_data = self.read_json_file_into_map(path);
-        parse_exchange_state(&parsed_data)
+        parse_exchange_state(&parsed_data, tokens)
     }
 
     /// Reads a json file into a json string.
-    fn read_json_file_into_map(&self, path: &str) -> Vec<BTreeMap<String, Value>> {
+    fn read_json_file_into_map(&self, path: &str) -> Vec<Map<String, Value>> {
         let file = File::open(path);
         match file {
             Ok(f) => {
@@ -127,7 +127,7 @@ impl FileAccountReader {
                     panic!("no json files under the folder: {:?}", user_data_path);
                 }
                 let first_doc_accounts =
-                    fm.read_json_into_accounts_vec(parser.docs[0].to_str().unwrap());
+                    fm.read_json_into_accounts_vec(parser.docs[0].to_str().unwrap(), &cfg.tokens);
                 let first_doc_accounts_len = first_doc_accounts.len();
 
                 if doc_len > 1 {
@@ -138,8 +138,10 @@ impl FileAccountReader {
                 parser.file_idx = 0;
 
                 if doc_len > 1 {
-                    let last_doc_accounts =
-                        fm.read_json_into_accounts_vec(parser.docs[doc_len - 1].to_str().unwrap());
+                    let last_doc_accounts = fm.read_json_into_accounts_vec(
+                        parser.docs[doc_len - 1].to_str().unwrap(),
+                        &cfg.tokens,
+                    );
                     assert!(last_doc_accounts.len() <= first_doc_accounts_len);
                     parser.last_doc_accounts = last_doc_accounts;
                 }
@@ -185,8 +187,8 @@ impl AccountParser for FileAccountReader {
 
         let acct_len =
             if offset + n > self.total_num_of_users { self.total_num_of_users - offset } else { n };
-
-        let mut result = vec![Account::get_empty_account(self.cfg.num_of_tokens); acct_len];
+        let num_of_tokens = self.cfg.tokens.len();
+        let mut result = vec![Account::get_empty_account(num_of_tokens); acct_len];
         if (n + offset - min_offset) <= (self.buffered_accounts.len()) {
             // we have enough account in the buffer
             result.clone_from_slice(&self.buffered_accounts[self.offset..(self.offset + n)]);
@@ -212,8 +214,10 @@ impl AccountParser for FileAccountReader {
                 if self.file_idx < (self.num_of_docs - 1) {
                     // load the next file; TODO: assert_eq!(accounts_len, last_doc_account_num);
                     self.file_idx += 1;
-                    self.buffered_accounts =
-                        fm.read_json_into_accounts_vec(self.docs[self.file_idx].to_str().unwrap());
+                    self.buffered_accounts = fm.read_json_into_accounts_vec(
+                        self.docs[self.file_idx].to_str().unwrap(),
+                        &self.cfg.tokens,
+                    );
                     result[filled_len..(filled_len + to_read)]
                         .clone_from_slice(&self.buffered_accounts[0..to_read]);
                     filled_len += to_read;
@@ -230,39 +234,59 @@ impl AccountParser for FileAccountReader {
 }
 
 /// Parses the exchanges state at some snapshot and returns.
-fn parse_exchange_state(parsed_data: &Vec<BTreeMap<String, Value>>) -> Vec<Account> {
+fn parse_exchange_state(
+    parsed_data: &Vec<Map<String, Value>>,
+    tokens: &Vec<String>,
+) -> Vec<Account> {
     let mut accounts_data: Vec<Account> = Vec::new();
     for obj in parsed_data {
-        accounts_data.push(parse_account_state(obj));
+        accounts_data.push(parse_account_state(obj, tokens));
     }
     accounts_data
 }
 
 /// Parses the exchanges state at some snapshot and returns.
-pub fn parse_account_state(parsed_data: &BTreeMap<String, Value>) -> Account {
-    let mut account_id = "";
-    let mut inner_vec: Vec<F> = Vec::new();
-    for (key, value) in parsed_data.iter() {
-        if key != "id" {
-            if let Some(number_str) = value.as_str() {
-                match number_str.parse::<u64>() {
-                    Ok(number) => inner_vec.push(F::from_canonical_u64(number)),
-                    Err(e) => {
-                        error!("Error in parsing token value number: {:?}", e);
-                        panic!("Error in parsing token value number: {:?}", e);
-                    }
-                }
-            } else {
-                error!("Error in parsing string from json: {:?}", value);
-                panic!("Error in parsing string from json: {:?}", value);
-            }
+pub fn parse_account_state(parsed_data: &Map<String, Value>, tokens: &Vec<String>) -> Account {
+    let account_id = parsed_data
+        .get("id")
+        .expect(format!("Account {:?} dont have key `id`", parsed_data).as_str())
+        .as_str()
+        .unwrap();
+
+    let equities = parsed_data
+        .get("equity")
+        .expect(format!("Account {:?} dont have key `equity`", parsed_data).as_str())
+        .as_object()
+        .unwrap();
+    let mut parsed_equities = Vec::new();
+    for token in tokens.iter() {
+        if let Some(val) = equities.get(token) {
+            let parsed_equity =
+                F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap());
+            parsed_equities.push(parsed_equity);
         } else {
-            account_id = value.as_str().unwrap();
+            panic!("fail to find equity for token: {:?} in accountID {:?}", token, account_id);
         }
     }
-    // todo:: currently, we fill debt all to zero
-    let asset_len = inner_vec.len();
-    Account { id: account_id.into(), equity: inner_vec, debt: vec![F::ZERO; asset_len] }
+
+    let mut parsed_debts = Vec::new();
+    if let Some(debts) = parsed_data.get("debt") {
+        let debts = debts.as_object().unwrap();
+        for token in tokens.iter() {
+            if let Some(val) = debts.get(token) {
+                let parsed_debt =
+                    F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap());
+                parsed_debts.push(parsed_debt);
+            } else {
+                panic!("fail to find debt for token: {:?} in accountID {:?}", token, account_id);
+            }
+        }
+    } else {
+        // if there is no debt, we fill it with zero
+        parsed_debts = vec![F::ZERO; parsed_equities.len()];
+    }
+
+    Account { id: account_id.into(), equity: parsed_equities, debt: parsed_debts }
 }
 
 pub struct RandomAccountParser {
@@ -299,9 +323,8 @@ mod test {
         parser::{parse_exchange_state, FileManager, FilesCfg},
     };
     use mockall::*;
-    use serde_json::Value;
+    use serde_json::{Map, Value};
     use std::{
-        collections::BTreeMap,
         path::{Path, PathBuf},
         str::FromStr,
     };
@@ -314,11 +337,11 @@ mod test {
         let path = "../../test-data/batch0.json";
         let maps = fm.read_json_file_into_map(path);
 
-        let id_0 = "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33ad";
+        let id_0 = "4282aed0318e3271db2649f3a4a6855d9f83285d04ea541d741fd53a602eb73e";
         let parsed_id_0 = maps.get(0).unwrap().get("id").unwrap();
         assert_eq!(id_0, parsed_id_0);
 
-        let id_1 = "47db1d296a7c146eab653591583a9a4873c626d8de47ae11393edd153e40f1ed";
+        let id_1 = "bfad15056e9c14831ee4351f180b7cbd141a1b372ba8696c8505f7335282126d";
         let parsed_id_1 = maps.get(1).unwrap().get("id").unwrap();
         assert_eq!(id_1, parsed_id_1);
     }
@@ -328,13 +351,14 @@ mod test {
         let fm = FileManager {};
         let path = "../../test-data/batch0.json";
         let maps = fm.read_json_file_into_map(path);
-        let accounts = parse_exchange_state(&maps);
+        let tokens = vec!["BTC".to_string(), "ETH".to_string()];
+        let accounts = parse_exchange_state(&maps, &tokens);
 
-        let id_0 = "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33ad";
+        let id_0 = "4282aed0318e3271db2649f3a4a6855d9f83285d04ea541d741fd53a602eb73e";
         let account_0 = accounts.get(0).unwrap();
         assert_eq!(id_0, account_0.id);
 
-        let id_1 = "47db1d296a7c146eab653591583a9a4873c626d8de47ae11393edd153e40f1ed";
+        let id_1 = "bfad15056e9c14831ee4351f180b7cbd141a1b372ba8696c8505f7335282126d";
         let account_1 = accounts.get(1).unwrap();
         assert_eq!(id_1, account_1.id);
     }
@@ -343,13 +367,14 @@ mod test {
     pub fn test_read_json_into_accounts_vec() {
         let fm = FileManager {};
         let path = "../../test-data/batch0.json";
-        let accounts = fm.read_json_into_accounts_vec(&path);
+        let tokens = vec!["BTC".to_string(), "ETH".to_string()];
+        let accounts = fm.read_json_into_accounts_vec(&path, &tokens);
 
-        let id_0 = "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33ad";
+        let id_0 = "4282aed0318e3271db2649f3a4a6855d9f83285d04ea541d741fd53a602eb73e";
         let account_0 = accounts.get(0).unwrap();
         assert_eq!(id_0, account_0.id);
 
-        let id_1 = "47db1d296a7c146eab653591583a9a4873c626d8de47ae11393edd153e40f1ed";
+        let id_1 = "bfad15056e9c14831ee4351f180b7cbd141a1b372ba8696c8505f7335282126d";
         let account_1 = accounts.get(1).unwrap();
         assert_eq!(id_1, account_1.id);
     }
@@ -359,8 +384,8 @@ mod test {
 
       impl JsonFileManager for FileManager {
           fn list_json_files(&self, dir: &Path) -> std::io::Result<Vec<PathBuf>>;
-          fn read_json_into_accounts_vec(&self, path: &str) -> Vec<Account>;
-          fn read_json_file_into_map(&self, path: &str) -> Vec<BTreeMap<String, Value>>;
+          fn read_json_into_accounts_vec(&self, path: &str, tokens : &Vec<String>) -> Vec<Account>;
+          fn read_json_file_into_map(&self, path: &str) -> Vec<Map<String, Value>>;
       }
     }
 
@@ -379,11 +404,11 @@ mod test {
             Ok(paths)
         });
 
-        mock_file_manager.expect_read_json_into_accounts_vec().times(1).returning(|_| {
+        mock_file_manager.expect_read_json_into_accounts_vec().times(1).returning(|_, _| {
             let accounts = vec![Account::get_empty_account(20); 4];
             accounts
         });
-        mock_file_manager.expect_read_json_into_accounts_vec().times(1).returning(|_| {
+        mock_file_manager.expect_read_json_into_accounts_vec().times(1).returning(|_, _| {
             let accounts = vec![Account::get_empty_account(20); 3];
             accounts
         });
@@ -391,26 +416,26 @@ mod test {
         let dir = tempdir::TempDir::new("user_input_test").unwrap().into_path();
 
         let mut file_acct_reader = FileAccountReader::new(
-            FilesCfg { dir, batch_size: 4, num_of_tokens: 20 },
+            FilesCfg { dir, batch_size: 4, tokens: vec!["BTC".to_owned(), "ETH".to_owned()] },
             &mock_file_manager,
         );
         assert_eq!(file_acct_reader.total_num_of_users(), 23);
 
-        mock_file_manager.expect_read_json_into_accounts_vec().times(1).returning(|_| {
+        mock_file_manager.expect_read_json_into_accounts_vec().times(1).returning(|_, _| {
             let accounts = vec![Account::get_empty_account(20); 4];
             accounts
         });
         let users = file_acct_reader.read_n_accounts(0, 8, &mock_file_manager);
         assert_eq!(users.len(), 8);
 
-        mock_file_manager.expect_read_json_into_accounts_vec().times(1).returning(|_| {
+        mock_file_manager.expect_read_json_into_accounts_vec().times(1).returning(|_, _| {
             let accounts = vec![Account::get_empty_account(20); 4];
             accounts
         });
         let users = file_acct_reader.read_n_accounts(8, 4, &mock_file_manager);
         assert_eq!(users.len(), 4);
 
-        mock_file_manager.expect_read_json_into_accounts_vec().times(3).returning(|_| {
+        mock_file_manager.expect_read_json_into_accounts_vec().times(3).returning(|_, _| {
             let accounts = vec![Account::get_empty_account(20); 4];
             accounts
         });

@@ -8,12 +8,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     account::Account,
-    database::{DataBase, UserId},
+    database::{PoRDB, UserId},
     error::PoRError,
     global::{GlobalConfig, GlobalMst},
     merkle_sum_prover::utils::hash_2_subhashes,
     types::{D, F},
 };
+
+use std::sync::Arc;
 
 /// We use this wrapper struct for the left and right indexes of our recursive siblings. This is needed so a user knows the position of
 /// their own hash when hashing.
@@ -149,7 +151,7 @@ pub struct RecursiveHashes {
 }
 
 impl RecursiveHashes {
-    pub fn new_from_index(indexes: &RecursiveIndex, db: &DataBase) -> Self {
+    pub fn new_from_index(indexes: &RecursiveIndex, db: Arc<dyn PoRDB>) -> Self {
         let left_hashes = indexes
             .left_indexes
             .iter()
@@ -188,7 +190,7 @@ pub struct MerkleProof {
 impl MerkleProof {
     pub fn new_from_account(
         account: &Account,
-        db: &DataBase,
+        db: Arc<dyn PoRDB>,
         cfg: &GlobalConfig,
     ) -> Result<MerkleProof, PoRError> {
         let user_id_res = UserId::from_hex_string(account.id.clone());
@@ -238,7 +240,7 @@ impl MerkleProof {
         if calculated_hash == gmst_root {
             Ok(())
         } else {
-            Err(PoRError::InvalidMerkleProof)
+            Err(PoRError::InvalidMerkleProof(self.account.id.clone()))
         }
     }
 }
@@ -248,7 +250,7 @@ pub fn get_merkle_proof_hashes_from_indexes(
     account: &Account,
     indexes: &MerkleProofIndex,
     user_index: usize,
-    db: &DataBase,
+    db: Arc<dyn PoRDB>,
 ) -> MerkleProof {
     let mst_hashes: Vec<HashOut<F>> = indexes
         .sum_tree_siblings
@@ -259,7 +261,7 @@ pub fn get_merkle_proof_hashes_from_indexes(
     let recursive_hashes: Vec<RecursiveHashes> = indexes
         .recursive_tree_siblings
         .iter()
-        .map(|x| RecursiveHashes::new_from_index(x, db))
+        .map(|x| RecursiveHashes::new_from_index(x, db.clone()))
         .collect();
 
     MerkleProof {

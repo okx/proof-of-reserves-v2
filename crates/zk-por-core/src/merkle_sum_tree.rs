@@ -95,11 +95,14 @@ pub mod test {
     pub fn test_new_from_account() {
         let path = "../../test-data/batch0.json";
         let fm = FileManager {};
-        let accounts = fm.read_json_into_accounts_vec(path);
+        let tokens = vec!["BTC".to_owned(), "ETH".to_owned()];
+        let accounts = fm.read_json_into_accounts_vec(path, &tokens);
 
         let account = accounts.get(0).unwrap();
         let node = MerkleSumNode::new_from_account(account);
-        assert_eq!(node.sum_equity, F::from_canonical_u64(133876586));
+        let btc_amount = 574041;
+        let eth_amount = 38553;
+        assert_eq!(node.sum_equity, F::from_canonical_u64(btc_amount + eth_amount));
         assert_eq!(node.sum_debt, F::from_canonical_u64(0));
     }
 
@@ -107,16 +110,24 @@ pub mod test {
     pub fn test_new_from_children_nodes() {
         let fm = FileManager {};
         let path = "../../test-data/batch0.json";
-        let accounts = fm.read_json_into_accounts_vec(path);
+        let tokens = vec!["BTC".to_owned(), "ETH".to_owned()];
+        let accounts = fm.read_json_into_accounts_vec(path, &tokens);
 
         let account1 = accounts.get(0).unwrap();
         let node1 = MerkleSumNode::new_from_account(account1);
+        let acc1_btc_amount = 574041;
+        let acc1_eth_amount = 38553;
+        let acc2_btc_amount = 4864585;
+        let acc2_eth_amount = 6877764;
+
         let account2 = accounts.get(1).unwrap();
         let node2 = MerkleSumNode::new_from_account(account2);
         let node3 = MerkleSumNode::new_from_children_nodes(&node1, &node2);
         assert_eq!(
             node3.sum_equity,
-            F::from_canonical_u64(138512215) + F::from_canonical_u64(133876586)
+            F::from_canonical_u64(
+                acc1_btc_amount + acc1_eth_amount + acc2_btc_amount + acc2_eth_amount
+            ),
         );
         assert_eq!(node3.sum_debt, F::from_canonical_u64(0));
     }
@@ -125,7 +136,8 @@ pub mod test {
     pub fn test_new_tree_from_accounts() {
         let fm = FileManager {};
         let path = "../../test-data/batch0.json";
-        let accounts = fm.read_json_into_accounts_vec(path);
+        let tokens = vec!["BTC".to_owned(), "ETH".to_owned()];
+        let accounts = fm.read_json_into_accounts_vec(path, &tokens);
         let mut sum_equity = F::ZERO;
 
         for i in 0..accounts.len() {

@@ -29,8 +29,8 @@ impl From<ConfigLog> for TraceConfig {
 #[derive(Debug, Clone, Deserialize)]
 pub struct ConfigProver {
     pub round_no: usize,
-    pub batch_size: usize,
-    pub num_of_tokens: usize,
+    pub batch_size: Option<usize>,
+    pub tokens: Vec<String>,
     pub user_data_path: String,
 }
 
@@ -44,7 +44,7 @@ impl ConfigDb {
     pub fn load(dir: &str) -> Result<Config, ConfigError> {
         let env = std::env::var("ENV").unwrap_or("default".into());
         Config::builder()
-            // .add_source(File::with_name(&format!("{}/default", dir)))
+            .add_source(File::with_name(&format!("{}/default", dir)))
             .add_source(File::with_name(&format!("{}/{}", dir, env)).required(false))
             .add_source(File::with_name(&format!("{}/local", dir)).required(false))
             .add_source(config::Environment::with_prefix("ZKPOR"))
@@ -60,7 +60,7 @@ impl ConfigDb {
 pub struct ProverConfig {
     pub log: ConfigLog,
     pub prover: ConfigProver,
-    pub db: ConfigDb,
+    pub db: Option<ConfigDb>,
 }
 
 impl ProverConfig {

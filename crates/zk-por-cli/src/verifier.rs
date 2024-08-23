@@ -1,3 +1,5 @@
+use indicatif::ProgressBar;
+use rayon::iter::IntoParallelRefIterator;
 use serde_json::from_reader;
 use std::{fs::File, path::PathBuf};
 
@@ -14,11 +16,69 @@ use zk_por_core::{
 };
 
 use plonky2::hash::hash_types::HashOut;
+use rayon::iter::ParallelIterator;
 
-pub fn verify(
+use glob::glob;
+use std::io;
+
+fn find_matching_files(pattern: &str) -> Result<Vec<PathBuf>, io::Error> {
+    let mut matching_files = Vec::new();
+
+    // Use the glob function to get an iterator of matching paths
+    for entry in glob(pattern).expect("Failed to read glob pattern") {
+        match entry {
+            Ok(path) => matching_files.push(path),
+            Err(e) => return Err(io::Error::new(io::ErrorKind::Other, e.to_string())),
+        }
+    }
+
+    Ok(matching_files)
+}
+
+pub fn verify_user(
     global_proof_path: PathBuf,
-    merkle_inclusion_path: Option<PathBuf>,
+    user_proof_path_pattern: &String,
 ) -> Result<(), PoRError> {
+    let proof_file = File::open(&global_proof_path).unwrap();
+    let reader = std::io::BufReader::new(proof_file);
+
+    // Parse the JSON as Proof
+    let proof: Proof = from_reader(reader)
+        .expect(format!("fail to parse global proof from path {:?}", global_proof_path).as_str());
+
+    let hash_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_hash_offset();
+    let root_hash = HashOut::<F>::from_partial(&proof.proof.public_inputs[hash_offset]);
+    let user_proof_paths =
+        find_matching_files(user_proof_path_pattern).map_err(|e| PoRError::Io(e))?;
+    let proof_file_num = user_proof_paths.len();
+    println!("successfully identify {} user proof files", proof_file_num);
+
+    let bar = ProgressBar::new(proof_file_num as u64);
+    let chunk_size: usize = num_cpus::get();
+    user_proof_paths.chunks(chunk_size).for_each(|chunks| {
+        chunks.par_iter().for_each(|user_proof_path| {
+            let merkle_path = File::open(&user_proof_path).unwrap();
+            let reader = std::io::BufReader::new(merkle_path);
+            let proof: MerkleProof = from_reader(reader).unwrap();
+            if let Err(e) = proof.verify_merkle_proof(root_hash) {
+                panic!(
+                    "fail to verify the user proof on path {:?} due to error {:?}",
+                    user_proof_path, e
+                )
+            }
+        });
+        bar.inc(chunks.len() as u64);
+    });
+    bar.finish();
+    println!(
+        "successfully verify {} user proofs with file pattern {}",
+        proof_file_num, user_proof_path_pattern
+    );
+
+    Ok(())
+}
+
+pub fn verify_global(global_proof_path: PathBuf) -> Result<(), PoRError> {
     let proof_file = File::open(&global_proof_path).unwrap();
     let reader = std::io::BufReader::new(proof_file);
 
@@ -62,30 +122,10 @@ pub fn verify(
         round_num,
         start.elapsed()
     );
-    let hash_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_hash_offset();
-    let root_hash = HashOut::<F>::from_partial(&proof.proof.public_inputs[hash_offset]);
     if !root_circuit.verify(proof.proof).is_ok() {
         return Err(PoRError::InvalidProof);
     }
     println!("successfully verify the global proof for round {}", round_num);
-
-    if let Some(merkle_inclusion_path) = merkle_inclusion_path {
-        let merkle_path = File::open(&merkle_inclusion_path).unwrap();
-        let reader = std::io::BufReader::new(merkle_path);
-
-        // Parse the JSON as Proof
-        let proof: MerkleProof = from_reader(reader).unwrap();
-
-        let res = proof.verify_merkle_proof(root_hash);
-
-        if res.is_err() {
-            let res_err = res.unwrap_err();
-            return Err(res_err);
-        } else {
-            println!("successfully verify the inclusion proof for user for round {}", round_num);
-            return Ok(());
-        }
-    }
 
     Ok(())
 }
