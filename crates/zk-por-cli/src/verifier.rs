@@ -4,7 +4,7 @@ use serde_json::from_reader;
 use std::{fs::File, path::PathBuf};
 
 // Assuming Proof is defined in lib.rs and lib.rs is in the same crate
-use super::constant::{RECURSION_BRANCHOUT_NUM};
+use super::constant::RECURSION_BRANCHOUT_NUM;
 use zk_por_core::{
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
