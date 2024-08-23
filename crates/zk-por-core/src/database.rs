@@ -5,7 +5,7 @@ use plonky2::{hash::hash_types::HashOut, plonk::config::GenericHashOut};
 use rand::Rng;
 use zk_por_db::LevelDb;
 
-use crate::{error::PoRError, types::F};
+use crate::{error::PoRError, global::GLOBAL_MST, types::F};
 use std::{collections::HashMap, sync::RwLock};
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct UserId(pub [u8; 32]);
@@ -154,6 +154,37 @@ impl PoRDB for RwLock<PoRMemoryDB> {
 
     fn get_gmst_node_hash(&self, node_idx: i32) -> Option<HashOut<F>> {
         self.read().unwrap().gmst_map.get(&node_idx).map(|x| *x)
+    }
+}
+
+/// PoRGMSTMemoryDB delegates the query on gmst node to the direct access of global GMST. For user_db, the query is delegated to PoRMemoryDB.
+/// This is to save memory fingerprint.
+pub struct PoRGMSTMemoryDB {
+    user_db: RwLock<PoRMemoryDB>,
+}
+///
+impl PoRGMSTMemoryDB {
+    pub fn new() -> Self {
+        Self { user_db: RwLock::new(PoRMemoryDB::new()) }
+    }
+}
+
+impl PoRDB for PoRGMSTMemoryDB {
+    fn add_batch_users(&mut self, batches: Vec<(UserId, u32)>) {
+        self.user_db.add_batch_users(batches);
+    }
+
+    fn get_user_index(&self, user_id: UserId) -> Option<u32> {
+        self.user_db.get_user_index(user_id)
+    }
+
+    fn add_batch_gmst_nodes(&mut self, _batches: Vec<(i32, HashOut<F>)>) {
+        // do nothing as we assume GMST is already built.
+        return;
+    }
+
+    fn get_gmst_node_hash(&self, node_idx: i32) -> Option<HashOut<F>> {
+        GLOBAL_MST.get().unwrap().read().unwrap().inner.get(node_idx as usize).map(|x| *x)
     }
 }
 

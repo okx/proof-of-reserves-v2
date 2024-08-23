@@ -1,6 +1,7 @@
 use super::constant::{
-    BATCH_PROVING_THREADS_NUM, DEFAULT_BATCH_SIZE, PROOF_GENERATION_THREADS_NUM,
-    RECURSION_BRANCHOUT_NUM, RECURSIVE_PROVING_THREADS_NUM,
+    BATCH_PROVING_THREADS_NUM, DEFAULT_BATCH_SIZE, GLOBAL_PROOF_FILENAME,
+    PROOF_GENERATION_THREADS_NUM, RECURSION_BRANCHOUT_NUM, RECURSIVE_PROVING_THREADS_NUM,
+    USER_PROOF_DIRNAME,
 };
 use indicatif::ProgressBar;
 use plonky2::hash::hash_types::HashOut;
@@ -18,8 +19,8 @@ use zk_por_core::{
     account::{persist_account_id_to_gmst_pos, Account},
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
-    config::{ConfigLog, ConfigProver, ProverConfig},
-    database::{PoRDB, PoRLevelDB, PoRLevelDBOption, PoRMemoryDB},
+    config::{ConfigProver, ProverConfig},
+    database::{PoRDB, PoRGMSTMemoryDB, PoRLevelDB, PoRLevelDBOption},
     e2e::{batch_prove_accounts, prove_subproofs},
     error::PoRError,
     global::{GlobalConfig, GlobalMst, GLOBAL_MST},
@@ -41,19 +42,28 @@ fn calculate_per_parse_account_num(batch_size: usize) -> usize {
     num_cpus * batch_size
 }
 
+fn ensure_output_dir_empty(user_proof_dir: PathBuf) -> Result<(), PoRError> {
+    fs::create_dir_all(&user_proof_dir).map_err(|e| return PoRError::Io(e))?;
+    let is_empty =
+        fs::read_dir(user_proof_dir.clone()).map_err(|e| return PoRError::Io(e))?.count() == 0;
+    if !is_empty {
+        return Err(PoRError::Io(std::io::Error::new(
+            std::io::ErrorKind::AlreadyExists,
+            format!(
+                "user proof output directory {} is not empty",
+                user_proof_dir.to_str().unwrap(),
+            ),
+        )));
+    }
+    return Ok(());
+}
+
 pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRError> {
-    let trace_cfg: TraceConfig = cfg
-        .log
-        .unwrap_or(ConfigLog {
-            file_name_prefix: "zkpor".to_string(),
-            dir: "logs/".to_string(),
-            level: "info".to_string(),
-            console: true,
-            flame: false,
-        })
-        .into();
+    let trace_cfg: TraceConfig = cfg.log.into();
 
     let _g = init_tracing(trace_cfg);
+    let user_proof_output_path = proof_output_path.join(USER_PROOF_DIRNAME);
+    ensure_output_dir_empty(user_proof_output_path)?;
 
     let mut database: Box<dyn PoRDB>;
     if let Some(level_db_config) = cfg.db {
@@ -62,7 +72,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
             gmst_dir: level_db_config.level_db_gmst_path.to_string(),
         }));
     } else {
-        database = Box::new(RwLock::new(PoRMemoryDB::new()));
+        database = Box::new(PoRGMSTMemoryDB::new());
     }
 
     let batch_size = cfg.prover.batch_size.unwrap_or(DEFAULT_BATCH_SIZE);
@@ -344,16 +354,15 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
     return Ok(());
 }
 
-pub fn dump_proofs(
+fn dump_proofs(
     cfg: &ConfigProver,
     proof_output_dir_path: PathBuf,
     db: Box<dyn PoRDB>,
     root_proof: &Proof,
 ) -> Result<(), PoRError> {
-    let user_proof_output_dir_path = proof_output_dir_path.join("user_proofs");
-    fs::create_dir_all(&user_proof_output_dir_path).map_err(|e| return PoRError::Io(e))?;
+    let user_proof_output_dir_path = proof_output_dir_path.join(USER_PROOF_DIRNAME); // directory has been checked empty before.
 
-    let global_proof_output_path = proof_output_dir_path.join("global_proof.json");
+    let global_proof_output_path = proof_output_dir_path.join(GLOBAL_PROOF_FILENAME);
     let mut global_proof_file =
         File::create(global_proof_output_path.clone()).map_err(|e| PoRError::Io(e))?;
 

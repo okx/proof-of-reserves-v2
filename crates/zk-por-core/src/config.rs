@@ -52,14 +52,13 @@ impl ConfigDb {
     }
     pub fn try_new() -> Result<Self, ConfigError> {
         let config = Self::load("config")?;
-        println!("config {:?}", config);
         config.try_deserialize()
     }
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ProverConfig {
-    pub log: Option<ConfigLog>,
+    pub log: ConfigLog,
     pub prover: ConfigProver,
     pub db: Option<ConfigDb>,
 }
