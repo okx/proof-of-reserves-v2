@@ -1,9 +1,8 @@
 use super::account::{gen_accounts_with_random_data, Account};
 use crate::types::F;
 use plonky2_field::types::Field;
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::{
-    collections::BTreeMap,
     fs,
     fs::File,
     io::BufReader,
@@ -35,7 +34,7 @@ pub struct FileManager {}
 pub trait JsonFileManager {
     fn list_json_files(&self, dir: &Path) -> std::io::Result<Vec<PathBuf>>;
     fn read_json_into_accounts_vec(&self, path: &str, tokens: &Vec<String>) -> Vec<Account>;
-    fn read_json_file_into_map(&self, path: &str) -> Vec<BTreeMap<String, Value>>;
+    fn read_json_file_into_map(&self, path: &str) -> Vec<Map<String, Value>>;
 }
 
 impl JsonFileManager for FileManager {
@@ -68,7 +67,7 @@ impl JsonFileManager for FileManager {
     }
 
     /// Reads a json file into a json string.
-    fn read_json_file_into_map(&self, path: &str) -> Vec<BTreeMap<String, Value>> {
+    fn read_json_file_into_map(&self, path: &str) -> Vec<Map<String, Value>> {
         let file = File::open(path);
         match file {
             Ok(f) => {
@@ -236,7 +235,7 @@ impl AccountParser for FileAccountReader {
 
 /// Parses the exchanges state at some snapshot and returns.
 fn parse_exchange_state(
-    parsed_data: &Vec<BTreeMap<String, Value>>,
+    parsed_data: &Vec<Map<String, Value>>,
     tokens: &Vec<String>,
 ) -> Vec<Account> {
     let mut accounts_data: Vec<Account> = Vec::new();
@@ -247,7 +246,7 @@ fn parse_exchange_state(
 }
 
 /// Parses the exchanges state at some snapshot and returns.
-pub fn parse_account_state(parsed_data: &BTreeMap<String, Value>, tokens: &Vec<String>) -> Account {
+pub fn parse_account_state(parsed_data: &Map<String, Value>, tokens: &Vec<String>) -> Account {
     let account_id = parsed_data
         .get("id")
         .expect(format!("Account {:?} dont have key `id`", parsed_data).as_str())
@@ -324,9 +323,8 @@ mod test {
         parser::{parse_exchange_state, FileManager, FilesCfg},
     };
     use mockall::*;
-    use serde_json::Value;
+    use serde_json::{Map, Value};
     use std::{
-        collections::BTreeMap,
         path::{Path, PathBuf},
         str::FromStr,
     };
@@ -387,7 +385,7 @@ mod test {
       impl JsonFileManager for FileManager {
           fn list_json_files(&self, dir: &Path) -> std::io::Result<Vec<PathBuf>>;
           fn read_json_into_accounts_vec(&self, path: &str, tokens : &Vec<String>) -> Vec<Account>;
-          fn read_json_file_into_map(&self, path: &str) -> Vec<BTreeMap<String, Value>>;
+          fn read_json_file_into_map(&self, path: &str) -> Vec<Map<String, Value>>;
       }
     }
 
