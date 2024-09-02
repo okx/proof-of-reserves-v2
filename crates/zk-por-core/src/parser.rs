@@ -260,26 +260,22 @@ pub fn parse_account_state(parsed_data: &Map<String, Value>, tokens: &Vec<String
         .unwrap();
     let mut parsed_equities = Vec::new();
     for token in tokens.iter() {
+        let mut parsed_equity = F::ZERO;
         if let Some(val) = equities.get(token) {
-            let parsed_equity =
-                F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap());
-            parsed_equities.push(parsed_equity);
-        } else {
-            panic!("fail to find equity for token: {:?} in accountID {:?}", token, account_id);
+            parsed_equity = F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap());
         }
+        parsed_equities.push(parsed_equity);
     }
 
     let mut parsed_debts = Vec::new();
     if let Some(debts) = parsed_data.get("debt") {
         let debts = debts.as_object().unwrap();
         for token in tokens.iter() {
+            let mut parsed_debt = F::ZERO;
             if let Some(val) = debts.get(token) {
-                let parsed_debt =
-                    F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap());
-                parsed_debts.push(parsed_debt);
-            } else {
-                panic!("fail to find debt for token: {:?} in accountID {:?}", token, account_id);
+                parsed_debt = F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap());
             }
+            parsed_debts.push(parsed_debt);
         }
     } else {
         // if there is no debt, we fill it with zero
