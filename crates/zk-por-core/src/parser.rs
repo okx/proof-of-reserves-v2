@@ -260,10 +260,9 @@ pub fn parse_account_state(parsed_data: &Map<String, Value>, tokens: &Vec<String
         .unwrap();
     let mut parsed_equities = Vec::new();
     for token in tokens.iter() {
-        let mut parsed_equity = F::ZERO;
-        if let Some(val) = equities.get(token) {
-            parsed_equity = F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap());
-        }
+        let parsed_equity = equities.get(token).map_or(F::ZERO, |val| {
+            F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap())
+        });
         parsed_equities.push(parsed_equity);
     }
 
@@ -271,10 +270,9 @@ pub fn parse_account_state(parsed_data: &Map<String, Value>, tokens: &Vec<String
     if let Some(debts) = parsed_data.get("debt") {
         let debts = debts.as_object().unwrap();
         for token in tokens.iter() {
-            let mut parsed_debt = F::ZERO;
-            if let Some(val) = debts.get(token) {
-                parsed_debt = F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap());
-            }
+            let parsed_debt = debts.get(token).map_or(F::ZERO, |val| {
+                F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap())
+            });
             parsed_debts.push(parsed_debt);
         }
     } else {
