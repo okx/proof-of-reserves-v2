@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Features
 
-- Add general-recursive-n proofs
+- Add general-recursive-n proofs ([#22](https://github.com/okx/proof-of-reserves-v2/pull/22))
 - Add-merkle-sum-tree-circuit-with-tests
 - Add tracing ([#9](https://github.com/okx/proof-of-reserves-v2/pull/9))
 - Add leveldb ([#20](https://github.com/okx/proof-of-reserves-v2/pull/20))
@@ -16,14 +16,14 @@ All notable changes to this project will be documented in this file.
 - Add-scheme-for-userid-hashing
 - Add global mst ([#35](https://github.com/okx/proof-of-reserves-v2/issues/35))
 - Add-merkle-proof-logic
-- Add-merkle-verification-logic
-- Add-merkle-proof-sdk
+- Add-merkle-verification-logic ([#58](https://github.com/okx/proof-of-reserves-v2/issues/58))
+- Add-merkle-proof-sdk ([#37](https://github.com/okx/proof-of-reserves-v2/issues/37))
 - Add-merkle-verification-to-verifier
 - Add-account-to-merkle-proof
 
 ### 🐛 Bug Fixes
 
-- Merkle-proof-non-power-of-2-recursive
+- Merkle-proof-non-power-of-2-recursive ([#55](https://github.com/okx/proof-of-reserves-v2/issues/55))
 - Fix-mst-proof-bug
 
 ### 🚜 Refactor
