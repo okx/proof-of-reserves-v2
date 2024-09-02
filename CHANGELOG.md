@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Features
 
-- Add general-recursive-n proofs
+- Add general-recursive-n proofs ([#74](https://github.com/okx/proof-of-reserves-v2/pull/74))
 - Add-merkle-sum-tree-circuit-with-tests ([#14](https://github.com/okx/proof-of-reserves-v2/pull/14))
 - Add tracing ([#9](https://github.com/okx/proof-of-reserves-v2/pull/9))
 - Add leveldb ([#20](https://github.com/okx/proof-of-reserves-v2/pull/20))
