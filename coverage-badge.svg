@@ -2,5 +2,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="100" height="20">
   <rect width="100" height="20" rx="3" fill="#555"/>
   <rect x="40" width="60" height="20" rx="3" fill="yellow"/>
-  <text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle" fill="#000" font-size="11" font-family="Verdana">Coverage 44.77%</text>
+  <text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle" fill="#000" font-size="11" font-family="Verdana">Coverage 44.85%</text>
 </svg>
