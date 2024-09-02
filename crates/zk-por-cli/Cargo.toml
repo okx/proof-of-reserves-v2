@@ -1,0 +1,38 @@
+[package]
+name = "zk-por-cli"
+description = "zk por apis"
+version = "0.1.0"
+authors = [
+]
+
+readme = "README.md"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[features]
+default = []
+
+[dependencies]
+zk-por-tracing={path="../zk-por-tracing"}
+zk-por-db={path="../zk-por-db"}
+zk-por-core={path="../zk-por-core"}
+plonky2={workspace=true}
+plonky2_field={workspace=true}
+clap={workspace=true}
+indicatif={workspace=true}
+tracing={workspace=true}
+serde_json={workspace=true}
+rayon={workspace=true}
+num_cpus={workspace=true}
+hex={workspace=true}
+glob = "=0.3.1"
+
+[dev-dependencies]
+criterion = { version = "0.5.1", default-features = false }
+
+[target.'cfg(not(target_os = "macos"))'.dev-dependencies]
+jemallocator = "0.5.0"

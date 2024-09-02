@@ -1,0 +1,66 @@
+[package]
+name = "zk-por-core"
+description = "zk por circuits and proving logic"
+version ={workspace=true}
+authors = [
+]
+
+readme = "README.md"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[features]
+default = []
+verifier = []
+
+[dependencies]
+zk-por-db={path="../zk-por-db"}
+zk-por-tracing={path="../zk-por-tracing"}
+plonky2={workspace=true}
+plonky2_field={workspace=true}
+rand={workspace=true}
+log = "0.4.17"
+serde_with = "3.9.0"
+itertools = "0.13.0"
+anyhow = "1.0.86"
+lazy_static = "1.5.0"
+serde={workspace=true}
+serde_json={workspace=true}
+rayon={workspace=true}
+env_logger = "0.11.5"
+tracing={workspace=true}
+thiserror={workspace=true}
+once_cell={workspace = true}
+config={workspace=true}
+num_cpus={workspace=true}
+db-key ={workspace=true}
+indicatif={workspace=true}
+hex={workspace=true}
+mockall={workspace=true}
+
+[build-dependencies]
+zk-por-tracing={path="../zk-por-tracing"}
+plonky2={workspace=true}
+plonky2_field={workspace=true}
+log = "0.4.17"
+serde={workspace=true}
+serde_json={workspace=true}
+rayon={workspace=true}
+tracing={workspace=true}
+thiserror={workspace=true}
+diesel = { version = "2.0", features = ["mysql", "r2d2", "chrono"] }
+
+[dev-dependencies]
+criterion = { version = "0.5.1", default-features = false }
+tempdir = {workspace=true}
+
+[target.'cfg(not(target_os = "macos"))'.dev-dependencies]
+jemallocator = "0.5.0"
+
+[[bench]]
+name = "benchmark"
+harness = false

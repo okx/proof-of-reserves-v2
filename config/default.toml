@@ -1,0 +1,12 @@
+[prover]
+round_no = 0
+user_data_path = "/opt/data/zkpor/users/"
+
+tokens = [ "BTC", "ETH", "USDT", "USDC", "XRP", "DOGE", "SOL", "OKB", "APT", "DASH", "DOT", "ELF", "EOS", "ETC", "FIL", "LINK", "LTC", "OKT", "PEOPLE", "TON", "TRX", "UNI", "1INCH", "AAVE", "ADA", "AGLD", "AIDOGE", "AKITA", "ALGO", "ALPHA", "ANT", "APE", "API3", "AR", "ARB", "ATOM", "AVAX", "AXS", "BABYDOGE", "BADGER", "BAL", "BAND", "BAT", "BCH", "BETH", "BICO", "BLUR", "BNB", "BNT", "BSV", "BTM", "BZZ", "CEL", "CELO", "CELR", "CETUS", "CFX", "CHZ", "CLV", "COMP", "CONV", "CORE", "CQT", "CRO", "CRV", "CSPR", "CVC", "DOME", "DORA", "DYDX", "EFI", "EGLD", "ENJ", "ENS", "ETHW", "FITFI", "FLM", "FLOKI", "FLOW", "FTM", "GALA", "GFT", "GLMR", "GMT", "GMX", "GODS", "GRT", "HBAR", "ICP", "IMX", "IOST", "IOTA", "JST", "KISHU", "KLAY", "KNC", "KSM", "LAT", "LDO", "LON", "LOOKS", "LPT", "LRC", "LUNA", "LUNC", "MAGIC", "MANA", "MASK", "MATIC", "MINA", "MKR", "NEAR", "NEO", "NFT", "OMG", "ONT", "OP", "PEPE", "PERP", "QTUM", "RDNT", "REN", "RSR", "RSS3", "RVN", "SAND", "SHIB", "SKL", "SLP", "SNT", "SNX", "STARL", "STORJ", "STX", "SUI", "SUSHI", "SWEAT", "SWRV", "THETA", "TRB", "TUSD", "UMA", "USTC", "WAVES", "WOO", "XCH", "XLM", "XMR", "XTZ", "YFI", "YFII", "YGG", "ZEC", "ZEN", "ZIL", "ZRX", "BTC1", "ETH1", "USDT1", "USDC1", "XRP1", "DOGE1", "SOL1", "OKB1", "APT1", "DASH1", "DOT1", "ELF1", "EOS1", "ETC1", "FIL1", "LINK1", "BTC2", "ETH2", "USDT2", "USDC2", "XRP2", "DOGE2", "SOL2", "OKB2", "APT2", "DASH2", "DOT2", "ELF2", "EOS2", "ETC2", "FIL2", "LINK2", "BTC3", "ETH3", "USDT3", "USDC3", "XRP3", "DOGE3", "SOL3", "OKB3", "APT3", "DASH3", "DOT3", "ELF3", "EOS3", "ETC3", "FIL3", "LINK3", "BTC4", "ETH4", "USDT4", "USDC4", "XRP4", "DOGE4", "SOL4", "OKB4", "APT4", "DASH4", "DOT4", "ELF4", "EOS4", "ETC4", "FIL4", "LINK4" ]
+
+[log]
+file_name_prefix = "zkpor"
+dir = "logs/"
+level = "info"
+console = true
+flame = false
