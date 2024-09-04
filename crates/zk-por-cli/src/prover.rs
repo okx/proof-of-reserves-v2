@@ -128,7 +128,8 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
 
     let start = std::time::Instant::now();
     let mut offset = 0;
-    let per_parse_account_num = calculate_per_parse_account_num(batch_size, batch_prove_threads_num);
+    let per_parse_account_num =
+        calculate_per_parse_account_num(batch_size, batch_prove_threads_num);
 
     let mut parse_num = 0;
     let mut batch_proofs = vec![];
@@ -179,12 +180,8 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
             .collect();
         drop(_g);
 
-        let proofs = batch_prove_accounts(
-            &circuit_registry,
-            accounts,
-            batch_prove_threads_num,
-            batch_size,
-        );
+        let proofs =
+            batch_prove_accounts(&circuit_registry, accounts, batch_prove_threads_num, batch_size);
 
         assert_eq!(proofs.len(), root_hashes.len());
 
@@ -395,7 +392,8 @@ fn dump_proofs(
     tracing::info!("start to generate and dump merkle proof for each of {} accounts", user_num);
 
     let bar = ProgressBar::new(user_num as u64);
-    let per_parse_account_num = calculate_per_parse_account_num(batch_size, cfg.batch_prove_threads_num);
+    let per_parse_account_num =
+        calculate_per_parse_account_num(batch_size, cfg.batch_prove_threads_num);
 
     let cdb: Arc<dyn PoRDB> = Arc::from(db);
     let mut offset = 0;
