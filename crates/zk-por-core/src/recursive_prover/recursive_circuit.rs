@@ -32,10 +32,12 @@ impl<const N: usize> RecursiveTargets<N> {
         MerkleSumNodeTarget::pub_input_root_hash_offset()
     }
 
+    #[inline]
     pub fn pub_input_equity_offset() -> usize {
         MerkleSumNodeTarget::pub_input_equity_offset()
     }
 
+    #[inline]
     pub fn pub_input_debt_offset() -> usize {
         MerkleSumNodeTarget::pub_input_debt_offset()
     }
