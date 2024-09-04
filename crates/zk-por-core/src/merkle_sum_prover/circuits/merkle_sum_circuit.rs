@@ -75,6 +75,16 @@ impl MerkleSumNodeTarget {
         }
     }
 
+    #[inline(always)]
+    pub fn pub_input_equity_offset() -> usize {
+        0
+    }
+
+    #[inline(always)]
+    pub fn pub_input_debt_offset() -> usize {
+        1
+    }
+
     pub fn pub_input_root_hash_offset() -> std::ops::Range<usize> {
         // the first two targets are sum_equity and sum_debt.
         2..6

@@ -1,4 +1,5 @@
 use indicatif::ProgressBar;
+use plonky2_field::types::PrimeField64;
 use rayon::iter::IntoParallelRefIterator;
 use serde_json::from_reader;
 use std::{fs::File, path::PathBuf};
@@ -122,10 +123,17 @@ pub fn verify_global(global_proof_path: PathBuf) -> Result<(), PoRError> {
         round_num,
         start.elapsed()
     );
+
+    let equity = proof.proof.public_inputs
+        [RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_equity_offset()];
+    let debt = proof.proof.public_inputs
+        [RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_debt_offset()];
     if !root_circuit.verify(proof.proof).is_ok() {
         return Err(PoRError::InvalidProof);
     }
-    println!("successfully verify the global proof for round {}", round_num);
+
+    println!("successfully verify the global proof for round {}, total exchange users' equity is {}, debt is {}, exchange liability is {}", 
+    round_num, equity.to_canonical_u64(), debt.to_canonical_u64(), (equity- debt).to_canonical_u64());
 
     Ok(())
 }
