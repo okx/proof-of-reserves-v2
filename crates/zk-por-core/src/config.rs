@@ -32,6 +32,8 @@ pub struct ConfigProver {
     pub batch_size: Option<usize>,
     pub tokens: Vec<String>,
     pub user_data_path: String,
+    pub batch_prove_threads_num: usize,
+    pub recursive_prove_threads_num: usize
 }
 
 #[derive(Debug, Clone, Deserialize)]
