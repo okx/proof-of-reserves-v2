@@ -263,7 +263,7 @@ pub fn parse_account_state(parsed_data: &Map<String, Value>, tokens: &Vec<String
 
     for token in tokens.iter() {
         let parsed_token = token_map.get(token);
-        if parsed_token.is_none(){
+        if parsed_token.is_none() {
             continue;
         }
 
@@ -272,8 +272,10 @@ pub fn parse_account_state(parsed_data: &Map<String, Value>, tokens: &Vec<String
 
         if parsed_val < 0 {
             parsed_debts.push(F::from_canonical_u64(abs_val));
-        }else{
+            parsed_equities.push(F::ZERO);
+        } else {
             parsed_equities.push(F::from_canonical_u64(abs_val));
+            parsed_debts.push(F::ZERO);
         }
     }
 

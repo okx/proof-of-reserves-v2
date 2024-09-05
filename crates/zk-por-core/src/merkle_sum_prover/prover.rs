@@ -77,6 +77,7 @@ impl MerkleSumTreeProver {
 
         let mut t = prove_timing();
         let data = builder.build::<C>();
+        println!("Data: {:?}", data.verifier_only);
 
         let CircuitData { prover_only, common, verifier_only: _ } = &data;
 

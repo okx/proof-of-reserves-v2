@@ -63,7 +63,14 @@ pub fn get_recursive_circuit_configs<const RECURSION_BRANCHOUT_NUM: usize>(
 ) -> Vec<CircuitConfig> {
     let level = (batch_num as f64).log(RECURSION_BRANCHOUT_NUM as f64).ceil() as usize;
 
+    println!("{:?}", level);
+
     let mut configs = vec![STANDARD_CONFIG; level];
-    *configs.last_mut().unwrap() = STANDARD_ZK_CONFIG;
+
+    if level == 0 {
+        configs.push(STANDARD_ZK_CONFIG);
+    } else {
+        *configs.last_mut().unwrap() = STANDARD_ZK_CONFIG;
+    }
     configs
 }
