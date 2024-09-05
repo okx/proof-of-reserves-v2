@@ -253,31 +253,28 @@ pub fn parse_account_state(parsed_data: &Map<String, Value>, tokens: &Vec<String
         .as_str()
         .unwrap();
 
-    let equities = parsed_data
-        .get("equity")
-        .expect(format!("Account {:?} dont have key `equity`", parsed_data).as_str())
+    let tokens = parsed_data
+        .get("tokens")
+        .expect(format!("Account {:?} dont have key `tokens`", parsed_data).as_str())
         .as_object()
         .unwrap();
     let mut parsed_equities = Vec::new();
-    for token in tokens.iter() {
-        let parsed_equity = equities.get(token).map_or(F::ZERO, |val| {
-            F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap())
-        });
-        parsed_equities.push(parsed_equity);
-    }
-
     let mut parsed_debts = Vec::new();
-    if let Some(debts) = parsed_data.get("debt") {
-        let debts = debts.as_object().unwrap();
-        for token in tokens.iter() {
-            let parsed_debt = debts.get(token).map_or(F::ZERO, |val| {
-                F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap())
-            });
-            parsed_debts.push(parsed_debt);
+
+    for token in tokens.iter() {
+        let parsed_token = tokens.get(token.0);
+        if parsed_token.is_none(){
+            continue;
         }
-    } else {
-        // if there is no debt, we fill it with zero
-        parsed_debts = vec![F::ZERO; parsed_equities.len()];
+
+        let parsed_val = parsed_token.unwrap().as_str().unwrap().parse::<i64>().unwrap();
+        let abs_val = parsed_val.abs() as u64;
+
+        if parsed_val < 0 {
+            parsed_debts.push(F::from_canonical_u64(abs_val));
+        }else{
+            parsed_equities.push(F::from_canonical_u64(abs_val));
+        }
     }
 
     Account { id: account_id.into(), equity: parsed_equities, debt: parsed_debts }
