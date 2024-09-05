@@ -77,7 +77,6 @@ impl MerkleSumTreeProver {
 
         let mut t = prove_timing();
         let data = builder.build::<C>();
-        println!("Data: {:?}", data.verifier_only);
 
         let CircuitData { prover_only, common, verifier_only: _ } = &data;
 
@@ -197,6 +196,7 @@ pub mod test {
             let fm = FileManager {};
             let tokens = vec!["BTC".to_owned(), "ETH".to_owned()];
             let accounts = fm.read_json_into_accounts_vec(path, &tokens);
+
             let prover = MerkleSumTreeProver {
                 // batch_id: 0,
                 accounts,

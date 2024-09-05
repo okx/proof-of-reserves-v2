@@ -330,11 +330,11 @@ mod test {
         let path = "../../test-data/batch0.json";
         let maps = fm.read_json_file_into_map(path);
 
-        let id_0 = "d4e5b58f1d133d8997778d3b27baebd12734cb7efb0e64117f9b519b3b856670";
+        let id_0 = "0ca5a8a06ad2f88d6b95d219d1018ccc7c1777c557b1a2a72db413eef6264bb0";
         let parsed_id_0 = maps.get(0).unwrap().get("id").unwrap();
         assert_eq!(id_0, parsed_id_0);
 
-        let id_1 = "ce28f3e33b9abb718efdc8146f793a60166e9033db4f362da1445b566545621a";
+        let id_1 = "1152272906d212dad6419261700a794687b371e8f9b8ec0ecb0f6023a9b3332b";
         let parsed_id_1 = maps.get(1).unwrap().get("id").unwrap();
         assert_eq!(id_1, parsed_id_1);
     }
@@ -347,11 +347,11 @@ mod test {
         let tokens = vec!["BTC".to_string(), "ETH".to_string()];
         let accounts = parse_exchange_state(&maps, &tokens);
 
-        let id_0 = "d4e5b58f1d133d8997778d3b27baebd12734cb7efb0e64117f9b519b3b856670";
+        let id_0 = "0ca5a8a06ad2f88d6b95d219d1018ccc7c1777c557b1a2a72db413eef6264bb0";
         let account_0 = accounts.get(0).unwrap();
         assert_eq!(id_0, account_0.id);
 
-        let id_1 = "ce28f3e33b9abb718efdc8146f793a60166e9033db4f362da1445b566545621a";
+        let id_1 = "1152272906d212dad6419261700a794687b371e8f9b8ec0ecb0f6023a9b3332b";
         let account_1 = accounts.get(1).unwrap();
         assert_eq!(id_1, account_1.id);
     }
@@ -363,11 +363,11 @@ mod test {
         let tokens = vec!["BTC".to_string(), "ETH".to_string()];
         let accounts = fm.read_json_into_accounts_vec(&path, &tokens);
 
-        let id_0 = "d4e5b58f1d133d8997778d3b27baebd12734cb7efb0e64117f9b519b3b856670";
+        let id_0 = "0ca5a8a06ad2f88d6b95d219d1018ccc7c1777c557b1a2a72db413eef6264bb0";
         let account_0 = accounts.get(0).unwrap();
         assert_eq!(id_0, account_0.id);
 
-        let id_1 = "ce28f3e33b9abb718efdc8146f793a60166e9033db4f362da1445b566545621a";
+        let id_1 = "1152272906d212dad6419261700a794687b371e8f9b8ec0ecb0f6023a9b3332b";
         let account_1 = accounts.get(1).unwrap();
         assert_eq!(id_1, account_1.id);
         println!("{:?}", account_1);
