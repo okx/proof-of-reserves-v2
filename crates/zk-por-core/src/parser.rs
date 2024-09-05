@@ -253,7 +253,7 @@ pub fn parse_account_state(parsed_data: &Map<String, Value>, tokens: &Vec<String
         .as_str()
         .unwrap();
 
-    let tokens = parsed_data
+    let token_map = parsed_data
         .get("tokens")
         .expect(format!("Account {:?} dont have key `tokens`", parsed_data).as_str())
         .as_object()
@@ -262,7 +262,7 @@ pub fn parse_account_state(parsed_data: &Map<String, Value>, tokens: &Vec<String
     let mut parsed_debts = Vec::new();
 
     for token in tokens.iter() {
-        let parsed_token = tokens.get(token.0);
+        let parsed_token = token_map.get(token);
         if parsed_token.is_none(){
             continue;
         }
@@ -328,11 +328,11 @@ mod test {
         let path = "../../test-data/batch0.json";
         let maps = fm.read_json_file_into_map(path);
 
-        let id_0 = "4282aed0318e3271db2649f3a4a6855d9f83285d04ea541d741fd53a602eb73e";
+        let id_0 = "d4e5b58f1d133d8997778d3b27baebd12734cb7efb0e64117f9b519b3b856670";
         let parsed_id_0 = maps.get(0).unwrap().get("id").unwrap();
         assert_eq!(id_0, parsed_id_0);
 
-        let id_1 = "bfad15056e9c14831ee4351f180b7cbd141a1b372ba8696c8505f7335282126d";
+        let id_1 = "ce28f3e33b9abb718efdc8146f793a60166e9033db4f362da1445b566545621a";
         let parsed_id_1 = maps.get(1).unwrap().get("id").unwrap();
         assert_eq!(id_1, parsed_id_1);
     }
@@ -345,11 +345,11 @@ mod test {
         let tokens = vec!["BTC".to_string(), "ETH".to_string()];
         let accounts = parse_exchange_state(&maps, &tokens);
 
-        let id_0 = "4282aed0318e3271db2649f3a4a6855d9f83285d04ea541d741fd53a602eb73e";
+        let id_0 = "d4e5b58f1d133d8997778d3b27baebd12734cb7efb0e64117f9b519b3b856670";
         let account_0 = accounts.get(0).unwrap();
         assert_eq!(id_0, account_0.id);
 
-        let id_1 = "bfad15056e9c14831ee4351f180b7cbd141a1b372ba8696c8505f7335282126d";
+        let id_1 = "ce28f3e33b9abb718efdc8146f793a60166e9033db4f362da1445b566545621a";
         let account_1 = accounts.get(1).unwrap();
         assert_eq!(id_1, account_1.id);
     }
@@ -361,13 +361,14 @@ mod test {
         let tokens = vec!["BTC".to_string(), "ETH".to_string()];
         let accounts = fm.read_json_into_accounts_vec(&path, &tokens);
 
-        let id_0 = "4282aed0318e3271db2649f3a4a6855d9f83285d04ea541d741fd53a602eb73e";
+        let id_0 = "d4e5b58f1d133d8997778d3b27baebd12734cb7efb0e64117f9b519b3b856670";
         let account_0 = accounts.get(0).unwrap();
         assert_eq!(id_0, account_0.id);
 
-        let id_1 = "bfad15056e9c14831ee4351f180b7cbd141a1b372ba8696c8505f7335282126d";
+        let id_1 = "ce28f3e33b9abb718efdc8146f793a60166e9033db4f362da1445b566545621a";
         let account_1 = accounts.get(1).unwrap();
         assert_eq!(id_1, account_1.id);
+        println!("{:?}", account_1);
     }
 
     mock! {

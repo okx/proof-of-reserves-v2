@@ -28,16 +28,15 @@ def init_user_data( batch_index, batch_size):
 
     for i in range(batch_size):
         account = {"id" : generate_random_hex_string(64)}
-        equities = {}
-        debts = {}
+        tokens = {}
         for coin in coins:
-            equities[coin] = str(random.randrange(2**32)//coins_len)
-            debts[coin] = str(0)
+            random_choice = random.choice([-1, 1])
+            if random_choice == -1:
+                tokens[coin] = str(-1)
+            else:
+                tokens[coin] = str((random.randrange(2**32) // coins_len))
 
-        account["equity"] = equities
-        # some accounts have debt
-        if random.randrange(2) == 0:
-            account["debt"] = debts
+        account["tokens"] = tokens
 
         data.append(account)
     # current_working_directory = os.getcwd()
