@@ -46,8 +46,8 @@ impl Execute for ZkPorCommitCommands {
                 let cfg = zk_por_core::config::ProverConfig::load(&cfg_path)
                     .map_err(|e| PoRError::ConfigError(e))?;
                 let prover_cfg = cfg.try_deserialize().unwrap();
-                let output_file = PathBuf::from_str(&output_path).unwrap();
-                prove(prover_cfg, output_file)
+                let output_path = PathBuf::from_str(&output_path).unwrap();
+                prove(prover_cfg, output_path)
             }
 
             ZkPorCommitCommands::VerifyGlobal { proof_path: global_proof_path } => {

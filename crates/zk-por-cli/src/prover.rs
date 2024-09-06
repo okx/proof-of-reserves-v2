@@ -1,8 +1,10 @@
 use super::constant::{
-    DEFAULT_BATCH_SIZE, GLOBAL_PROOF_FILENAME, RECURSION_BRANCHOUT_NUM, USER_PROOF_DIRNAME,
+    DEFAULT_BATCH_SIZE, GLOBAL_INFO_FILENAME, GLOBAL_PROOF_FILENAME, RECURSION_BRANCHOUT_NUM,
+    USER_PROOF_DIRNAME,
 };
 use indicatif::ProgressBar;
 use plonky2::hash::hash_types::HashOut;
+use plonky2_field::types::PrimeField64;
 use rayon::{iter::ParallelIterator, prelude::*};
 use serde_json::json;
 use std::{
@@ -28,7 +30,7 @@ use zk_por_core::{
     parser::{AccountParser, FileAccountReader, FileManager, FilesCfg},
     recursive_prover::recursive_circuit::RecursiveTargets,
     types::F,
-    General, Proof,
+    General, Info, Proof,
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
 
@@ -365,6 +367,39 @@ fn dump_proofs(
 
     global_proof_file
         .write_all(json!(root_proof).to_string().as_bytes())
+        .map_err(|e| return PoRError::Io(e))?;
+
+    ///////////////////////////////////////////////
+    let hash_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_hash_offset();
+    let root_hash = HashOut::<F>::from_partial(&root_proof.proof.public_inputs[hash_offset]);
+    let root_hash_bytes = root_hash
+        .elements
+        .iter()
+        .map(|x| x.to_canonical_u64().to_le_bytes())
+        .flatten()
+        .collect::<Vec<u8>>();
+    let root_hash = hex::encode(root_hash_bytes);
+
+    let equity_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_equity_offset();
+    let equity_sum = root_proof.proof.public_inputs[equity_offset].to_canonical_u64();
+
+    let debt_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_equity_offset();
+    let debt_sum = root_proof.proof.public_inputs[debt_offset].to_canonical_u64();
+    assert!(equity_sum >= debt_sum);
+    let balance_sum = equity_sum - debt_sum;
+    let info = Info {
+        root_hash: root_hash,
+        equity_sum: equity_sum,
+        debt_sum: debt_sum,
+        balance_sum: balance_sum,
+    };
+
+    let global_info_output_path = proof_output_dir_path.join(GLOBAL_INFO_FILENAME);
+    let mut global_info_file =
+        File::create(global_info_output_path.clone()).map_err(|e| PoRError::Io(e))?;
+
+    global_info_file
+        .write_all(json!(info).to_string().as_bytes())
         .map_err(|e| return PoRError::Io(e))?;
 
     ///////////////////////////////////////////////
