@@ -146,7 +146,9 @@ impl FileAccountReader {
                     parser.last_doc_accounts = last_doc_accounts;
                 }
 
-                let total_num_of_users = if doc_len ==1 {first_doc_accounts_len} else {
+                let total_num_of_users = if doc_len == 1 {
+                    first_doc_accounts_len
+                } else {
                     (doc_len - 1) * first_doc_accounts_len + parser.last_doc_accounts.len()
                 };
 
