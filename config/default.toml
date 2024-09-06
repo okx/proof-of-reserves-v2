@@ -1,6 +1,6 @@
 [prover]
 round_no = 0
-user_data_path = "test-data/user-data"
+user_data_path = "/opt/data/zkpor/users/"
 batch_prove_threads_num = 32
 recursive_prove_threads_num = 16
 

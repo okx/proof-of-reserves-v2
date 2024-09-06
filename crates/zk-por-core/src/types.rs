@@ -13,6 +13,9 @@ pub const MAX_POSITIVE_AMOUNT_LOG: usize = 62;
 // Number of accounts in one merkle sum tree batch.
 pub const MERKLE_SUM_TREE_BATCH_SIZE: usize = 1;
 
+pub const ASSETS_KEY: &str = "assets";
+
+
 pub type C = PoseidonGoldilocksConfig;
 pub type F = <C as GenericConfig<D>>::F;
 

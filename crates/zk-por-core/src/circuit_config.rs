@@ -63,14 +63,30 @@ pub fn get_recursive_circuit_configs<const RECURSION_BRANCHOUT_NUM: usize>(
 ) -> Vec<CircuitConfig> {
     let level = (batch_num as f64).log(RECURSION_BRANCHOUT_NUM as f64).ceil() as usize;
 
-    println!("{:?}", level);
-
     let mut configs = vec![STANDARD_CONFIG; level];
 
-    if level == 0 {
-        configs.push(STANDARD_ZK_CONFIG);
+    if let Some(last) = configs.last_mut() {
+        *last = STANDARD_ZK_CONFIG; // Change the last element to 0
     } else {
-        *configs.last_mut().unwrap() = STANDARD_ZK_CONFIG;
+        configs.push(STANDARD_ZK_CONFIG); // Add 0 if the vec is empty
     }
     configs
+}
+
+#[cfg(test)]
+pub mod test {
+    use crate::circuit_config::{STANDARD_CONFIG, STANDARD_ZK_CONFIG};
+
+    use super::get_recursive_circuit_configs;
+
+    #[test]
+    pub fn test_get_recursive_circuit_config(){
+        let batch_num = 1;
+        let cfgs = get_recursive_circuit_configs::<64>(batch_num);
+        assert_eq!(vec![STANDARD_ZK_CONFIG], cfgs);
+
+        let batch_num = 66;
+        let cfgs = get_recursive_circuit_configs::<64>(batch_num);
+        assert_eq!(vec![STANDARD_CONFIG, STANDARD_ZK_CONFIG], cfgs);
+    }
 }

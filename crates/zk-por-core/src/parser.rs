@@ -1,5 +1,5 @@
 use super::account::{gen_accounts_with_random_data, Account};
-use crate::types::F;
+use crate::types::{ASSETS_KEY, F};
 use plonky2_field::types::Field;
 use serde_json::{Map, Value};
 use std::{
@@ -254,7 +254,7 @@ pub fn parse_account_state(parsed_data: &Map<String, Value>, tokens: &Vec<String
         .unwrap();
 
     let token_map = parsed_data
-        .get("tokens")
+        .get(ASSETS_KEY)
         .expect(format!("Account {:?} dont have key `tokens`", parsed_data).as_str())
         .as_object()
         .unwrap();
@@ -370,7 +370,6 @@ mod test {
         let id_1 = "1152272906d212dad6419261700a794687b371e8f9b8ec0ecb0f6023a9b3332b";
         let account_1 = accounts.get(1).unwrap();
         assert_eq!(id_1, account_1.id);
-        println!("{:?}", account_1);
     }
 
     mock! {
