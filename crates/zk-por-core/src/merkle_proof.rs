@@ -93,6 +93,7 @@ pub fn get_recursive_siblings_index(
     let layers = (cfg.num_of_batches.next_power_of_two() as f64)
         .log(cfg.recursion_branchout_num as f64)
         .ceil() as usize;
+    let layers = std::cmp::max(1, layers);
 
     for i in 0..layers {
         let mut left_layer = Vec::new();

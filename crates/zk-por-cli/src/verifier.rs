@@ -39,7 +39,7 @@ fn find_matching_files(pattern: &str) -> Result<Vec<PathBuf>, io::Error> {
 pub fn verify_user(
     global_proof_path: PathBuf,
     user_proof_path_pattern: &String,
-    verbose : bool,
+    verbose: bool,
 ) -> Result<(), PoRError> {
     let proof_file = File::open(&global_proof_path).unwrap();
     let reader = std::io::BufReader::new(proof_file);
@@ -54,7 +54,10 @@ pub fn verify_user(
         find_matching_files(user_proof_path_pattern).map_err(|e| PoRError::Io(e))?;
     let proof_file_num = user_proof_paths.len();
     if proof_file_num == 0 {
-        return Err(PoRError::InvalidParameter(format!("fail to find any user proof files with pattern {}", user_proof_path_pattern)));
+        return Err(PoRError::InvalidParameter(format!(
+            "fail to find any user proof files with pattern {}",
+            user_proof_path_pattern
+        )));
     }
 
     if verbose {
@@ -63,18 +66,32 @@ pub fn verify_user(
 
     let bar = ProgressBar::new(proof_file_num as u64);
     let chunk_size: usize = num_cpus::get();
-    let invalid_proof_paths = user_proof_paths.chunks(chunk_size).map(|chunks| {
-        let invalid_proof_paths = chunks.par_iter().map(|user_proof_path| {
-            let merkle_path = File::open(&user_proof_path).unwrap();
-            let reader = std::io::BufReader::new(merkle_path);
-            let proof: MerkleProof = from_reader(reader).unwrap();
-            let result = proof.verify_merkle_proof(root_hash);
-            (result, user_proof_path)
-        }).filter(|(result, _)|{result.is_err()}).map(|(_, invalid_proof_path)|{invalid_proof_path.to_str().unwrap().to_owned()}).collect::<Vec<String>>();
-        bar.inc(chunks.len() as u64);
-        invalid_proof_paths
-    }).flatten().collect::<Vec<String>>();
-    bar.finish();
+    let invalid_proof_paths = user_proof_paths
+        .chunks(chunk_size)
+        .map(|chunks| {
+            let invalid_proof_paths = chunks
+                .par_iter()
+                .map(|user_proof_path| {
+                    let merkle_path = File::open(&user_proof_path).unwrap();
+                    let reader = std::io::BufReader::new(merkle_path);
+                    let proof: MerkleProof = from_reader(reader).unwrap();
+                    let result = proof.verify_merkle_proof(root_hash);
+                    (result, user_proof_path)
+                })
+                .filter(|(result, _)| result.is_err())
+                .map(|(_, invalid_proof_path)| invalid_proof_path.to_str().unwrap().to_owned())
+                .collect::<Vec<String>>();
+            if verbose {
+                bar.inc(chunks.len() as u64);
+            }
+            invalid_proof_paths
+        })
+        .flatten()
+        .collect::<Vec<String>>();
+    if verbose {
+        bar.finish();
+    }
+
     let invalid_proof_num = invalid_proof_paths.len();
     let valid_proof_num = proof_file_num - invalid_proof_num;
     if verbose {
@@ -92,7 +109,7 @@ pub fn verify_user(
     Ok(())
 }
 
-pub fn verify_global(global_proof_path: PathBuf, verbose : bool) -> Result<(), PoRError> {
+pub fn verify_global(global_proof_path: PathBuf, verbose: bool) -> Result<(), PoRError> {
     let proof_file = File::open(&global_proof_path).unwrap();
     let reader = std::io::BufReader::new(proof_file);
 

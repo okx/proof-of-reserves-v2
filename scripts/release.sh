@@ -12,6 +12,6 @@ sed -i '' 's|/opt/data/zkpor/users/|./sample_data/|g' release/config/default.tom
 
 mkdir -p release/sample_data
 cp -r test-data/batch0.json release/sample_data
-cp doc/release.md release/README.md
+cp docs/release.md release/README.md
 
 tar -cvf zk-por.tar ./release/

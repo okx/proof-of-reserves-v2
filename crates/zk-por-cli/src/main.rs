@@ -2,9 +2,9 @@ use std::{path::PathBuf, str::FromStr};
 
 use clap::{Parser, Subcommand};
 use zk_por_cli::{
+    constant::{DEFAULT_USER_PROOF_FILE_PATTERN, GLOBAL_PROOF_FILENAME},
     prover::prove,
     verifier::{verify_global, verify_user},
-    constant::{GLOBAL_PROOF_FILENAME, DEFAULT_USER_PROOF_FILE_PATTERN},
 };
 use zk_por_core::error::PoRError;
 
@@ -56,7 +56,10 @@ impl Execute for Option<ZkPorCommitCommands> {
                 verify_global(global_proof_path, true)
             }
 
-            Some(ZkPorCommitCommands::VerifyUser { global_proof_path, user_proof_path_pattern }) => {
+            Some(ZkPorCommitCommands::VerifyUser {
+                global_proof_path,
+                user_proof_path_pattern,
+            }) => {
                 let global_proof_path = PathBuf::from_str(&global_proof_path).unwrap();
                 verify_user(global_proof_path, user_proof_path_pattern, true)
             }
@@ -85,6 +88,7 @@ impl Execute for Option<ZkPorCommitCommands> {
 
 fn main() -> std::result::Result<(), PoRError> {
     let cli = Cli::parse();
-    _ = cli.command.execute();
+    let r = cli.command.execute();
+    println!("Execution result: {:?}", r);
     Ok(())
 }

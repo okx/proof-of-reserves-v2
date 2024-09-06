@@ -383,7 +383,7 @@ fn dump_proofs(
     let equity_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_equity_offset();
     let equity_sum = root_proof.proof.public_inputs[equity_offset].to_canonical_u64();
 
-    let debt_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_equity_offset();
+    let debt_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_debt_offset();
     let debt_sum = root_proof.proof.public_inputs[debt_offset].to_canonical_u64();
     assert!(equity_sum >= debt_sum);
     let balance_sum = equity_sum - debt_sum;
