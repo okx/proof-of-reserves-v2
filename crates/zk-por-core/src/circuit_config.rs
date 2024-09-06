@@ -80,7 +80,7 @@ pub mod test {
     use super::get_recursive_circuit_configs;
 
     #[test]
-    pub fn test_get_recursive_circuit_config(){
+    pub fn test_get_recursive_circuit_config() {
         let batch_num = 1;
         let cfgs = get_recursive_circuit_configs::<64>(batch_num);
         assert_eq!(vec![STANDARD_ZK_CONFIG], cfgs);
