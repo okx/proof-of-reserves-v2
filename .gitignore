@@ -9,3 +9,4 @@ test-data/user-data*/
 test-data/proofs*/
 my_permanent_leveldb/
 *level_db*/
+*.json
