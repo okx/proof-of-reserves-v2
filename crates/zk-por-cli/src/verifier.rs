@@ -132,7 +132,7 @@ pub fn verify_global(global_proof_path: PathBuf) -> Result<(), PoRError> {
         return Err(PoRError::InvalidProof);
     }
 
-    println!("successfully verify the global proof for round {}, total exchange users' equity is {}, debt is {}, exchange liability is {}", 
+    println!("successfully verify the global proof for round {}, total exchange users' equity is {}, debt is {}, exchange liability is {}",
     round_num, equity.to_canonical_u64(), debt.to_canonical_u64(), (equity- debt).to_canonical_u64());
 
     Ok(())
