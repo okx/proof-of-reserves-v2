@@ -146,8 +146,9 @@ impl FileAccountReader {
                     parser.last_doc_accounts = last_doc_accounts;
                 }
 
-                let total_num_of_users =
-                    (doc_len - 1) * first_doc_accounts_len + parser.last_doc_accounts.len();
+                let total_num_of_users = if doc_len ==1 {first_doc_accounts_len} else {
+                    (doc_len - 1) * first_doc_accounts_len + parser.last_doc_accounts.len()
+                };
 
                 let num_of_batches = total_num_of_users.div_ceil(parser.cfg.batch_size);
                 parser.total_num_of_users = total_num_of_users;
