@@ -4,6 +4,7 @@ use clap::{Parser, Subcommand};
 use zk_por_cli::{
     prover::prove,
     verifier::{verify_global, verify_user},
+    constant::{GLOBAL_PROOF_FILENAME, DEFAULT_USER_PROOF_FILE_PATTERN},
 };
 use zk_por_core::error::PoRError;
 
@@ -11,7 +12,7 @@ use zk_por_core::error::PoRError;
 #[command(version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
-    command: ZkPorCommitCommands,
+    command: Option<ZkPorCommitCommands>,
 }
 
 pub trait Execute {
@@ -39,10 +40,10 @@ pub enum ZkPorCommitCommands {
     },
 }
 
-impl Execute for ZkPorCommitCommands {
+impl Execute for Option<ZkPorCommitCommands> {
     fn execute(&self) -> std::result::Result<(), PoRError> {
         match self {
-            ZkPorCommitCommands::Prove { cfg_path, output_path } => {
+            Some(ZkPorCommitCommands::Prove { cfg_path, output_path }) => {
                 let cfg = zk_por_core::config::ProverConfig::load(&cfg_path)
                     .map_err(|e| PoRError::ConfigError(e))?;
                 let prover_cfg = cfg.try_deserialize().unwrap();
@@ -50,14 +51,33 @@ impl Execute for ZkPorCommitCommands {
                 prove(prover_cfg, output_path)
             }
 
-            ZkPorCommitCommands::VerifyGlobal { proof_path: global_proof_path } => {
+            Some(ZkPorCommitCommands::VerifyGlobal { proof_path: global_proof_path }) => {
                 let global_proof_path = PathBuf::from_str(&global_proof_path).unwrap();
-                verify_global(global_proof_path)
+                verify_global(global_proof_path, true)
             }
 
-            ZkPorCommitCommands::VerifyUser { global_proof_path, user_proof_path_pattern } => {
+            Some(ZkPorCommitCommands::VerifyUser { global_proof_path, user_proof_path_pattern }) => {
                 let global_proof_path = PathBuf::from_str(&global_proof_path).unwrap();
-                verify_user(global_proof_path, user_proof_path_pattern)
+                verify_user(global_proof_path, user_proof_path_pattern, true)
+            }
+
+            None => {
+                println!("============Validation started============");
+                let global_proof_path = PathBuf::from_str(GLOBAL_PROOF_FILENAME).unwrap();
+                let user_proof_path_pattern = DEFAULT_USER_PROOF_FILE_PATTERN.to_owned();
+                if verify_global(global_proof_path.clone(), false).is_ok() {
+                    println!("Total sum and non-negative constraint validation passed")
+                } else {
+                    println!("Total sum and non-negative constraint validation failed")
+                }
+
+                if verify_user(global_proof_path, &user_proof_path_pattern, false).is_ok() {
+                    println!("Inclusion constraint validation passed")
+                } else {
+                    println!("Inclusion constraint validation failed")
+                }
+                println!("============Validation finished============");
+                Ok(())
             }
         }
     }
@@ -65,8 +85,6 @@ impl Execute for ZkPorCommitCommands {
 
 fn main() -> std::result::Result<(), PoRError> {
     let cli = Cli::parse();
-    let start = std::time::Instant::now();
-    let result = cli.command.execute();
-    println!("result: {:?}, elapsed: {:?}", result, start.elapsed());
+    _ = cli.command.execute();
     Ok(())
 }

@@ -29,7 +29,7 @@ pub struct GlobalMst {
 impl GlobalMst {
     pub fn new(cfg: GlobalConfig) -> Self {
         let top_level =
-            (cfg.num_of_batches as f64).log(cfg.recursion_branchout_num as f64).ceil() as usize;
+            std::cmp::max(1, (cfg.num_of_batches as f64).log(cfg.recursion_branchout_num as f64).ceil() as usize);
 
         let mst_vec = vec![HashOut::default(); 0]; // will resize later
         let mut mst = Self { inner: mst_vec, top_recursion_level: top_level, cfg: cfg };
@@ -157,11 +157,11 @@ impl GlobalMst {
 
     /// `recursive_level` count from bottom to top; recursive_level = 1 means the bottom layer; increase whilve moving to the top.
     pub fn set_recursive_hash(&mut self, recursive_level: usize, index: usize, hash: HashOut<F>) {
-        debug!(
-            "set_recursive_hash, recursive_level: {:?}, index: {:?}, hash: {:?}",
-            recursive_level, index, hash
-        );
         let idx = GlobalMst::get_recursive_global_index(&self.cfg, recursive_level, index);
+        tracing::debug!(
+            "set_recursive_hash, recursive_level: {:?}, index: {:?}, hash: {:?}, idx: {:?}",
+            recursive_level, index, hash, idx, 
+        );
         self.inner[idx] = hash;
     }
 
