@@ -65,28 +65,20 @@ pub fn verify_user(
     }
 
     let bar = ProgressBar::new(proof_file_num as u64);
-    let chunk_size: usize = num_cpus::get();
     let invalid_proof_paths = user_proof_paths
-        .chunks(chunk_size)
-        .map(|chunks| {
-            let invalid_proof_paths = chunks
-                .par_iter()
-                .map(|user_proof_path| {
-                    let merkle_path = File::open(&user_proof_path).unwrap();
-                    let reader = std::io::BufReader::new(merkle_path);
-                    let proof: MerkleProof = from_reader(reader).unwrap();
-                    let result = proof.verify_merkle_proof(root_hash);
-                    (result, user_proof_path)
-                })
-                .filter(|(result, _)| result.is_err())
-                .map(|(_, invalid_proof_path)| invalid_proof_path.to_str().unwrap().to_owned())
-                .collect::<Vec<String>>();
+        .par_iter()
+        .map(|user_proof_path| {
+            let merkle_path = File::open(&user_proof_path).unwrap();
+            let reader = std::io::BufReader::new(merkle_path);
+            let proof: MerkleProof = from_reader(reader).unwrap();
+            let result = proof.verify_merkle_proof(root_hash);
             if verbose {
-                bar.inc(chunks.len() as u64);
+                bar.inc(1);
             }
-            invalid_proof_paths
+            (result, user_proof_path)
         })
-        .flatten()
+        .filter(|(result, _)| result.is_err())
+        .map(|(_, invalid_proof_path)| invalid_proof_path.to_str().unwrap().to_owned())
         .collect::<Vec<String>>();
     if verbose {
         bar.finish();
