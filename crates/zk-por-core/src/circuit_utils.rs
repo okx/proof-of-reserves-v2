@@ -76,7 +76,7 @@ pub mod test {
     #[should_panic]
     fn test_assert_non_negative_unsigned_panic() {
         run_circuit_test(|builder, _pw| {
-            let x = builder.constant(F::from_canonical_u64(F::ORDER-1));
+            let x = builder.constant(F::from_canonical_u64(F::ORDER - 1));
             assert_non_negative_unsigned(builder, x);
         });
     }
