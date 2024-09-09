@@ -25,6 +25,11 @@ pub fn prove_timing() -> TimingTree {
     TimingTree::new("prove", level)
 }
 
+pub fn recursive_levels(batch_num: usize, recursion_branchout_num: usize) -> usize {
+    let level = (batch_num as f64).log(recursion_branchout_num as f64).ceil() as usize;
+    std::cmp::max(1, level)
+}
+
 /// Test runner for ease of testing
 #[allow(clippy::unused_unit)]
 pub fn run_circuit_test<T, F, const D: usize>(test: T)
@@ -71,7 +76,7 @@ pub mod test {
     #[should_panic]
     fn test_assert_non_negative_unsigned_panic() {
         run_circuit_test(|builder, _pw| {
-            let x = builder.constant(F::from_canonical_i64(-1));
+            let x = builder.constant(F::from_canonical_u64(F::ORDER - 1));
             assert_non_negative_unsigned(builder, x);
         });
     }

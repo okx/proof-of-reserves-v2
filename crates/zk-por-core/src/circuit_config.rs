@@ -3,6 +3,8 @@ use plonky2::{
     plonk::circuit_data::CircuitConfig,
 };
 
+use super::circuit_utils::recursive_levels;
+
 pub const STANDARD_CONFIG: CircuitConfig = CircuitConfig {
     num_wires: 135,
     num_routed_wires: 80,
@@ -61,15 +63,13 @@ pub const STANDARD_ZK_CONFIG: CircuitConfig = CircuitConfig {
 pub fn get_recursive_circuit_configs<const RECURSION_BRANCHOUT_NUM: usize>(
     batch_num: usize,
 ) -> Vec<CircuitConfig> {
-    let level = (batch_num as f64).log(RECURSION_BRANCHOUT_NUM as f64).ceil() as usize;
+    let level = recursive_levels(batch_num, RECURSION_BRANCHOUT_NUM);
 
     let mut configs = vec![STANDARD_CONFIG; level];
 
-    if let Some(last) = configs.last_mut() {
-        *last = STANDARD_ZK_CONFIG; // Change the last element to 0
-    } else {
-        configs.push(STANDARD_ZK_CONFIG); // Add 0 if the vec is empty
-    }
+    // The last circuit is a zk circuit, and the rest are standard circuits.
+    // there is at least one recursive circuit.
+    *configs.last_mut().unwrap() = STANDARD_ZK_CONFIG;
     configs
 }
 
