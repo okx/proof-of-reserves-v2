@@ -47,7 +47,7 @@ jobs:
 
     - name: Run tests with coverage
       run: |
-        cargo tarpaulin --release --out Html --output-dir target/debug/tarpaulin/ -- --nocapture > test.log
+        cargo tarpaulin --out Html --output-dir target/debug/tarpaulin/ -- --nocapture > test.log
         LAST_LINE=$( tail -n 1 test.log)
         CODE_COV=$(echo "$LAST_LINE" | cut -d '%' -f 1)
         echo "CODE_COV: $CODE_COV"
