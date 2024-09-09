@@ -6,7 +6,7 @@ Edit `config/default.toml` such that `user_data_path` is the directory containin
 cfg_dir_path="config"
 output_proof_dir_path="proof"
 
-./zk-por-prover prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_dir_path}
+./zk-por-prover prove --cfg-path "${cfg_dir_path}" --output-path "${output_proof_dir_path}"
 ```
 In the current directory, a directory `proof` is generated with the below files:
 ```
@@ -22,7 +22,7 @@ For internal use.
 ```
 global_proof_path="./proof/global_proof.json"
 
-./zk-por-verifier verify-global --proof-path ${global_proof_path}
+./zk-por-verifier verify-global --proof-path "${global_proof_path}"
 ```
 If successful, the console shows
 ```
@@ -36,7 +36,7 @@ For internal use.
 ```
 user_proof_path_pattern="./proof/user_proofs/*.json" # use wildcard to verify multiple files
 
-./zk-por-verifier verify-user --global-proof-path ${global_proof_path} --user-proof-path-pattern ${user_proof_path_pattern}
+./zk-por-verifier verify-user --global-proof-path "${global_proof_path}" --user-proof-path-pattern "${user_proof_path_pattern}"
 ```
 If successful, the console shows
 ```
