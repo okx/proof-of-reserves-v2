@@ -32,6 +32,16 @@ impl<const N: usize> RecursiveTargets<N> {
         MerkleSumNodeTarget::pub_input_root_hash_offset()
     }
 
+    #[inline]
+    pub fn pub_input_equity_offset() -> usize {
+        MerkleSumNodeTarget::pub_input_equity_offset()
+    }
+
+    #[inline]
+    pub fn pub_input_debt_offset() -> usize {
+        MerkleSumNodeTarget::pub_input_debt_offset()
+    }
+
     /// Builds a N-ary merkle sum tree and sets its root as a public input. We use a N-ary merkle sum tree instead of the binary one since it requires less hash gates.
     pub fn build_recursive_merkle_sum_tree_circuit(&mut self, builder: &mut CircuitBuilder<F, D>) {
         let mut merkle_sum_tree_node_targets: Vec<MerkleSumNodeTarget> = Vec::new();

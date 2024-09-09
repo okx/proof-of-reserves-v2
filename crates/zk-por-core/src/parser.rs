@@ -1,5 +1,5 @@
 use super::account::{gen_accounts_with_random_data, Account};
-use crate::types::F;
+use crate::types::{ASSETS_KEY, F};
 use plonky2_field::types::Field;
 use serde_json::{Map, Value};
 use std::{
@@ -146,8 +146,11 @@ impl FileAccountReader {
                     parser.last_doc_accounts = last_doc_accounts;
                 }
 
-                let total_num_of_users =
-                    (doc_len - 1) * first_doc_accounts_len + parser.last_doc_accounts.len();
+                let total_num_of_users = if doc_len == 1 {
+                    first_doc_accounts_len
+                } else {
+                    (doc_len - 1) * first_doc_accounts_len + parser.last_doc_accounts.len()
+                };
 
                 let num_of_batches = total_num_of_users.div_ceil(parser.cfg.batch_size);
                 parser.total_num_of_users = total_num_of_users;
@@ -253,31 +256,30 @@ pub fn parse_account_state(parsed_data: &Map<String, Value>, tokens: &Vec<String
         .as_str()
         .unwrap();
 
-    let equities = parsed_data
-        .get("equity")
-        .expect(format!("Account {:?} dont have key `equity`", parsed_data).as_str())
+    let token_map = parsed_data
+        .get(ASSETS_KEY)
+        .expect(format!("Account {:?} dont have key `tokens`", parsed_data).as_str())
         .as_object()
         .unwrap();
     let mut parsed_equities = Vec::new();
-    for token in tokens.iter() {
-        let parsed_equity = equities.get(token).map_or(F::ZERO, |val| {
-            F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap())
-        });
-        parsed_equities.push(parsed_equity);
-    }
-
     let mut parsed_debts = Vec::new();
-    if let Some(debts) = parsed_data.get("debt") {
-        let debts = debts.as_object().unwrap();
-        for token in tokens.iter() {
-            let parsed_debt = debts.get(token).map_or(F::ZERO, |val| {
-                F::from_canonical_u64(val.as_str().unwrap().parse::<u64>().unwrap())
-            });
-            parsed_debts.push(parsed_debt);
+
+    for token in tokens.iter() {
+        let parsed_token = token_map.get(token);
+        if parsed_token.is_none() {
+            continue;
         }
-    } else {
-        // if there is no debt, we fill it with zero
-        parsed_debts = vec![F::ZERO; parsed_equities.len()];
+
+        let parsed_val = parsed_token.unwrap().as_str().unwrap().parse::<i64>().unwrap();
+        let abs_val = parsed_val.abs() as u64;
+
+        if parsed_val < 0 {
+            parsed_debts.push(F::from_canonical_u64(abs_val));
+            parsed_equities.push(F::ZERO);
+        } else {
+            parsed_equities.push(F::from_canonical_u64(abs_val));
+            parsed_debts.push(F::ZERO);
+        }
     }
 
     Account { id: account_id.into(), equity: parsed_equities, debt: parsed_debts }
@@ -331,11 +333,11 @@ mod test {
         let path = "../../test-data/batch0.json";
         let maps = fm.read_json_file_into_map(path);
 
-        let id_0 = "4282aed0318e3271db2649f3a4a6855d9f83285d04ea541d741fd53a602eb73e";
+        let id_0 = "0ca5a8a06ad2f88d6b95d219d1018ccc7c1777c557b1a2a72db413eef6264bb0";
         let parsed_id_0 = maps.get(0).unwrap().get("id").unwrap();
         assert_eq!(id_0, parsed_id_0);
 
-        let id_1 = "bfad15056e9c14831ee4351f180b7cbd141a1b372ba8696c8505f7335282126d";
+        let id_1 = "1152272906d212dad6419261700a794687b371e8f9b8ec0ecb0f6023a9b3332b";
         let parsed_id_1 = maps.get(1).unwrap().get("id").unwrap();
         assert_eq!(id_1, parsed_id_1);
     }
@@ -348,11 +350,11 @@ mod test {
         let tokens = vec!["BTC".to_string(), "ETH".to_string()];
         let accounts = parse_exchange_state(&maps, &tokens);
 
-        let id_0 = "4282aed0318e3271db2649f3a4a6855d9f83285d04ea541d741fd53a602eb73e";
+        let id_0 = "0ca5a8a06ad2f88d6b95d219d1018ccc7c1777c557b1a2a72db413eef6264bb0";
         let account_0 = accounts.get(0).unwrap();
         assert_eq!(id_0, account_0.id);
 
-        let id_1 = "bfad15056e9c14831ee4351f180b7cbd141a1b372ba8696c8505f7335282126d";
+        let id_1 = "1152272906d212dad6419261700a794687b371e8f9b8ec0ecb0f6023a9b3332b";
         let account_1 = accounts.get(1).unwrap();
         assert_eq!(id_1, account_1.id);
     }
@@ -364,11 +366,11 @@ mod test {
         let tokens = vec!["BTC".to_string(), "ETH".to_string()];
         let accounts = fm.read_json_into_accounts_vec(&path, &tokens);
 
-        let id_0 = "4282aed0318e3271db2649f3a4a6855d9f83285d04ea541d741fd53a602eb73e";
+        let id_0 = "0ca5a8a06ad2f88d6b95d219d1018ccc7c1777c557b1a2a72db413eef6264bb0";
         let account_0 = accounts.get(0).unwrap();
         assert_eq!(id_0, account_0.id);
 
-        let id_1 = "bfad15056e9c14831ee4351f180b7cbd141a1b372ba8696c8505f7335282126d";
+        let id_1 = "1152272906d212dad6419261700a794687b371e8f9b8ec0ecb0f6023a9b3332b";
         let account_1 = accounts.get(1).unwrap();
         assert_eq!(id_1, account_1.id);
     }

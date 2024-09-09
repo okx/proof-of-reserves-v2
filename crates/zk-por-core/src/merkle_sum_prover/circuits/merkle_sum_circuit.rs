@@ -75,6 +75,16 @@ impl MerkleSumNodeTarget {
         }
     }
 
+    #[inline(always)]
+    pub fn pub_input_equity_offset() -> usize {
+        0
+    }
+
+    #[inline(always)]
+    pub fn pub_input_debt_offset() -> usize {
+        1
+    }
+
     pub fn pub_input_root_hash_offset() -> std::ops::Range<usize> {
         // the first two targets are sum_equity and sum_debt.
         2..6
@@ -110,7 +120,7 @@ impl From<Vec<Target>> for MerkleSumNodeTarget {
         }
     }
 }
-/// We can represent the Merkle Sum Tree as a vector of merkle sum nodes, with the root being the last node in the vector.    
+/// We can represent the Merkle Sum Tree as a vector of merkle sum nodes, with the root being the last node in the vector.
 pub struct MerkleSumTreeTarget {
     pub sum_tree: Vec<MerkleSumNodeTarget>,
 }

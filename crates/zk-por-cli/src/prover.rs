@@ -1,9 +1,10 @@
 use super::constant::{
-    BATCH_PROVING_THREADS_NUM, DEFAULT_BATCH_SIZE, GLOBAL_PROOF_FILENAME, RECURSION_BRANCHOUT_NUM,
-    RECURSIVE_PROVING_THREADS_NUM, USER_PROOF_DIRNAME,
+    DEFAULT_BATCH_SIZE, GLOBAL_INFO_FILENAME, GLOBAL_PROOF_FILENAME, RECURSION_BRANCHOUT_NUM,
+    USER_PROOF_DIRNAME,
 };
 use indicatif::ProgressBar;
 use plonky2::hash::hash_types::HashOut;
+use plonky2_field::types::PrimeField64;
 use rayon::{iter::ParallelIterator, prelude::*};
 use serde_json::json;
 use std::{
@@ -29,15 +30,14 @@ use zk_por_core::{
     parser::{AccountParser, FileAccountReader, FileManager, FilesCfg},
     recursive_prover::recursive_circuit::RecursiveTargets,
     types::F,
-    General, Proof,
+    General, Info, Proof,
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
 
 // as we use one thread to prove each batch, we load num_cpus batches to increase the parallelism.
-fn calculate_per_parse_account_num(batch_size: usize) -> usize {
+fn calculate_per_parse_account_num(batch_size: usize, threads_num: usize) -> usize {
     let num_cpus = num_cpus::get();
-    let num_cpus =
-        if BATCH_PROVING_THREADS_NUM < num_cpus { BATCH_PROVING_THREADS_NUM } else { num_cpus };
+    let num_cpus = if threads_num < num_cpus { threads_num } else { num_cpus };
     num_cpus * batch_size
 }
 
@@ -76,6 +76,9 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
 
     let batch_size = cfg.prover.batch_size.unwrap_or(DEFAULT_BATCH_SIZE);
     let token_num = cfg.prover.tokens.len();
+    let batch_prove_threads_num = cfg.prover.batch_prove_threads_num;
+    let recursive_prove_threads_num = cfg.prover.recursive_prove_threads_num;
+
     // the path to dump the final generated proof
     let file_manager = FileManager {};
     let mut account_parser = FileAccountReader::new(
@@ -127,7 +130,8 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
 
     let start = std::time::Instant::now();
     let mut offset = 0;
-    let per_parse_account_num = calculate_per_parse_account_num(batch_size);
+    let per_parse_account_num =
+        calculate_per_parse_account_num(batch_size, batch_prove_threads_num);
 
     let mut parse_num = 0;
     let mut batch_proofs = vec![];
@@ -178,12 +182,8 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
             .collect();
         drop(_g);
 
-        let proofs = batch_prove_accounts(
-            &circuit_registry,
-            accounts,
-            BATCH_PROVING_THREADS_NUM,
-            batch_size,
-        );
+        let proofs =
+            batch_prove_accounts(&circuit_registry, accounts, batch_prove_threads_num, batch_size);
 
         assert_eq!(proofs.len(), root_hashes.len());
 
@@ -267,7 +267,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
             last_level_proofs,
             last_level_circuit_vd.clone(),
             &circuit_registry,
-            RECURSIVE_PROVING_THREADS_NUM,
+            recursive_prove_threads_num,
             level,
         );
 
@@ -370,6 +370,39 @@ fn dump_proofs(
         .map_err(|e| return PoRError::Io(e))?;
 
     ///////////////////////////////////////////////
+    let hash_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_hash_offset();
+    let root_hash = HashOut::<F>::from_partial(&root_proof.proof.public_inputs[hash_offset]);
+    let root_hash_bytes = root_hash
+        .elements
+        .iter()
+        .map(|x| x.to_canonical_u64().to_le_bytes())
+        .flatten()
+        .collect::<Vec<u8>>();
+    let root_hash = hex::encode(root_hash_bytes);
+
+    let equity_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_equity_offset();
+    let equity_sum = root_proof.proof.public_inputs[equity_offset].to_canonical_u64();
+
+    let debt_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_debt_offset();
+    let debt_sum = root_proof.proof.public_inputs[debt_offset].to_canonical_u64();
+    assert!(equity_sum >= debt_sum);
+    let balance_sum = equity_sum - debt_sum;
+    let info = Info {
+        root_hash: root_hash,
+        equity_sum: equity_sum,
+        debt_sum: debt_sum,
+        balance_sum: balance_sum,
+    };
+
+    let global_info_output_path = proof_output_dir_path.join(GLOBAL_INFO_FILENAME);
+    let mut global_info_file =
+        File::create(global_info_output_path.clone()).map_err(|e| PoRError::Io(e))?;
+
+    global_info_file
+        .write_all(json!(info).to_string().as_bytes())
+        .map_err(|e| return PoRError::Io(e))?;
+
+    ///////////////////////////////////////////////
     // generate and dump proof for each user
     // create a new account reader to avoid buffering previously loaded accounts in memory
     let file_manager = FileManager {};
@@ -394,7 +427,8 @@ fn dump_proofs(
     tracing::info!("start to generate and dump merkle proof for each of {} accounts", user_num);
 
     let bar = ProgressBar::new(user_num as u64);
-    let per_parse_account_num = calculate_per_parse_account_num(batch_size);
+    let per_parse_account_num =
+        calculate_per_parse_account_num(batch_size, cfg.batch_prove_threads_num);
 
     let cdb: Arc<dyn PoRDB> = Arc::from(db);
     let mut offset = 0;

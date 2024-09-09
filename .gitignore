@@ -10,3 +10,6 @@ test-data/proofs*/
 my_permanent_leveldb/
 *level_db*/
 *.json
+*DS_Store
+*tar
+release/

@@ -125,4 +125,7 @@ pub mod test {
             account_target.set_account_targets(accounts.get(0).unwrap(), pw);
         });
     }
+
+    #[test]
+    fn test_theory() {}
 }
