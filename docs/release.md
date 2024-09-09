@@ -20,7 +20,7 @@ In the current directory, a directory `proof` is generated with the below files:
 ## Verify only global proof
 For internal use. 
 ```
-global_proof_path="./proof/global_proof.jsonglobal_proof_path="./proof/global_proof.json""
+global_proof_path="./proof/global_proof.json"
 
 ./zk-por-verifier verify-global --proof-path ${global_proof_path}
 ```
@@ -49,10 +49,12 @@ Execution result: Ok(())
 ## Global proof and user proofs
 For external users to verify, 
 ```
+# the binary will look for global_proof.json and any files with *_inclusion_proof.json in the same directory for verification. So we first copy them to the current directory. 
+
 cp proof/global_proof.json ./global_proof.json
+# copy any one of user proofs. 
 cp proof/user_proofs/$(ls proof/user_proofs/ | head -n 1) ./user_inclusion_proof.json
 
-# the binary will look for global_proof.json and any files with *_inclusion_proof.json in the same directory for verification
 ./zk-por-verifier
 ```
 If successful, the console shows:

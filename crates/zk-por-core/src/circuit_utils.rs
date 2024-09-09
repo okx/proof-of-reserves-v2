@@ -25,6 +25,11 @@ pub fn prove_timing() -> TimingTree {
     TimingTree::new("prove", level)
 }
 
+pub fn recursive_levels(batch_num: usize, recursion_branchout_num: usize) -> usize {
+    let level = (batch_num as f64).log(recursion_branchout_num as f64).ceil() as usize;
+    std::cmp::max(1, level)
+}
+
 /// Test runner for ease of testing
 #[allow(clippy::unused_unit)]
 pub fn run_circuit_test<T, F, const D: usize>(test: T)

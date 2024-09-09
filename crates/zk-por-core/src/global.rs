@@ -1,4 +1,5 @@
 use crate::{
+    circuit_utils::recursive_levels,
     database::PoRDB,
     merkle_sum_prover::utils::hash_2_subhashes,
     recursive_prover::prover::hash_n_subhashes,
@@ -28,10 +29,7 @@ pub struct GlobalMst {
 
 impl GlobalMst {
     pub fn new(cfg: GlobalConfig) -> Self {
-        let top_level = std::cmp::max(
-            1,
-            (cfg.num_of_batches as f64).log(cfg.recursion_branchout_num as f64).ceil() as usize,
-        );
+        let top_level = recursive_levels(cfg.num_of_batches, cfg.recursion_branchout_num);
 
         let mst_vec = vec![HashOut::default(); 0]; // will resize later
         let mut mst = Self { inner: mst_vec, top_recursion_level: top_level, cfg: cfg };
