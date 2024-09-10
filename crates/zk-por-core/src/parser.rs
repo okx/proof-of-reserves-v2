@@ -200,7 +200,7 @@ impl AccountParser for FileAccountReader {
             let mut filled_len = 0;
 
             if self.offset < self.buffered_accounts.len() {
-                let filled_len = self.buffered_accounts.len() - self.offset;
+                filled_len = self.buffered_accounts.len() - self.offset;
                 result[0..filled_len].clone_from_slice(&self.buffered_accounts[(self.offset)..]);
             }
             let mut missing_len = result.len() - (self.buffered_accounts.len() - self.offset);
