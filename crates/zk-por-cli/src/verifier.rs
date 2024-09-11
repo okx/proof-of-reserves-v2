@@ -70,7 +70,9 @@ pub fn verify_user(
         .map(|user_proof_path| {
             let merkle_path = File::open(&user_proof_path).unwrap();
             let reader = std::io::BufReader::new(merkle_path);
-            let proof: MerkleProof = from_reader(reader).unwrap();
+            let proof: MerkleProof = from_reader(reader).expect(
+                format!("fail to parse user proof from path {:?}", user_proof_path).as_str(),
+            );
             let result = proof.verify_merkle_proof(root_hash);
             if verbose {
                 bar.inc(1);

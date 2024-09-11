@@ -6,16 +6,76 @@ use plonky2::{
     hash::{hash_types::HashOut, poseidon::PoseidonHash},
     plonk::config::Hasher,
 };
-use plonky2_field::types::Field;
+use plonky2_field::types::{Field, PrimeField64};
 use rand::Rng;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// A struct representing a users account. It represents their equity and debt as a Vector of goldilocks field elements.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Account {
     pub id: String, // 256 bit hex string
     pub equity: Vec<F>,
     pub debt: Vec<F>,
+}
+
+impl Serialize for Account {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("Account", 3)?;
+        state.serialize_field("id", &self.id)?;
+        // Custom serialization for equity and debt to ensure they are serialized in a specific format if needed
+        let equity_as_strings: Vec<String> = self
+            .equity
+            .iter()
+            .map(|e| {
+                let num = e.to_canonical_u64();
+                num.to_string()
+            })
+            .collect();
+        state.serialize_field("equity", &equity_as_strings)?;
+
+        let debt_as_strings: Vec<String> = self
+            .debt
+            .iter()
+            .map(|e| {
+                let num = e.to_canonical_u64();
+                num.to_string()
+            })
+            .collect();
+        state.serialize_field("debt", &debt_as_strings)?;
+        state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for Account {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct InnerAccount {
+            id: String,
+            equity: Vec<String>,
+            debt: Vec<String>,
+        }
+
+        let helper = InnerAccount::deserialize(deserializer)?;
+        let equity = helper
+            .equity
+            .iter()
+            .map(|e| F::from_canonical_u64(u64::from_str_radix(e, 10).unwrap()))
+            .collect();
+        let debt = helper
+            .debt
+            .iter()
+            .map(|e| F::from_canonical_u64(u64::from_str_radix(e, 10).unwrap()))
+            .collect();
+
+        Ok(Account { id: helper.id, equity: equity, debt: debt })
+    }
 }
 
 impl Account {
@@ -116,4 +176,31 @@ pub fn gen_empty_accounts(batch_size: usize, num_assets: usize) -> Vec<Account> 
             batch_size
         ];
     accounts
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json;
+
+    #[test]
+    fn test_account_json_marshalling() {
+        // Step 1: Create an instance of `Account`
+        let original_account = Account {
+            id: "1".to_owned(), // Assuming `id` is of type that implements `Serialize` and `Deserialize`
+            equity: vec![F::from_canonical_u64(0), F::from_canonical_u64(1)],
+            debt: vec![F::from_canonical_u64(0), F::from_canonical_u64(2)],
+        };
+
+        // Step 2: Serialize the `Account` instance to a JSON string
+        let json_string = serde_json::to_string(&original_account).unwrap();
+
+        // Step 3: Deserialize the JSON string back into an `Account` instance
+        let deserialized_account: Account = serde_json::from_str(&json_string).unwrap();
+
+        // Step 4: Assert that the original and deserialized instances are equal
+        assert_eq!(original_account.id, deserialized_account.id);
+        assert_eq!(original_account.equity, deserialized_account.equity);
+        assert_eq!(original_account.debt, deserialized_account.debt);
+    }
 }

@@ -1,9 +1,9 @@
 rm -rf release
 mkdir -p release/{config,sample_data}
 
-cargo build --release
+RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target x86_64-unknown-linux-gnu
 mv target/release/zk-por-cli release/zk-por-prover
-cargo build --features zk-por-core/verifier --release
+RUSTFLAGS="-C target-feature=+crt-static" cargo build --features zk-por-core/verifier --release --target x86_64-unknown-linux-gnu
 mv target/release/zk-por-cli release/zk-por-verifier
 
 mkdir -p release/config
@@ -13,4 +13,4 @@ mkdir -p release/sample_data
 cp -r test-data/batch0.json release/sample_data
 cp docs/release.md release/README.md
 
-tar -cvf zk-por.tar ./release/
+tar -cvf zk-por-linux.tar ./release/
