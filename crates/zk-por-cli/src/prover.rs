@@ -371,10 +371,6 @@ fn dump_proofs(
     );
     global_proof_writer.flush()?;
 
-    // global_proof_file
-    //     .write_all(json!(root_proof).to_string().as_bytes())
-    //     .map_err(|e| return PoRError::Io(e))?;
-
     ///////////////////////////////////////////////
     let hash_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_hash_offset();
     let root_hash = HashOut::<F>::from_partial(&root_proof.proof.public_inputs[hash_offset]);
