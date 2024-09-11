@@ -587,114 +587,6 @@ pub mod test {
         res.unwrap();
     }
 
-    // THIS IS THE TEST DATA FOR VERIFY
-    // #[test]
-    // pub fn poseidon_hash() {
-    //     let equity = vec![3,3,3,].iter().map(|x| F::from_canonical_u32(*x)).collect_vec();
-    //     let debt = vec![1,1,1,].iter().map(|x| F::from_canonical_u32(*x)).collect_vec();
-
-    //     let accounts = vec![
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33ad".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         },
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33ac".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         },
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33ab".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         },
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33aa".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         },
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33a1".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         },
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33a2".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         },
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33a3".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         },
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33a4".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         }
-    //     ];
-
-    //     let msts: Vec<MerkleSumTree> = accounts
-    //         .chunks(2)
-    //         .map(|account_batch| MerkleSumTree::new_tree_from_accounts(&account_batch.to_vec()))
-    //         .collect();
-
-    //     let mst_hashes = msts.iter().map(|x| x.merkle_sum_tree.iter().map(|y| y.hash).collect_vec()).collect_vec();
-    //     println!("msts:{:?}", mst_hashes);
-    //     let inputs = vec![
-    //         HashOut::from_vec(
-    //             vec![
-    //                 8699257539652901730,
-    //                 12847577670763395377,
-    //                 14540605839220144846,
-    //                 1921995570040415498,
-    //             ]
-    //             .iter()
-    //             .map(|x| F::from_canonical_u64(*x))
-    //             .collect::<Vec<F>>(),
-    //         ),
-    //         HashOut::from_vec(
-    //             vec![
-    //                 15026394135096265436,
-    //                 13313300609834454638,
-    //                 10151802728958521275,
-    //                 6200471959130767555,
-    //             ]
-    //             .iter()
-    //             .map(|x| F::from_canonical_u64(*x))
-    //             .collect::<Vec<F>>(),
-    //         ),
-    //         HashOut::from_vec(
-    //             vec![
-    //                 2010803994799996791,
-    //                 568450490466247075,
-    //                 18209684900543488748,
-    //                 7678193912819861368,
-    //             ]
-    //             .iter()
-    //             .map(|x| F::from_canonical_u64(*x))
-    //             .collect::<Vec<F>>(),
-    //         ),
-    //         HashOut::from_vec(
-    //             vec![
-    //                 13089029781628355232,
-    //                 10704046654659337561,
-    //                 15794212269117984095,
-    //                 15948192230150472783,
-    //             ]
-    //             .iter()
-    //             .map(|x| F::from_canonical_u64(*x))
-    //             .collect::<Vec<F>>(),
-    //         ),
-    //     ];
-
-    //     let hash = PoseidonHash::hash_no_pad(
-    //         inputs.iter().map(|x| x.elements).flatten().collect_vec().as_slice(),
-    //     );
-    //     println!("Hash: {:?}", hash);
-    // }
     #[test]
     pub fn test_json_merkle_proof() {
         let _gmst = GlobalMst::new(GlobalConfig {
@@ -768,10 +660,10 @@ pub mod test {
             MerkleProof { account, sum_tree_siblings, recursive_tree_siblings, index: 0 };
 
         let json_string = serde_json::to_string(&merkle_proof).unwrap();
-        println!("JSON: {:?}", json_string);
 
         // Step 3: Deserialize the JSON string back into an `Account` instance
         let deserialized_merkle_proof: MerkleProof = serde_json::from_str(&json_string).unwrap();
         assert_eq!(merkle_proof.index, deserialized_merkle_proof.index);
+        assert_eq!(merkle_proof.sum_tree_siblings, deserialized_merkle_proof.sum_tree_siblings);
     }
 }
