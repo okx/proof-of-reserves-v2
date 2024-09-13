@@ -267,8 +267,8 @@ pub fn parse_account_state(parsed_data: &Map<String, Value>, tokens: &Vec<String
     for token in tokens.iter() {
         let mut parsed_equity = 0 as u64;
         let mut parsed_debt = 0 as u64;
-        if let Some(parsed_balance) = token_map.get(token) {
-            let parsed_balance = parsed_balance.as_str().unwrap().parse::<i64>().unwrap();
+        if let Some(parsed_balance_str) = token_map.get(token) {
+            let parsed_balance = parsed_balance_str.as_str().unwrap().parse::<i64>().unwrap();
             let abs_val = parsed_balance.abs() as u64;
             if parsed_balance < 0 {
                 parsed_debt = abs_val;
