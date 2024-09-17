@@ -1,6 +1,13 @@
 # Config
 Edit `config/default.toml` such that `user_data_path` is the directory containing the user files only. Currently, it is set to `./sample_data` for demo. 
 
+# Check 
+check all user accounst are non-negative
+```
+cfg_dir_path="config"
+./zk-por-checker check-non-neg-user --cfg-path "${cfg_dir_path}" --output-path "${output_proof_dir_path}"
+```
+
 # Prove
 ```
 cfg_dir_path="config"
