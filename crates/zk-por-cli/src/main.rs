@@ -2,6 +2,7 @@ use std::{path::PathBuf, str::FromStr};
 
 use clap::{Parser, Subcommand};
 use zk_por_cli::{
+    checker::check_non_neg_user,
     constant::{DEFAULT_USER_PROOF_FILE_PATTERN, GLOBAL_PROOF_FILENAME},
     prover::prove,
     verifier::{verify_global, verify_user},
@@ -27,6 +28,11 @@ pub enum ZkPorCommitCommands {
         #[arg(short, long)]
         output_path: String, // path to output file
     },
+    CheckNonNegUser {
+        #[arg(short, long)]
+        cfg_path: String, // path to config file
+    },
+
     VerifyGlobal {
         #[arg(short, long)]
         proof_path: String,
@@ -49,6 +55,13 @@ impl Execute for Option<ZkPorCommitCommands> {
                 let prover_cfg = cfg.try_deserialize().unwrap();
                 let output_path = PathBuf::from_str(&output_path).unwrap();
                 prove(prover_cfg, output_path)
+            }
+
+            Some(ZkPorCommitCommands::CheckNonNegUser { cfg_path }) => {
+                let cfg = zk_por_core::config::ProverConfig::load(&cfg_path)
+                    .map_err(|e| PoRError::ConfigError(e))?;
+                let prover_cfg = cfg.try_deserialize().unwrap();
+                check_non_neg_user(prover_cfg)
             }
 
             Some(ZkPorCommitCommands::VerifyGlobal { proof_path: global_proof_path }) => {

@@ -35,7 +35,7 @@ use zk_por_core::{
 use zk_por_tracing::{init_tracing, TraceConfig};
 
 // as we use one thread to prove each batch, we load num_cpus batches to increase the parallelism.
-fn calculate_per_parse_account_num(batch_size: usize, threads_num: usize) -> usize {
+pub fn calculate_per_parse_account_num(batch_size: usize, threads_num: usize) -> usize {
     let num_cpus = num_cpus::get();
     let num_cpus = if threads_num < num_cpus { threads_num } else { num_cpus };
     num_cpus * batch_size
