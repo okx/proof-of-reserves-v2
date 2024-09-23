@@ -58,8 +58,7 @@ pub fn check_non_neg_user(cfg: ProverConfig) -> Result<(), PoRError> {
         for account in accounts {
             let equity_sum =
                 account.equity.iter().fold(F::ZERO, |acc, x| acc + *x).to_canonical_u64();
-            let debt_sum =
-                account.debt.iter().fold(F::ZERO, |acc, x| acc + *x).to_canonical_u64();
+            let debt_sum = account.debt.iter().fold(F::ZERO, |acc, x| acc + *x).to_canonical_u64();
 
             if equity_sum < debt_sum {
                 tracing::error!(

@@ -79,8 +79,21 @@ impl Execute for Option<ZkPorCommitCommands> {
 
             None => {
                 println!("============Validation started============");
-                let global_proof_path = PathBuf::from_str(GLOBAL_PROOF_FILENAME).unwrap();
-                let user_proof_path_pattern = DEFAULT_USER_PROOF_FILE_PATTERN.to_owned();
+                let exec_parent_path = std::env::current_exe()
+                    .expect("fail to get current exe path")
+                    .parent()
+                    .unwrap()
+                    .to_path_buf();
+
+                // join the dir path and GLOBAL_PROOF_FILENAME
+                let global_proof_path = exec_parent_path.join(GLOBAL_PROOF_FILENAME);
+
+                let user_proof_path_pattern = exec_parent_path
+                    .join(DEFAULT_USER_PROOF_FILE_PATTERN)
+                    .to_str()
+                    .unwrap()
+                    .to_string();
+
                 if verify_global(global_proof_path.clone(), false).is_ok() {
                     println!("Total sum and non-negative constraint validation passed")
                 } else {
