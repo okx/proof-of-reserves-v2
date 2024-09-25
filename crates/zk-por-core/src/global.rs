@@ -158,13 +158,6 @@ impl GlobalMst {
     /// `recursive_level` count from bottom to top; recursive_level = 1 means the bottom layer; increase whilve moving to the top.
     pub fn set_recursive_hash(&mut self, recursive_level: usize, index: usize, hash: HashOut<F>) {
         let idx = GlobalMst::get_recursive_global_index(&self.cfg, recursive_level, index);
-        tracing::debug!(
-            "set_recursive_hash, recursive_level: {:?}, index: {:?}, hash: {:?}, idx: {:?}",
-            recursive_level,
-            index,
-            hash,
-            idx,
-        );
         self.inner[idx] = hash;
     }
 

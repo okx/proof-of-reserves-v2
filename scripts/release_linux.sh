@@ -3,6 +3,8 @@ mkdir -p release/{config,sample_data}
 
 RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target x86_64-unknown-linux-gnu
 mv target/x86_64-unknown-linux-gnu/release/zk-por-cli release/zk-por-prover
+cp release/zk-por-prover release/zk-por-checker
+
 RUSTFLAGS="-C target-feature=+crt-static" cargo build --features zk-por-core/verifier --release --target x86_64-unknown-linux-gnu
 mv target/x86_64-unknown-linux-gnu/release/zk-por-cli release/zk-por-verifier
 
