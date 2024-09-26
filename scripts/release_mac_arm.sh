@@ -6,7 +6,7 @@ mv target/release/zk-por-cli release/zk-por-prover
 cp release/zk-por-prover release/zk-por-checker
 
 cargo build --features zk-por-core/verifier --release
-mv target/release/zk-por-cli release/zk-por-verifier
+mv target/release/zk-por-cli release/zk_STARK_Validator_v2
 
 mkdir -p release/config
 sed 's|/opt/data/zkpor/users/|./sample_data/|g' config/default.toml > release/config/default.toml

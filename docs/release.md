@@ -17,7 +17,7 @@ output_proof_dir_path="proof"
 ```
 In the current directory, a directory `proof` is generated with the below files:
 ```
-- global_proof.json # the sum and non-negative proof
+- sum_proof_data.json # the sum and non-negative proof
 - global_info.json # contains the root hash, the sum of equity, debt and balance (equity - debt)
 - user-proofs/ # directory containing user inclusion proofs, one user per file named with accountID
   - xxxxxxx.json
@@ -27,9 +27,9 @@ In the current directory, a directory `proof` is generated with the below files:
 ## Verify only global proof
 For internal use. 
 ```
-global_proof_path="./proof/global_proof.json"
+sum_proof_data_path="./proof/sum_proof_data.json"
 
-./zk-por-verifier verify-global --proof-path "${global_proof_path}"
+./zk_STARK_Validator_v2 verify-global --proof-path "${sum_proof_data_path}"
 ```
 If successful, the console shows
 ```
@@ -43,7 +43,7 @@ For internal use.
 ```
 user_proof_path_pattern="./proof/user_proofs/*.json" # use wildcard to verify multiple files
 
-./zk-por-verifier verify-user --global-proof-path "${global_proof_path}" --user-proof-path-pattern "${user_proof_path_pattern}"
+./zk_STARK_Validator_v2 verify-user --global-proof-path "${sum_proof_data_path}" --user-proof-path-pattern "${user_proof_path_pattern}"
 ```
 If successful, the console shows
 ```
@@ -56,13 +56,13 @@ Execution result: Ok(())
 ## Global proof and user proofs
 For external users to verify, 
 ```
-# the binary will look for global_proof.json and any files with *_inclusion_proof.json in the same directory for verification. So we first copy them to the current directory. 
+# the binary will look for sum_proof_data.json and any files with *_inclusion_proof.json in the same directory for verification. So we first copy them to the current directory. 
 
-cp proof/global_proof.json ./global_proof.json
+cp proof/sum_proof_data.json ./sum_proof_data.json
 # copy any one of user proofs. 
 cp proof/user_proofs/$(ls proof/user_proofs/ | head -n 1) ./user_inclusion_proof.json
 
-./zk-por-verifier
+./zk_STARK_Validator_v2
 ```
 If successful, the console shows:
 ```
