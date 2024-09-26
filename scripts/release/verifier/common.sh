@@ -5,7 +5,15 @@ function build_and_package() {
     TMR_DIR=""
     RUSTFLAGS="-C target-feature=+crt-static" cargo build --features zk-por-core/verifier --release --target ${TARGET} --package zk-por-cli --bin zk-por-cli 
 
-    mv target/${TARGET}/release/zk-por-cli ./zk_STARK_Validator_V2_${TARGET}_${VERSION}
+    if [ -f target/${TARGET}/release/zk-por-cli ]; then
+        mv target/${TARGET}/release/zk-por-cli ./zk_STARK_Validator_V2_${TARGET}_${VERSION}
+    elif [ -f target/${TARGET}/release/zk-por-cli.exe ]; then
+        mv target/${TARGET}/release/zk-por-cli.exe ./zk_STARK_Validator_V2_${TARGET}_${VERSION}
+    else
+        echo "zk-por-cli binary does not exist."
+        return 1
+    fi 
+
     zip ./zk_STARK_Validator_V2_${TARGET}_${VERSION}.zip ./zk_STARK_Validator_V2_${TARGET}_${VERSION}
     rm ./zk_STARK_Validator_V2_${TARGET}_${VERSION}
     mv ./zk_STARK_Validator_V2_${TARGET}_${VERSION}.zip validator/bin
