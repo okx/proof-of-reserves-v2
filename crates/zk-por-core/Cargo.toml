@@ -18,7 +18,7 @@ default = []
 verifier = []
 
 [dependencies]
-zk-por-db={path="../zk-por-db"}
+zk-por-db={path="../zk-por-db", optional = true}
 zk-por-tracing={path="../zk-por-tracing"}
 plonky2={workspace=true}
 plonky2_field={workspace=true}

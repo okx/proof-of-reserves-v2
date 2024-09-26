@@ -20,7 +20,7 @@ use zk_por_core::{
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
     config::{ConfigProver, ProverConfig},
-    database::{PoRDB, PoRGMSTMemoryDB, PoRLevelDB, PoRLevelDBOption},
+    database::{init_db, PoRDB},
     e2e::{batch_prove_accounts, prove_subproofs},
     error::PoRError,
     global::{GlobalConfig, GlobalMst, GLOBAL_MST},
@@ -64,15 +64,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
     let user_proof_output_path = proof_output_path.join(USER_PROOF_DIRNAME);
     ensure_output_dir_empty(user_proof_output_path)?;
 
-    let mut database: Box<dyn PoRDB>;
-    if let Some(level_db_config) = cfg.db {
-        database = Box::new(PoRLevelDB::new(PoRLevelDBOption {
-            user_map_dir: level_db_config.level_db_user_path.to_string(),
-            gmst_dir: level_db_config.level_db_gmst_path.to_string(),
-        }));
-    } else {
-        database = Box::new(PoRGMSTMemoryDB::new());
-    }
+    let mut database = init_db(cfg.db);
 
     let batch_size = cfg.prover.batch_size.unwrap_or(DEFAULT_BATCH_SIZE);
     let token_num = cfg.prover.tokens.len();
