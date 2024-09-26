@@ -3,6 +3,10 @@ use plonky2::hash::hash_types::HashOut;
 use rand::Rng;
 
 #[cfg(feature = "zk-por-db")]
+use plonky2::plonk::config::GenericHashOut;
+#[cfg(feature = "zk-por-db")]
+use std::str::FromStr;
+#[cfg(feature = "zk-por-db")]
 use zk_por_db::LevelDb;
 
 use super::config::ConfigDb;
