@@ -23,11 +23,8 @@ per_file_account_num=131072 # multiple of 1024, the batch size
 
 # test data will be generated to ./test-data/user-data
 python3 scripts/gen_test_data.py ${file_num} ${per_file_account_num}
-
-# extract the first account to generate merkle inclusion proof later. 
-account0_path="./test-data/account0.json"
-jq '.[0]' ./test-data/user-data/batch0.json > ${account0_path} 
 ```
+
 - prove
 ```
 cfg_dir_path="config"
@@ -37,31 +34,33 @@ cp ${cfg_dir_path}/default.toml ${cfg_dir_path}/local.toml
 # edit local.toml such that the field "user_data_path" to "test-data/user-data"
 sed -i '' 's|/opt/data/zkpor/users/|test-data/user-data|g' config/local.toml
 
-output_proof_path="global_proof.json"
+output_proof_dir_path="./test-data/proof"
 
-cargo run --release --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_path}
+cargo run --release --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_dir_path}
 ```
 
-- get the merkle proof
+- verify global proof
 ```
-inclusion_proof_path="account0_merkle_proof.json"
-cargo run --release --package zk-por-cli --bin zk-por-cli get-merkle-proof --account-path ${account0_path} --output-path ${inclusion_proof_path} --cfg-path ${cfg_dir_path}
+global_proof_path="./test-data/proof/global_proof.json"
+
+cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify-global --proof-path ${global_proof_path}
 ```
 
-- verify
+- verify user proof
 ```
-global_root_path="global_proof.json"
+global_proof_path="./test-data/proof/global_proof.json"
+# to verify all accounts
+user_proof_path_pattern="./test-data/proof/user_proofs/*.json"
 
-# parameter `inclusion-proof-path` is optional. If skipped, verification for an account's merkle inclusion is skipped. 
+# to verify one account with ${accountID}
+# user_proof_path_pattern="./test-data/user_proofs/${accountID}.json"
 
-cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify --global-proof-path ${global_root_path} --inclusion-proof-path ${inclusion_proof_path}
+cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify-user --global-proof-path ${global_proof_path} --user-proof-path-pattern ${user_proof_path_pattern}
 ```
 
 ## cli tool
 ```
 ./target/release/zk-por-cli --help
-./target/release/zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_path}
-./target/release/zk-por-cli get-merkle-proof --account-path account.json --output-path merkle_proof.json --cfg-path config
 ```
 
 ## Code Coverage

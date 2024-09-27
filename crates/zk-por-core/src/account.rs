@@ -1,19 +1,14 @@
+use crate::{
+    database::{PoRDB, UserId},
+    types::F,
+};
 use plonky2::{
     hash::{hash_types::HashOut, poseidon::PoseidonHash},
     plonk::config::Hasher,
 };
 use plonky2_field::types::Field;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::{collections::BTreeMap, fs::File, io::BufReader};
-
-use crate::{
-    database::{DataBase, UserId},
-    error::PoRError,
-    parser::parse_account_state,
-    types::F,
-};
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
 /// A struct representing a users account. It represents their equity and debt as a Vector of goldilocks field elements.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -72,31 +67,10 @@ impl Account {
             .map(|seg| F::from_canonical_u64(u64::from_str_radix(seg, 16).unwrap()))
             .collect::<Vec<F>>()
     }
-
-    /// Get a new account from a file path
-    pub fn new_from_file_path(path: String) -> Result<Self, PoRError> {
-        let file_res = File::open(path);
-
-        if file_res.is_err() {
-            return Err(PoRError::InvalidParameter("Invalid account json file path".to_string()));
-        }
-
-        let reader = BufReader::new(file_res.unwrap());
-        // Deserialize the json data to a struct
-        let account_map_res: Result<BTreeMap<String, Value>, _> = serde_json::from_reader(reader);
-
-        if account_map_res.is_err() {
-            return Err(PoRError::InvalidParameter("Invalid account json".to_string()));
-        }
-
-        let account = parse_account_state(&account_map_res.unwrap());
-
-        Ok(account)
-    }
 }
 
 pub fn persist_account_id_to_gmst_pos(
-    db: &mut DataBase,
+    db: &mut Box<dyn PoRDB>,
     accounts: &Vec<Account>,
     start_idx: usize,
 ) {

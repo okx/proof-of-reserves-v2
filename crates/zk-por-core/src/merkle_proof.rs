@@ -8,12 +8,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     account::Account,
-    database::{DataBase, UserId},
+    circuit_utils::recursive_levels,
+    database::{PoRDB, UserId},
     error::PoRError,
     global::{GlobalConfig, GlobalMst},
     merkle_sum_prover::utils::hash_2_subhashes,
     types::{D, F},
 };
+
+use std::sync::Arc;
 
 /// We use this wrapper struct for the left and right indexes of our recursive siblings. This is needed so a user knows the position of
 /// their own hash when hashing.
@@ -76,58 +79,24 @@ pub fn get_recursive_siblings_index(
     assert!(global_index < GlobalMst::get_num_of_leaves(cfg));
 
     let mut siblings = Vec::new();
-    let local_mst_root_index = cfg.batch_size * 2 - 2;
     let mst_batch_idx = global_index / cfg.batch_size;
-    let this_mst_root_idx =
-        GlobalMst::get_batch_tree_global_index(cfg, mst_batch_idx, local_mst_root_index);
+    let mut recursive_idx = mst_batch_idx / cfg.recursion_branchout_num;
+    let mut recursive_offset = mst_batch_idx % cfg.recursion_branchout_num;
 
-    let first_mst_root_idx = GlobalMst::get_batch_tree_global_index(cfg, 0, local_mst_root_index);
-    assert!(this_mst_root_idx >= first_mst_root_idx);
+    let recursive_level_num = recursive_levels(cfg.num_of_batches, cfg.recursion_branchout_num);
 
-    let this_mst_root_offset = this_mst_root_idx - first_mst_root_idx;
-    let mut recursive_idx = this_mst_root_offset / cfg.recursion_branchout_num;
-    let mut recursive_offset = this_mst_root_offset % cfg.recursion_branchout_num;
-
-    let layers = (cfg.num_of_batches.next_power_of_two() as f64)
-        .log(cfg.recursion_branchout_num as f64)
-        .ceil() as usize;
-
-    for i in 0..layers {
+    for i in 0..recursive_level_num {
         let mut left_layer = Vec::new();
         let mut right_layer = Vec::new();
-        if i == 0 {
-            for j in 0..cfg.recursion_branchout_num {
-                if j < recursive_offset {
-                    let index =
-                        first_mst_root_idx + (cfg.recursion_branchout_num * recursive_idx) + j;
-                    left_layer.push(index);
-                }
-
-                if j > recursive_offset {
-                    let index =
-                        first_mst_root_idx + (cfg.recursion_branchout_num * recursive_idx) + j;
-                    right_layer.push(index);
-                }
+        for j in 0..cfg.recursion_branchout_num {
+            let inner_level_idx = recursive_idx * cfg.recursion_branchout_num + j;
+            let index = GlobalMst::get_recursive_global_index(cfg, i, inner_level_idx);
+            if j < recursive_offset {
+                left_layer.push(index);
             }
-        } else {
-            for j in 0..cfg.recursion_branchout_num {
-                if j < recursive_offset {
-                    let index = GlobalMst::get_recursive_global_index(
-                        cfg,
-                        i,
-                        recursive_idx * cfg.recursion_branchout_num + j,
-                    );
-                    left_layer.push(index);
-                }
 
-                if j > recursive_offset {
-                    let index = GlobalMst::get_recursive_global_index(
-                        cfg,
-                        i,
-                        recursive_idx * cfg.recursion_branchout_num + j,
-                    );
-                    right_layer.push(index);
-                }
+            if j > recursive_offset {
+                right_layer.push(index);
             }
         }
 
@@ -149,7 +118,7 @@ pub struct RecursiveHashes {
 }
 
 impl RecursiveHashes {
-    pub fn new_from_index(indexes: &RecursiveIndex, db: &DataBase) -> Self {
+    pub fn new_from_index(indexes: &RecursiveIndex, db: Arc<dyn PoRDB>) -> Self {
         let left_hashes = indexes
             .left_indexes
             .iter()
@@ -188,7 +157,7 @@ pub struct MerkleProof {
 impl MerkleProof {
     pub fn new_from_account(
         account: &Account,
-        db: &DataBase,
+        db: Arc<dyn PoRDB>,
         cfg: &GlobalConfig,
     ) -> Result<MerkleProof, PoRError> {
         let user_id_res = UserId::from_hex_string(account.id.clone());
@@ -238,7 +207,7 @@ impl MerkleProof {
         if calculated_hash == gmst_root {
             Ok(())
         } else {
-            Err(PoRError::InvalidMerkleProof)
+            Err(PoRError::InvalidMerkleProof(self.account.id.clone()))
         }
     }
 }
@@ -248,7 +217,7 @@ pub fn get_merkle_proof_hashes_from_indexes(
     account: &Account,
     indexes: &MerkleProofIndex,
     user_index: usize,
-    db: &DataBase,
+    db: Arc<dyn PoRDB>,
 ) -> MerkleProof {
     let mst_hashes: Vec<HashOut<F>> = indexes
         .sum_tree_siblings
@@ -259,7 +228,7 @@ pub fn get_merkle_proof_hashes_from_indexes(
     let recursive_hashes: Vec<RecursiveHashes> = indexes
         .recursive_tree_siblings
         .iter()
-        .map(|x| RecursiveHashes::new_from_index(x, db))
+        .map(|x| RecursiveHashes::new_from_index(x, db.clone()))
         .collect();
 
     MerkleProof {

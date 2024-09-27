@@ -75,6 +75,16 @@ impl MerkleSumNodeTarget {
         }
     }
 
+    #[inline(always)]
+    pub fn pub_input_equity_offset() -> usize {
+        0
+    }
+
+    #[inline(always)]
+    pub fn pub_input_debt_offset() -> usize {
+        1
+    }
+
     pub fn pub_input_root_hash_offset() -> std::ops::Range<usize> {
         // the first two targets are sum_equity and sum_debt.
         2..6
@@ -110,7 +120,7 @@ impl From<Vec<Target>> for MerkleSumNodeTarget {
         }
     }
 }
-/// We can represent the Merkle Sum Tree as a vector of merkle sum nodes, with the root being the last node in the vector.    
+/// We can represent the Merkle Sum Tree as a vector of merkle sum nodes, with the root being the last node in the vector.
 pub struct MerkleSumTreeTarget {
     pub sum_tree: Vec<MerkleSumNodeTarget>,
 }
@@ -208,7 +218,8 @@ pub mod test {
         run_circuit_test(|builder, pw| {
             let path = "../../test-data/batch0.json";
             let fm = FileManager {};
-            let accounts = fm.read_json_into_accounts_vec(path);
+            let tokens = vec!["BTC".to_owned(), "ETH".to_owned()];
+            let accounts = fm.read_json_into_accounts_vec(path, &tokens);
 
             let account_target_1 =
                 AccountTargets::new_from_account(accounts.get(0).unwrap(), builder);

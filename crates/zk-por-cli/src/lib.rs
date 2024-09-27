@@ -1,4 +1,3 @@
-mod constant;
-pub mod merkle_proof;
+pub mod constant;
 pub mod prover;
 pub mod verifier;

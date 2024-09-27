@@ -91,7 +91,8 @@ pub mod test {
         run_circuit_test(|builder, pw| {
             let fm = FileManager {};
             let path = "../../test-data/batch0.json";
-            let accounts = fm.read_json_into_accounts_vec(path);
+            let tokens = vec!["BTC".to_owned(), "ETH".to_owned()];
+            let accounts = fm.read_json_into_accounts_vec(path, &tokens);
 
             let account_target =
                 AccountTargets::new_from_account(accounts.get(0).unwrap(), builder);
@@ -104,7 +105,8 @@ pub mod test {
         run_circuit_test(|builder, pw| {
             let path = "../../test-data/batch0.json";
             let fm = FileManager {};
-            let accounts = fm.read_json_into_accounts_vec(path);
+            let tokens = vec!["BTC".to_owned(), "ETH".to_owned()];
+            let accounts = fm.read_json_into_accounts_vec(path, &tokens);
 
             let account_target =
                 AccountTargets::new_from_account(accounts.get(0).unwrap(), builder);
@@ -123,4 +125,7 @@ pub mod test {
             account_target.set_account_targets(accounts.get(0).unwrap(), pw);
         });
     }
+
+    #[test]
+    fn test_theory() {}
 }

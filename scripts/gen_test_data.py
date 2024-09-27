@@ -8,13 +8,7 @@ import secrets
 import sys
 
 config = {
-    "coins": ["BTC","ETH","USDT","USDC","XRP","DOGE","SOL","OKB","APT","DASH","DOT","ELF","EOS","ETC","FIL","LINK","LTC","OKT","PEOPLE","TON","TRX","UNI","1INCH","AAVE","ADA","AGLD","AIDOGE","AKITA","ALGO","ALPHA","ANT","APE","API3","AR","ARB","ATOM","AVAX","AXS","BABYDOGE","BADGER","BAL","BAND","BAT","BCH","BETH","BICO","BLUR","BNB","BNT","BSV","BTM","BZZ","CEL","CELO","CELR","CETUS","CFX","CHZ","CLV","COMP","CONV","CORE","CQT","CRO","CRV","CSPR","CVC","DOME","DORA","DYDX","EFI","EGLD","ENJ","ENS","ETHW","FITFI","FLM","FLOKI","FLOW","FTM","GALA","GFT","GLMR","GMT","GMX","GODS","GRT","HBAR","ICP","IMX","IOST","IOTA","JST","KISHU","KLAY","KNC","KSM","LAT","LDO","LON","LOOKS","LPT","LRC","LUNA","LUNC","MAGIC","MANA","MASK","MATIC","MINA","MKR","NEAR","NEO","NFT","OMG","ONT","OP","PEPE","PERP","QTUM","RDNT","REN","RSR","RSS3","RVN","SAND","SHIB","SKL","SLP","SNT","SNX","STARL","STORJ","STX","SUI","SUSHI","SWEAT","SWRV","THETA","TRB","TUSD","UMA","USTC","WAVES","WOO","XCH","XLM","XMR","XTZ","YFI","YFII","YGG","ZEC","ZEN","ZIL","ZRX",
-    "BTC1","ETH1","USDT1","USDC1","XRP1","DOGE1","SOL1","OKB1","APT1","DASH1","DOT1","ELF1","EOS1","ETC1","FIL1","LINK1",
-    "BTC2","ETH2","USDT2","USDC2","XRP2","DOGE2","SOL2","OKB2","APT2","DASH2","DOT2","ELF2","EOS2","ETC2","FIL2","LINK2",
-    "BTC3","ETH3","USDT3","USDC3","XRP3","DOGE3","SOL3","OKB3","APT3","DASH3","DOT3","ELF3","EOS3","ETC3","FIL3","LINK3",
-    "BTC4","ETH4","USDT4","USDC4","XRP4","DOGE4","SOL4","OKB4","APT4","DASH4","DOT4","ELF4","EOS4","ETC4","FIL4","LINK4"
-
-    ]
+    "coins": [ "BTC", "ETH", "USDT", "USDC", "XRP", "DOGE", "SOL", "OKB", "APT", "DASH", "DOT", "ELF", "EOS", "ETC", "FIL", "LINK", "LTC", "OKT", "PEOPLE", "TON", "TRX", "UNI", "1INCH", "AAVE", "ADA", "AGLD", "AIDOGE", "AKITA", "ALGO", "ALPHA", "ANT", "APE", "API3", "AR", "ARB", "ATOM", "AVAX", "AXS", "BABYDOGE", "BADGER", "BAL", "BAND", "BAT", "BCH", "BETH", "BICO", "BLUR", "BNB", "BNT", "BSV", "BTM", "BZZ", "CEL", "CELO", "CELR", "CETUS", "CFX", "CHZ", "CLV", "COMP", "CONV", "CORE", "CQT", "CRO", "CRV", "CSPR", "CVC", "DOME", "DORA", "DYDX", "EFI", "EGLD", "ENJ", "ENS", "ETHW", "FITFI", "FLM", "FLOKI", "FLOW", "FTM", "GALA", "GFT", "GLMR", "GMT", "GMX", "GODS", "GRT", "HBAR", "ICP", "IMX", "IOST", "IOTA", "JST", "KISHU", "KLAY", "KNC", "KSM", "LAT", "LDO", "LON", "LOOKS", "LPT", "LRC", "LUNA", "LUNC", "MAGIC", "MANA", "MASK", "MATIC", "MINA", "MKR", "NEAR", "NEO", "NFT", "OMG", "ONT", "OP", "PEPE", "PERP", "QTUM", "RDNT", "REN", "RSR", "RSS3", "RVN", "SAND", "SHIB", "SKL", "SLP", "SNT", "SNX", "STARL", "STORJ", "STX", "SUI", "SUSHI", "SWEAT", "SWRV", "THETA", "TRB", "TUSD", "UMA", "USTC", "WAVES", "WOO", "XCH", "XLM", "XMR", "XTZ", "YFI", "YFII", "YGG", "ZEC", "ZEN", "ZIL", "ZRX", "BTC1", "ETH1", "USDT1", "USDC1", "XRP1", "DOGE1", "SOL1", "OKB1", "APT1", "DASH1", "DOT1", "ELF1", "EOS1", "ETC1", "FIL1", "LINK1", "BTC2", "ETH2", "USDT2", "USDC2", "XRP2", "DOGE2", "SOL2", "OKB2", "APT2", "DASH2", "DOT2", "ELF2", "EOS2", "ETC2", "FIL2", "LINK2", "BTC3", "ETH3", "USDT3", "USDC3", "XRP3", "DOGE3", "SOL3", "OKB3", "APT3", "DASH3", "DOT3", "ELF3", "EOS3", "ETC3", "FIL3", "LINK3", "BTC4", "ETH4", "USDT4", "USDC4", "XRP4", "DOGE4", "SOL4", "OKB4", "APT4", "DASH4", "DOT4", "ELF4", "EOS4", "ETC4", "FIL4", "LINK4" ]
 }
 coins = config["coins"]
 coins_len = len(coins)
@@ -33,14 +27,38 @@ def init_user_data( batch_index, batch_size):
     data = []
 
     for i in range(batch_size):
-        items = {"id" : generate_random_hex_string(64)}
+        account = {"id" : generate_random_hex_string(64)}
+        tokens_int = {}
+        negative_sum = 0
+        num_positive = 0
+        positive_sum = 0
         for coin in coins:
-            items[coin] = str(random.randrange(2**32)//coins_len)
-        data.append(items)
+            random_choice = random.choice([-1, 1])
+            abs_val = (random.randrange(2**32) // coins_len)
+            tokens_int[coin] = random_choice*abs_val
+            if random_choice == -1:
+                negative_sum = negative_sum + abs_val
+            else:
+                num_positive = num_positive + 1
+
+        tokens_str = {}
+        for coin in coins:
+            if tokens_int[coin] > 0:
+                token = tokens_int[coin] + int(negative_sum/num_positive)
+                positive_sum = positive_sum + token
+                tokens_str[coin] = str(token)
+            else:
+                tokens_str[coin] = str(tokens_int[coin])
+
+        assert(positive_sum > negative_sum)
+
+        account["assets"] = tokens_str
+
+        data.append(account)
     # current_working_directory = os.getcwd()
     # user_data_path = os.path.join(current_working_directory, "test-data/user-data/batch" + str(batch_index) + ".json")
     with open("./test-data/user-data/batch" + str(batch_index) + ".json", "w") as f:
-        json.dump(data, f)
+        json.dump(data, f, indent=4)
     return
 
 if __name__ == '__main__':

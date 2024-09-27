@@ -30,7 +30,7 @@ impl MerkleSumNode {
     pub fn new_from_children_nodes(node1: &MerkleSumNode, node2: &MerkleSumNode) -> MerkleSumNode {
         let hash = hash_2_subhashes::<F, D>(&node1.hash, &node2.hash);
         let sum_equity = node1.sum_equity + node2.sum_equity;
-        let sum_debt = node2.sum_debt + node2.sum_debt;
+        let sum_debt = node1.sum_debt + node2.sum_debt;
         MerkleSumNode { hash, sum_equity, sum_debt }
     }
 }
@@ -95,43 +95,60 @@ pub mod test {
     pub fn test_new_from_account() {
         let path = "../../test-data/batch0.json";
         let fm = FileManager {};
-        let accounts = fm.read_json_into_accounts_vec(path);
+        let tokens = vec!["BTC".to_owned(), "ETH".to_owned()];
+        let accounts = fm.read_json_into_accounts_vec(path, &tokens);
 
         let account = accounts.get(0).unwrap();
         let node = MerkleSumNode::new_from_account(account);
-        assert_eq!(node.sum_equity, F::from_canonical_u64(133876586));
-        assert_eq!(node.sum_debt, F::from_canonical_u64(0));
+        let btc_amount = 9195990;
+        let eth_amount = 0;
+        assert_eq!(node.sum_equity, F::from_canonical_u64(btc_amount + eth_amount));
+        assert_eq!(node.sum_debt, F::from_canonical_u64(1));
     }
 
     #[test]
     pub fn test_new_from_children_nodes() {
         let fm = FileManager {};
         let path = "../../test-data/batch0.json";
-        let accounts = fm.read_json_into_accounts_vec(path);
+        let tokens = vec!["BTC".to_owned(), "ETH".to_owned()];
+        let accounts = fm.read_json_into_accounts_vec(path, &tokens);
 
         let account1 = accounts.get(0).unwrap();
         let node1 = MerkleSumNode::new_from_account(account1);
+        let acc1_btc_amount = 9195990;
+        let acc1_eth_amount = 0;
+        let acc2_btc_amount = 1729750;
+        let acc2_eth_amount = 0;
+
         let account2 = accounts.get(1).unwrap();
         let node2 = MerkleSumNode::new_from_account(account2);
         let node3 = MerkleSumNode::new_from_children_nodes(&node1, &node2);
         assert_eq!(
             node3.sum_equity,
-            F::from_canonical_u64(138512215) + F::from_canonical_u64(133876586)
+            F::from_canonical_u64(
+                acc1_btc_amount + acc1_eth_amount + acc2_btc_amount + acc2_eth_amount
+            ),
         );
-        assert_eq!(node3.sum_debt, F::from_canonical_u64(0));
+        assert_eq!(node3.sum_debt, F::from_canonical_u64(2));
     }
 
     #[test]
     pub fn test_new_tree_from_accounts() {
         let fm = FileManager {};
         let path = "../../test-data/batch0.json";
-        let accounts = fm.read_json_into_accounts_vec(path);
+        let tokens = vec!["BTC".to_owned(), "ETH".to_owned()];
+        let accounts = fm.read_json_into_accounts_vec(path, &tokens);
         let mut sum_equity = F::ZERO;
+        let mut sum_debt = F::ZERO;
 
         for i in 0..accounts.len() {
             let account = accounts.get(i).unwrap();
             account.equity.iter().for_each(|x| {
                 sum_equity = sum_equity + *x;
+            });
+
+            account.debt.iter().for_each(|x| {
+                sum_debt = sum_debt + *x;
             });
         }
 
@@ -139,7 +156,7 @@ pub mod test {
 
         let root = tree.get_root();
         assert_eq!(root.sum_equity, sum_equity);
-        assert_eq!(root.sum_debt, F::ZERO);
+        assert_eq!(root.sum_debt, sum_debt);
     }
 
     #[test]

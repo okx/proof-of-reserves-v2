@@ -34,3 +34,11 @@ pub struct Proof {
     pub root_vd_digest: HashOut<F>,
     pub proof: ProofWithPublicInputs<F, C, D>,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct Info {
+    pub root_hash: String,
+    pub equity_sum: u64,
+    pub debt_sum: u64,
+    pub balance_sum: u64,
+}
