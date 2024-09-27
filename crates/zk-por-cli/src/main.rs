@@ -2,12 +2,8 @@ use std::{path::PathBuf, str::FromStr};
 
 use clap::{Parser, Subcommand};
 use zk_por_cli::{
-<<<<<<< Updated upstream
-    constant::{DEFAULT_USER_PROOF_FILE_PATTERN, GLOBAL_PROOF_FILENAME},
-=======
-    checker::check_non_neg_user,
+    // checker::check_non_neg_user,
     constant::{DEFAULT_USER_PROOF_FILE_PATTERN, GLOBAL_PROOF_FILENAME, VD_FILENAME},
->>>>>>> Stashed changes
     prover::prove,
     verifier::{verify_global, verify_user},
 };
@@ -58,12 +54,12 @@ impl Execute for Option<ZkPorCommitCommands> {
                 prove(prover_cfg, output_path)
             }
 
-            Some(ZkPorCommitCommands::CheckNonNegUser { cfg_path }) => {
-                let cfg = zk_por_core::config::ProverConfig::load(&cfg_path)
-                    .map_err(|e| PoRError::ConfigError(e))?;
-                let prover_cfg = cfg.try_deserialize().unwrap();
-                check_non_neg_user(prover_cfg)
-            }
+            // Some(ZkPorCommitCommands::CheckNonNegUser { cfg_path }) => {
+            //     let cfg = zk_por_core::config::ProverConfig::load(&cfg_path)
+            //         .map_err(|e| PoRError::ConfigError(e))?;
+            //     let prover_cfg = cfg.try_deserialize().unwrap();
+            //     check_non_neg_user(prover_cfg)
+            // }
 
             Some(ZkPorCommitCommands::VerifyGlobal { proof_path: global_proof_path, vd_path }) => {
                 let global_proof_path = PathBuf::from_str(&global_proof_path).unwrap();
@@ -82,8 +78,9 @@ impl Execute for Option<ZkPorCommitCommands> {
             None => {
                 println!("============Validation started============");
                 let global_proof_path = PathBuf::from_str(GLOBAL_PROOF_FILENAME).unwrap();
+                let vd_path = PathBuf::from_str(VD_FILENAME).unwrap();
                 let user_proof_path_pattern = DEFAULT_USER_PROOF_FILE_PATTERN.to_owned();
-                if verify_global(global_proof_path.clone(), false).is_ok() {
+                if verify_global(global_proof_path.clone(), vd_path, false).is_ok() {
                     println!("Total sum and non-negative constraint validation passed")
                 } else {
                     println!("Total sum and non-negative constraint validation failed")
