@@ -222,7 +222,7 @@ impl PoRDB for PoRGMSTMemoryDB {
 #[cfg(test)]
 mod test {
     use plonky2::{field::types::Sample, hash::hash_types::HashOut};
-    
+
     #[cfg(feature = "zk-por-db")]
     use tempdir::TempDir;
 
