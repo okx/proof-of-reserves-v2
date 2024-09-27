@@ -41,9 +41,9 @@ cargo run --release --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg
 
 - verify global proof
 ```
-global_proof_path="./test-data/proof/global_proof.json"
+global_proof_path="./test-data/proof/sum_proof_data.json"
 
-cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify-global --proof-path ${global_proof_path}
+cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify-global --proof-path ${global_proof_path} --vd-path ${vd_path}
 ```
 
 - verify user proof

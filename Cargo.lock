@@ -1333,6 +1333,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 
 [[package]]
+name = "papi-bindings"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81518ae527cd340ee685d9fdcd4a9bd2e4e36d60e72554a56f8a987cff7918cc"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "parking_lot"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1459,7 +1468,7 @@ checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 [[package]]
 name = "plonky2"
 version = "0.2.0"
-source = "git+https://github.com/okx/plonky2#140d97a8081cfae1d08e43199e13084c1acf1dae"
+source = "git+https://github.com/okx/plonky2?rev=a9573ca78115b7c0cbdf372fb7b652d34b29493e#a9573ca78115b7c0cbdf372fb7b652d34b29493e"
 dependencies = [
  "ahash 0.8.11",
  "anyhow",
@@ -1472,6 +1481,7 @@ dependencies = [
  "log",
  "num",
  "once_cell",
+ "papi-bindings",
  "plonky2_field",
  "plonky2_maybe_rayon",
  "plonky2_util",
@@ -1485,7 +1495,7 @@ dependencies = [
 [[package]]
 name = "plonky2_field"
 version = "0.2.0"
-source = "git+https://github.com/okx/plonky2#140d97a8081cfae1d08e43199e13084c1acf1dae"
+source = "git+https://github.com/okx/plonky2?rev=a9573ca78115b7c0cbdf372fb7b652d34b29493e#a9573ca78115b7c0cbdf372fb7b652d34b29493e"
 dependencies = [
  "anyhow",
  "itertools 0.11.0",
@@ -1504,7 +1514,7 @@ dependencies = [
 [[package]]
 name = "plonky2_maybe_rayon"
 version = "0.2.0"
-source = "git+https://github.com/okx/plonky2#140d97a8081cfae1d08e43199e13084c1acf1dae"
+source = "git+https://github.com/okx/plonky2?rev=a9573ca78115b7c0cbdf372fb7b652d34b29493e#a9573ca78115b7c0cbdf372fb7b652d34b29493e"
 dependencies = [
  "rayon",
 ]
@@ -1512,7 +1522,7 @@ dependencies = [
 [[package]]
 name = "plonky2_util"
 version = "0.2.0"
-source = "git+https://github.com/okx/plonky2#140d97a8081cfae1d08e43199e13084c1acf1dae"
+source = "git+https://github.com/okx/plonky2?rev=a9573ca78115b7c0cbdf372fb7b652d34b29493e#a9573ca78115b7c0cbdf372fb7b652d34b29493e"
 
 [[package]]
 name = "portable-atomic"
@@ -2539,6 +2549,7 @@ dependencies = [
  "plonky2",
  "plonky2_field",
  "rayon",
+ "serde",
  "serde_json",
  "tracing",
  "zk-por-core",

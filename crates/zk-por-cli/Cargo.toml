@@ -26,6 +26,7 @@ clap={workspace=true}
 indicatif={workspace=true}
 tracing={workspace=true}
 serde_json={workspace=true}
+serde={workspace=true}
 rayon={workspace=true}
 num_cpus={workspace=true}
 hex={workspace=true}

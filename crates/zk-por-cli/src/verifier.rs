@@ -1,26 +1,38 @@
 use indicatif::ProgressBar;
 use plonky2_field::types::PrimeField64;
 use rayon::iter::IntoParallelRefIterator;
+use serde::{Deserialize, Serialize};
 use serde_json::from_reader;
 use std::{fs::File, path::PathBuf};
-
 // Assuming Proof is defined in lib.rs and lib.rs is in the same crate
 use super::constant::RECURSION_BRANCHOUT_NUM;
+use std::io::Read;
 use zk_por_core::{
-    circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
-    circuit_registry::registry::CircuitRegistry,
     error::PoRError,
     merkle_proof::MerkleProof,
     recursive_prover::recursive_circuit::RecursiveTargets,
-    types::F,
+    types::{C, D, F},
     Proof,
 };
 
-use plonky2::hash::hash_types::HashOut;
+use plonky2::{
+    hash::hash_types::HashOut,
+    plonk::{
+        circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
+        verifier::verify,
+    },
+    util::serialization::DefaultGateSerializer,
+};
 use rayon::iter::ParallelIterator;
 
 use glob::glob;
 use std::io;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct VerifierData {
+    circuit_common: String,
+    verifier_only_data: String,
+}
 
 fn find_matching_files(pattern: &str) -> Result<Vec<PathBuf>, io::Error> {
     let mut matching_files = Vec::new();
@@ -101,7 +113,11 @@ pub fn verify_user(
     Ok(())
 }
 
-pub fn verify_global(global_proof_path: PathBuf, verbose: bool) -> Result<(), PoRError> {
+pub fn verify_global(
+    global_proof_path: PathBuf,
+    vd_path: PathBuf,
+    verbose: bool,
+) -> Result<(), PoRError> {
     let proof_file = File::open(&global_proof_path).unwrap();
     let reader = std::io::BufReader::new(proof_file);
 
@@ -112,48 +128,33 @@ pub fn verify_global(global_proof_path: PathBuf, verbose: bool) -> Result<(), Po
         panic!("The recursion_branchout_num is not configured to be equal to 64");
     }
 
-    let token_num = proof.general.token_num;
-    let batch_num = proof.general.batch_num;
     let round_num = proof.general.round_num;
-    let batch_size = proof.general.batch_size;
-    let recursive_circuit_configs =
-        get_recursive_circuit_configs::<RECURSION_BRANCHOUT_NUM>(batch_num);
-
-    // not to use trace::log to avoid the dependency on the trace config.
-    if verbose {
-        println!(
-            "start to reconstruct the circuit with {} recursive levels for round {}",
-            recursive_circuit_configs.len(),
-            round_num
-        );
-    }
-    let start = std::time::Instant::now();
-    let circuit_registry = CircuitRegistry::<RECURSION_BRANCHOUT_NUM>::init(
-        batch_size,
-        token_num,
-        STANDARD_CONFIG,
-        recursive_circuit_configs,
-    );
-
-    let root_circuit = circuit_registry.get_root_circuit();
-
-    let circuit_vd = root_circuit.verifier_only.circuit_digest;
-    if circuit_vd != proof.root_vd_digest {
-        return Err(PoRError::CircuitDigestMismatch);
-    }
 
     if verbose {
-        println!(
-            "successfully reconstruct the circuit for round {} in {:?}",
-            round_num,
-            start.elapsed()
-        );
-
         let equity = proof.proof.public_inputs
             [RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_equity_offset()];
         let debt = proof.proof.public_inputs
             [RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_debt_offset()];
-        if !root_circuit.verify(proof.proof).is_ok() {
+
+        let mut file = File::open(vd_path).unwrap();
+
+        let mut json_string = String::new();
+        file.read_to_string(&mut json_string).unwrap();
+        let vd_deserialized: VerifierData = serde_json::from_str(&json_string).unwrap();
+
+        let vd_recoverred: VerifierOnlyCircuitData<C, D> =
+            serde_json::from_str(&vd_deserialized.verifier_only_data).unwrap();
+
+        let gate_serializer = DefaultGateSerializer;
+        let common_data_recoverred = CommonCircuitData::<F, D>::from_bytes(
+            hex::decode(vd_deserialized.circuit_common).unwrap(),
+            &gate_serializer,
+        )
+        .unwrap();
+
+        let ret = verify(proof.proof, &vd_recoverred, &common_data_recoverred);
+
+        if !ret.is_ok() {
             return Err(PoRError::InvalidProof);
         }
 
