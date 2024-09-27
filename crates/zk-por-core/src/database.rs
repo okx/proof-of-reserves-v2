@@ -222,10 +222,14 @@ impl PoRDB for PoRGMSTMemoryDB {
 #[cfg(test)]
 mod test {
     use plonky2::{field::types::Sample, hash::hash_types::HashOut};
+    
+    #[cfg(feature = "zk-por-db")]
     use tempdir::TempDir;
 
+    #[cfg(feature = "zk-por-db")]
+    use crate::database::{PoRLevelDB, PoRLevelDBOption};
     use crate::{
-        database::{PoRDB, PoRLevelDB, PoRLevelDBOption, PoRMemoryDB, UserId},
+        database::{PoRDB, PoRMemoryDB, UserId},
         types::F,
     };
     use std::sync::RwLock;
@@ -256,6 +260,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(feature = "zk-por-db")]
     fn test_leveldb() {
         let tempdir_user = TempDir::new("example_user").unwrap();
         let tempdir_gmst = TempDir::new("example_gmst").unwrap();
