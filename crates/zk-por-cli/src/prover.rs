@@ -6,11 +6,11 @@ use indicatif::ProgressBar;
 use plonky2::hash::hash_types::HashOut;
 use plonky2_field::types::PrimeField64;
 use rayon::{iter::ParallelIterator, prelude::*};
-use serde_json::json;
+
 use std::{
     fs,
     fs::File,
-    io::Write,
+    io::{BufWriter, Write},
     path::PathBuf,
     str::FromStr,
     sync::{Arc, RwLock},
@@ -20,7 +20,7 @@ use zk_por_core::{
     circuit_config::{get_recursive_circuit_configs, STANDARD_CONFIG},
     circuit_registry::registry::CircuitRegistry,
     config::{ConfigProver, ProverConfig},
-    database::{PoRDB, PoRGMSTMemoryDB, PoRLevelDB, PoRLevelDBOption},
+    database::{init_db, PoRDB},
     e2e::{batch_prove_accounts, prove_subproofs},
     error::PoRError,
     global::{GlobalConfig, GlobalMst, GLOBAL_MST},
@@ -35,7 +35,7 @@ use zk_por_core::{
 use zk_por_tracing::{init_tracing, TraceConfig};
 
 // as we use one thread to prove each batch, we load num_cpus batches to increase the parallelism.
-fn calculate_per_parse_account_num(batch_size: usize, threads_num: usize) -> usize {
+pub fn calculate_per_parse_account_num(batch_size: usize, threads_num: usize) -> usize {
     let num_cpus = num_cpus::get();
     let num_cpus = if threads_num < num_cpus { threads_num } else { num_cpus };
     num_cpus * batch_size
@@ -64,15 +64,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
     let user_proof_output_path = proof_output_path.join(USER_PROOF_DIRNAME);
     ensure_output_dir_empty(user_proof_output_path)?;
 
-    let mut database: Box<dyn PoRDB>;
-    if let Some(level_db_config) = cfg.db {
-        database = Box::new(PoRLevelDB::new(PoRLevelDBOption {
-            user_map_dir: level_db_config.level_db_user_path.to_string(),
-            gmst_dir: level_db_config.level_db_gmst_path.to_string(),
-        }));
-    } else {
-        database = Box::new(PoRGMSTMemoryDB::new());
-    }
+    let mut database = init_db(cfg.db);
 
     let batch_size = cfg.prover.batch_size.unwrap_or(DEFAULT_BATCH_SIZE);
     let token_num = cfg.prover.tokens.len();
@@ -362,12 +354,14 @@ fn dump_proofs(
     let user_proof_output_dir_path = proof_output_dir_path.join(USER_PROOF_DIRNAME); // directory has been checked empty before.
 
     let global_proof_output_path = proof_output_dir_path.join(GLOBAL_PROOF_FILENAME);
-    let mut global_proof_file =
+    let global_proof_file =
         File::create(global_proof_output_path.clone()).map_err(|e| PoRError::Io(e))?;
 
-    global_proof_file
-        .write_all(json!(root_proof).to_string().as_bytes())
-        .map_err(|e| return PoRError::Io(e))?;
+    let mut global_proof_writer = BufWriter::new(global_proof_file);
+    serde_json::to_writer(&mut global_proof_writer, &root_proof).expect(
+        format!("fail to dump global proof file to {:?}", global_proof_output_path).as_str(),
+    );
+    global_proof_writer.flush()?;
 
     ///////////////////////////////////////////////
     let hash_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_hash_offset();
@@ -395,12 +389,14 @@ fn dump_proofs(
     };
 
     let global_info_output_path = proof_output_dir_path.join(GLOBAL_INFO_FILENAME);
-    let mut global_info_file =
+    let global_info_file =
         File::create(global_info_output_path.clone()).map_err(|e| PoRError::Io(e))?;
 
-    global_info_file
-        .write_all(json!(info).to_string().as_bytes())
-        .map_err(|e| return PoRError::Io(e))?;
+    let mut global_info_writer = BufWriter::new(global_info_file);
+    serde_json::to_writer(&mut global_info_writer, &info).expect(
+        format!("fail to dump global info file to {:?}", global_proof_output_path).as_str(),
+    );
+    global_info_writer.flush()?;
 
     ///////////////////////////////////////////////
     // generate and dump proof for each user
@@ -447,15 +443,20 @@ fn dump_proofs(
                 let user_proof_output_path =
                     user_proof_output_dir_path.join(format!("{}.json", account.id));
 
-                let mut user_proof_file = File::create(user_proof_output_path).expect(
+                let user_proof_file = File::create(user_proof_output_path).expect(
                     format!("fail to create user proof file for account {}", user_proof.account.id)
                         .as_str(),
                 );
 
-                user_proof_file.write_all(json!(user_proof).to_string().as_bytes()).expect(
+                let mut user_proof_writer = BufWriter::new(user_proof_file);
+                serde_json::to_writer(&mut user_proof_writer, &user_proof).expect(
                     format!("fail to write user proof file for account {}", user_proof.account.id)
                         .as_str(),
                 );
+                user_proof_writer.flush().expect(
+                    format!("fail to write user proof file for account {}", user_proof.account.id)
+                        .as_str(),
+                )
             });
 
             bar.inc(chunk.len() as u64);

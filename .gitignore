@@ -12,4 +12,4 @@ my_permanent_leveldb/
 *.json
 *DS_Store
 *tar
-release/
+/release/

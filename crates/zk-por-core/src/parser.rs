@@ -200,7 +200,7 @@ impl AccountParser for FileAccountReader {
             let mut filled_len = 0;
 
             if self.offset < self.buffered_accounts.len() {
-                let filled_len = self.buffered_accounts.len() - self.offset;
+                filled_len = self.buffered_accounts.len() - self.offset;
                 result[0..filled_len].clone_from_slice(&self.buffered_accounts[(self.offset)..]);
             }
             let mut missing_len = result.len() - (self.buffered_accounts.len() - self.offset);
@@ -258,28 +258,27 @@ pub fn parse_account_state(parsed_data: &Map<String, Value>, tokens: &Vec<String
 
     let token_map = parsed_data
         .get(ASSETS_KEY)
-        .expect(format!("Account {:?} dont have key `tokens`", parsed_data).as_str())
+        .expect(format!("Account {:?} dont have key `{:?}`", parsed_data, ASSETS_KEY).as_str())
         .as_object()
         .unwrap();
     let mut parsed_equities = Vec::new();
     let mut parsed_debts = Vec::new();
 
     for token in tokens.iter() {
-        let parsed_token = token_map.get(token);
-        if parsed_token.is_none() {
-            continue;
+        let mut parsed_equity = 0 as u64;
+        let mut parsed_debt = 0 as u64;
+        if let Some(parsed_balance_str) = token_map.get(token) {
+            let parsed_balance = parsed_balance_str.as_str().unwrap().parse::<i64>().unwrap();
+            let abs_val = parsed_balance.abs() as u64;
+            if parsed_balance < 0 {
+                parsed_debt = abs_val;
+            } else {
+                parsed_equity = abs_val;
+            }
         }
 
-        let parsed_val = parsed_token.unwrap().as_str().unwrap().parse::<i64>().unwrap();
-        let abs_val = parsed_val.abs() as u64;
-
-        if parsed_val < 0 {
-            parsed_debts.push(F::from_canonical_u64(abs_val));
-            parsed_equities.push(F::ZERO);
-        } else {
-            parsed_equities.push(F::from_canonical_u64(abs_val));
-            parsed_debts.push(F::ZERO);
-        }
+        parsed_equities.push(F::from_canonical_u64(parsed_equity));
+        parsed_debts.push(F::from_canonical_u64(parsed_debt));
     }
 
     Account { id: account_id.into(), equity: parsed_equities, debt: parsed_debts }

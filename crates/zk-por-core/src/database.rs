@@ -1,9 +1,15 @@
-use std::str::FromStr;
-
 use hex::ToHex;
-use plonky2::{hash::hash_types::HashOut, plonk::config::GenericHashOut};
+use plonky2::hash::hash_types::HashOut;
 use rand::Rng;
+
+#[cfg(feature = "zk-por-db")]
+use plonky2::plonk::config::GenericHashOut;
+#[cfg(feature = "zk-por-db")]
+use std::str::FromStr;
+#[cfg(feature = "zk-por-db")]
 use zk_por_db::LevelDb;
+
+use super::config::ConfigDb;
 
 use crate::{error::PoRError, global::GLOBAL_MST, types::F};
 use std::{collections::HashMap, sync::RwLock};
@@ -70,11 +76,13 @@ pub struct PoRLevelDBOption {
     pub gmst_dir: String,
 }
 
+#[cfg(feature = "zk-por-db")]
 pub struct PoRLevelDB {
     user_db: LevelDb<UserId>,
     gmst_db: LevelDb<i32>, // we use i32 as a key of type u32 is not provided by default in leveldb
 }
 
+#[cfg(feature = "zk-por-db")]
 impl PoRLevelDB {
     pub fn new(opt: PoRLevelDBOption) -> Self {
         Self {
@@ -84,6 +92,7 @@ impl PoRLevelDB {
     }
 }
 
+#[cfg(feature = "zk-por-db")]
 impl PoRDB for PoRLevelDB {
     fn add_batch_users(&mut self, batches: Vec<(UserId, u32)>) {
         let batches = batches
@@ -124,6 +133,27 @@ impl PoRDB for PoRLevelDB {
     }
 }
 
+pub fn init_db(db_config: Option<ConfigDb>) -> Box<dyn PoRDB> {
+    let database: Box<dyn PoRDB>;
+    if let Some(level_db_config) = db_config {
+        #[cfg(feature = "zk-por-db")]
+        {
+            database = Box::new(PoRLevelDB::new(PoRLevelDBOption {
+                user_map_dir: level_db_config.level_db_user_path.to_string(),
+                gmst_dir: level_db_config.level_db_gmst_path.to_string(),
+            }));
+        }
+
+        #[cfg(not(feature = "zk-por-db"))]
+        {
+            _ = level_db_config;
+            panic!("leveldb feature is not enabled");
+        }
+    } else {
+        database = Box::new(PoRGMSTMemoryDB::new());
+    }
+    database
+}
 pub struct PoRMemoryDB {
     user_map: HashMap<UserId, u32>,
     gmst_map: HashMap<i32, HashOut<F>>,
