@@ -1,13 +1,14 @@
 use itertools::Itertools;
 use plonky2::{
     hash::{hash_types::HashOut, poseidon::PoseidonHash},
-    plonk::config::Hasher,
+    plonk::config::{GenericHashOut, Hasher},
 };
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use serde::{Deserialize, Serialize};
+use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
     account::Account,
+    circuit_utils::recursive_levels,
     database::{PoRDB, UserId},
     error::PoRError,
     global::{GlobalConfig, GlobalMst},
@@ -78,58 +79,24 @@ pub fn get_recursive_siblings_index(
     assert!(global_index < GlobalMst::get_num_of_leaves(cfg));
 
     let mut siblings = Vec::new();
-    let local_mst_root_index = cfg.batch_size * 2 - 2;
     let mst_batch_idx = global_index / cfg.batch_size;
-    let this_mst_root_idx =
-        GlobalMst::get_batch_tree_global_index(cfg, mst_batch_idx, local_mst_root_index);
+    let mut recursive_idx = mst_batch_idx / cfg.recursion_branchout_num;
+    let mut recursive_offset = mst_batch_idx % cfg.recursion_branchout_num;
 
-    let first_mst_root_idx = GlobalMst::get_batch_tree_global_index(cfg, 0, local_mst_root_index);
-    assert!(this_mst_root_idx >= first_mst_root_idx);
+    let recursive_level_num = recursive_levels(cfg.num_of_batches, cfg.recursion_branchout_num);
 
-    let this_mst_root_offset = this_mst_root_idx - first_mst_root_idx;
-    let mut recursive_idx = this_mst_root_offset / cfg.recursion_branchout_num;
-    let mut recursive_offset = this_mst_root_offset % cfg.recursion_branchout_num;
-
-    let layers = (cfg.num_of_batches.next_power_of_two() as f64)
-        .log(cfg.recursion_branchout_num as f64)
-        .ceil() as usize;
-
-    for i in 0..layers {
+    for i in 0..recursive_level_num {
         let mut left_layer = Vec::new();
         let mut right_layer = Vec::new();
-        if i == 0 {
-            for j in 0..cfg.recursion_branchout_num {
-                if j < recursive_offset {
-                    let index =
-                        first_mst_root_idx + (cfg.recursion_branchout_num * recursive_idx) + j;
-                    left_layer.push(index);
-                }
-
-                if j > recursive_offset {
-                    let index =
-                        first_mst_root_idx + (cfg.recursion_branchout_num * recursive_idx) + j;
-                    right_layer.push(index);
-                }
+        for j in 0..cfg.recursion_branchout_num {
+            let inner_level_idx = recursive_idx * cfg.recursion_branchout_num + j;
+            let index = GlobalMst::get_recursive_global_index(cfg, i, inner_level_idx);
+            if j < recursive_offset {
+                left_layer.push(index);
             }
-        } else {
-            for j in 0..cfg.recursion_branchout_num {
-                if j < recursive_offset {
-                    let index = GlobalMst::get_recursive_global_index(
-                        cfg,
-                        i,
-                        recursive_idx * cfg.recursion_branchout_num + j,
-                    );
-                    left_layer.push(index);
-                }
 
-                if j > recursive_offset {
-                    let index = GlobalMst::get_recursive_global_index(
-                        cfg,
-                        i,
-                        recursive_idx * cfg.recursion_branchout_num + j,
-                    );
-                    right_layer.push(index);
-                }
+            if j > recursive_offset {
+                right_layer.push(index);
             }
         }
 
@@ -144,10 +111,74 @@ pub fn get_recursive_siblings_index(
 
 /// We use this wrapper struct for the left and right hashes of our recursive siblings. This is needed so a user knows the position of
 /// their own hash when hashing.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RecursiveHashes {
     left_hashes: Vec<HashOut<F>>,
     right_hashes: Vec<HashOut<F>>,
+}
+
+impl Serialize for RecursiveHashes {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("RecursiveHashes", 2)?;
+
+        let left_hashes: Vec<String> = self
+            .left_hashes
+            .iter()
+            .map(|e| {
+                let bytes = e.to_bytes();
+                hex::encode(&bytes)
+            })
+            .collect();
+        state.serialize_field("left_hashes", &left_hashes)?;
+
+        let right_hashes: Vec<String> = self
+            .right_hashes
+            .iter()
+            .map(|e| {
+                let bytes = e.to_bytes();
+                hex::encode(&bytes)
+            })
+            .collect();
+        state.serialize_field("right_hashes", &right_hashes)?;
+        state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for RecursiveHashes {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Inner {
+            left_hashes: Vec<String>,
+            right_hashes: Vec<String>,
+        }
+
+        let helper = Inner::deserialize(deserializer)?;
+        let left_hashes = helper
+            .left_hashes
+            .iter()
+            .map(|e| {
+                let bytes = hex::decode(e).unwrap();
+                HashOut::from_bytes(&bytes)
+            })
+            .collect();
+        let right_hashes = helper
+            .right_hashes
+            .iter()
+            .map(|e| {
+                let bytes = hex::decode(e).unwrap();
+                HashOut::from_bytes(&bytes)
+            })
+            .collect();
+
+        Ok(RecursiveHashes { left_hashes: left_hashes, right_hashes: right_hashes })
+    }
 }
 
 impl RecursiveHashes {
@@ -179,12 +210,69 @@ impl RecursiveHashes {
 
 /// Hashes for a given users merkle proof of inclusion siblings in the Global Merkle Sum Tree, also includes account data as it is needed for the verification
 /// of the merkle proof (needed to calculate own hash)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct MerkleProof {
     pub account: Account,
     pub index: usize,
     pub sum_tree_siblings: Vec<HashOut<F>>,
     pub recursive_tree_siblings: Vec<RecursiveHashes>,
+}
+
+impl Serialize for MerkleProof {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("MerkleProof", 4)?;
+        state.serialize_field("account", &self.account)?;
+        state.serialize_field("index", &self.index)?;
+
+        let sum_tree_siblings: Vec<String> = self
+            .sum_tree_siblings
+            .iter()
+            .map(|e| {
+                let bytes = e.to_bytes();
+                hex::encode(&bytes)
+            })
+            .collect();
+
+        state.serialize_field("sum_tree_siblings", &sum_tree_siblings)?;
+        state.serialize_field("recursive_tree_siblings", &self.recursive_tree_siblings)?;
+        state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for MerkleProof {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct InnerMerkleProof {
+            account: Account,
+            index: usize,
+            sum_tree_siblings: Vec<String>,
+            recursive_tree_siblings: Vec<RecursiveHashes>,
+        }
+
+        let helper = InnerMerkleProof::deserialize(deserializer)?;
+        let sum_tree_siblings = helper
+            .sum_tree_siblings
+            .iter()
+            .map(|e| {
+                let bytes = hex::decode(e).unwrap();
+                HashOut::from_bytes(&bytes)
+            })
+            .collect();
+
+        Ok(MerkleProof {
+            account: helper.account,
+            index: helper.index,
+            sum_tree_siblings: sum_tree_siblings,
+            recursive_tree_siblings: helper.recursive_tree_siblings,
+        })
+    }
 }
 
 impl MerkleProof {
@@ -499,112 +587,83 @@ pub mod test {
         res.unwrap();
     }
 
-    // THIS IS THE TEST DATA FOR VERIFY
-    // #[test]
-    // pub fn poseidon_hash() {
-    //     let equity = vec![3,3,3,].iter().map(|x| F::from_canonical_u32(*x)).collect_vec();
-    //     let debt = vec![1,1,1,].iter().map(|x| F::from_canonical_u32(*x)).collect_vec();
+    #[test]
+    pub fn test_json_merkle_proof() {
+        let _gmst = GlobalMst::new(GlobalConfig {
+            num_of_tokens: 3,
+            num_of_batches: 4,
+            batch_size: 2,
+            recursion_branchout_num: 4,
+        });
 
-    //     let accounts = vec![
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33ad".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         },
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33ac".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         },
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33ab".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         },
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33aa".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         },
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33a1".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         },
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33a2".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         },
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33a3".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         },
-    //         Account{
-    //             id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33a4".to_string(),
-    //             equity: equity.clone(),
-    //             debt: debt.clone(),
-    //         }
-    //     ];
+        let equity = vec![0, 3, 3].iter().map(|x| F::from_canonical_u32(*x)).collect_vec();
+        let debt = vec![1, 1, 1].iter().map(|x| F::from_canonical_u32(*x)).collect_vec();
 
-    //     let msts: Vec<MerkleSumTree> = accounts
-    //         .chunks(2)
-    //         .map(|account_batch| MerkleSumTree::new_tree_from_accounts(&account_batch.to_vec()))
-    //         .collect();
+        let sum_tree_siblings = vec![HashOut::from_vec(
+            vec![
+                7609058119952049295,
+                8895839458156070742,
+                1052773619972611009,
+                6038312163525827182,
+            ]
+            .iter()
+            .map(|x| F::from_canonical_u64(*x))
+            .collect::<Vec<F>>(),
+        )];
 
-    //     let mst_hashes = msts.iter().map(|x| x.merkle_sum_tree.iter().map(|y| y.hash).collect_vec()).collect_vec();
-    //     println!("msts:{:?}", mst_hashes);
-    //     let inputs = vec![
-    //         HashOut::from_vec(
-    //             vec![
-    //                 8699257539652901730,
-    //                 12847577670763395377,
-    //                 14540605839220144846,
-    //                 1921995570040415498,
-    //             ]
-    //             .iter()
-    //             .map(|x| F::from_canonical_u64(*x))
-    //             .collect::<Vec<F>>(),
-    //         ),
-    //         HashOut::from_vec(
-    //             vec![
-    //                 15026394135096265436,
-    //                 13313300609834454638,
-    //                 10151802728958521275,
-    //                 6200471959130767555,
-    //             ]
-    //             .iter()
-    //             .map(|x| F::from_canonical_u64(*x))
-    //             .collect::<Vec<F>>(),
-    //         ),
-    //         HashOut::from_vec(
-    //             vec![
-    //                 2010803994799996791,
-    //                 568450490466247075,
-    //                 18209684900543488748,
-    //                 7678193912819861368,
-    //             ]
-    //             .iter()
-    //             .map(|x| F::from_canonical_u64(*x))
-    //             .collect::<Vec<F>>(),
-    //         ),
-    //         HashOut::from_vec(
-    //             vec![
-    //                 13089029781628355232,
-    //                 10704046654659337561,
-    //                 15794212269117984095,
-    //                 15948192230150472783,
-    //             ]
-    //             .iter()
-    //             .map(|x| F::from_canonical_u64(*x))
-    //             .collect::<Vec<F>>(),
-    //         ),
-    //     ];
+        let recursive_tree_siblings = vec![RecursiveHashes {
+            left_hashes: vec![],
+            right_hashes: vec![
+                HashOut::from_vec(
+                    vec![
+                        15026394135096265436,
+                        13313300609834454638,
+                        10151802728958521275,
+                        6200471959130767555,
+                    ]
+                    .iter()
+                    .map(|x| F::from_canonical_u64(*x))
+                    .collect::<Vec<F>>(),
+                ),
+                HashOut::from_vec(
+                    vec![
+                        2010803994799996791,
+                        568450490466247075,
+                        18209684900543488748,
+                        7678193912819861368,
+                    ]
+                    .iter()
+                    .map(|x| F::from_canonical_u64(*x))
+                    .collect::<Vec<F>>(),
+                ),
+                HashOut::from_vec(
+                    vec![
+                        13089029781628355232,
+                        10704046654659337561,
+                        15794212269117984095,
+                        15948192230150472783,
+                    ]
+                    .iter()
+                    .map(|x| F::from_canonical_u64(*x))
+                    .collect::<Vec<F>>(),
+                ),
+            ],
+        }];
 
-    //     let hash = PoseidonHash::hash_no_pad(
-    //         inputs.iter().map(|x| x.elements).flatten().collect_vec().as_slice(),
-    //     );
-    //     println!("Hash: {:?}", hash);
-    // }
+        let account = Account {
+            id: "320b5ea99e653bc2b593db4130d10a4efd3a0b4cc2e1a6672b678d71dfbd33ad".to_string(),
+            equity: equity.clone(),
+            debt: debt.clone(),
+        };
+
+        let merkle_proof =
+            MerkleProof { account, sum_tree_siblings, recursive_tree_siblings, index: 0 };
+
+        let json_string = serde_json::to_string(&merkle_proof).unwrap();
+
+        // Step 3: Deserialize the JSON string back into an `Account` instance
+        let deserialized_merkle_proof: MerkleProof = serde_json::from_str(&json_string).unwrap();
+        assert_eq!(merkle_proof.index, deserialized_merkle_proof.index);
+        assert_eq!(merkle_proof.sum_tree_siblings, deserialized_merkle_proof.sum_tree_siblings);
+    }
 }

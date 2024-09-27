@@ -120,7 +120,7 @@ impl From<Vec<Target>> for MerkleSumNodeTarget {
         }
     }
 }
-/// We can represent the Merkle Sum Tree as a vector of merkle sum nodes, with the root being the last node in the vector.    
+/// We can represent the Merkle Sum Tree as a vector of merkle sum nodes, with the root being the last node in the vector.
 pub struct MerkleSumTreeTarget {
     pub sum_tree: Vec<MerkleSumNodeTarget>,
 }
