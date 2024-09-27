@@ -1,4 +1,8 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{
+    io::{stdin, Read},
+    path::PathBuf,
+    str::FromStr,
+};
 
 use clap::{Parser, Subcommand};
 use zk_por_cli::{
@@ -115,6 +119,7 @@ impl Execute for Option<ZkPorCommitCommands> {
 fn main() -> std::result::Result<(), PoRError> {
     let cli = Cli::parse();
     let r = cli.command.execute();
-    println!("Execution result: {:?}", r);
+    println!("Execution result: {:?}. Press Enter to quit...", r);
+    stdin().read_exact(&mut [0]).unwrap();
     Ok(())
 }
