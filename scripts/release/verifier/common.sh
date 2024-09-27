@@ -1,6 +1,7 @@
 function build_and_package() {
     mkdir -p validator/bin
 	TARGET=$1
+    rustup target add $TARGET
     VERSION=$2
     TMR_DIR=""
     RUSTFLAGS="-C target-feature=+crt-static" cargo build --features zk-por-core/verifier --release --target ${TARGET} --package zk-por-cli --bin zk-por-cli 

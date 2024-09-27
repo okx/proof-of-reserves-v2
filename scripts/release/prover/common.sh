@@ -1,5 +1,6 @@
 function build_and_package() {
 	TARGET=$1
+    rustup target add $TARGET
 	RELEASE_TMP_DIR="./release_tmp"
     rm -rf ${RELEASE_TMP_DIR}
     mkdir -p ${RELEASE_TMP_DIR}/{config,sample_data}
