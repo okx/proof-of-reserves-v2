@@ -120,6 +120,6 @@ fn main() -> std::result::Result<(), PoRError> {
     let cli = Cli::parse();
     let r = cli.command.execute();
     println!("Execution result: {:?}. Press Enter to quit...", r);
-    stdin().read(&mut [0]).unwrap();
+    stdin().read_exact(&mut [0]).unwrap();
     Ok(())
 }
