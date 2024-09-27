@@ -1,7 +1,12 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{
+    io::{stdin, Read},
+    path::PathBuf,
+    str::FromStr,
+};
 
 use clap::{Parser, Subcommand};
 use zk_por_cli::{
+    checker::check_non_neg_user,
     constant::{DEFAULT_USER_PROOF_FILE_PATTERN, GLOBAL_PROOF_FILENAME},
     prover::prove,
     verifier::{verify_global, verify_user},
@@ -27,6 +32,11 @@ pub enum ZkPorCommitCommands {
         #[arg(short, long)]
         output_path: String, // path to output file
     },
+    CheckNonNegUser {
+        #[arg(short, long)]
+        cfg_path: String, // path to config file
+    },
+
     VerifyGlobal {
         #[arg(short, long)]
         proof_path: String,
@@ -51,6 +61,13 @@ impl Execute for Option<ZkPorCommitCommands> {
                 prove(prover_cfg, output_path)
             }
 
+            Some(ZkPorCommitCommands::CheckNonNegUser { cfg_path }) => {
+                let cfg = zk_por_core::config::ProverConfig::load(&cfg_path)
+                    .map_err(|e| PoRError::ConfigError(e))?;
+                let prover_cfg = cfg.try_deserialize().unwrap();
+                check_non_neg_user(prover_cfg)
+            }
+
             Some(ZkPorCommitCommands::VerifyGlobal { proof_path: global_proof_path }) => {
                 let global_proof_path = PathBuf::from_str(&global_proof_path).unwrap();
                 verify_global(global_proof_path, true)
@@ -66,8 +83,21 @@ impl Execute for Option<ZkPorCommitCommands> {
 
             None => {
                 println!("============Validation started============");
-                let global_proof_path = PathBuf::from_str(GLOBAL_PROOF_FILENAME).unwrap();
-                let user_proof_path_pattern = DEFAULT_USER_PROOF_FILE_PATTERN.to_owned();
+                let exec_parent_path = std::env::current_exe()
+                    .expect("fail to get current exe path")
+                    .parent()
+                    .unwrap()
+                    .to_path_buf();
+
+                // join the dir path and GLOBAL_PROOF_FILENAME
+                let global_proof_path = exec_parent_path.join(GLOBAL_PROOF_FILENAME);
+
+                let user_proof_path_pattern = exec_parent_path
+                    .join(DEFAULT_USER_PROOF_FILE_PATTERN)
+                    .to_str()
+                    .unwrap()
+                    .to_string();
+
                 if verify_global(global_proof_path.clone(), false).is_ok() {
                     println!("Total sum and non-negative constraint validation passed")
                 } else {
@@ -89,6 +119,7 @@ impl Execute for Option<ZkPorCommitCommands> {
 fn main() -> std::result::Result<(), PoRError> {
     let cli = Cli::parse();
     let r = cli.command.execute();
-    println!("Execution result: {:?}", r);
+    println!("Execution result: {:?}. Press Enter to quit...", r);
+    stdin().read_exact(&mut [0]).unwrap();
     Ok(())
 }
