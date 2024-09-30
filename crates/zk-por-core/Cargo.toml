@@ -16,12 +16,14 @@ categories.workspace = true
 [features]
 default = []
 verifier = []
+cuda = ["cryptography_cuda/cuda","plonky2/cuda","plonky2/batch"]
 
 [dependencies]
 zk-por-db={path="../zk-por-db", optional = true}
 zk-por-tracing={path="../zk-por-tracing"}
 plonky2={workspace=true}
 plonky2_field={workspace=true}
+cryptography_cuda={workspace=true}
 rand={workspace=true}
 log = "0.4.17"
 serde_with = "3.9.0"

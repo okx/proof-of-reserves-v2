@@ -13,6 +13,9 @@ use zk_por_cli::{
 };
 use zk_por_core::error::PoRError;
 
+#[cfg(feature="cuda")]
+use cryptography_cuda::init_cuda_degree_rs;
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Cli {
@@ -117,8 +120,13 @@ impl Execute for Option<ZkPorCommitCommands> {
 }
 
 fn main() -> std::result::Result<(), PoRError> {
+    #[cfg(feature="cuda")]
+    init_cuda_degree_rs(22);
+
     let cli = Cli::parse();
+    let start = std::time::Instant::now();
     let r = cli.command.execute();
+    println!("Command execution time: {:?} seconds", start.elapsed().as_secs());
     println!("Execution result: {:?}. Press Enter to quit...", r);
     stdin().read_exact(&mut [0]).unwrap();
     Ok(())

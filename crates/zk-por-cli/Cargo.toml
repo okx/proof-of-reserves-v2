@@ -15,12 +15,14 @@ categories.workspace = true
 
 [features]
 default = []
+cuda = ["cryptography_cuda/cuda","plonky2/cuda","plonky2/batch"]
 
 [dependencies]
 zk-por-tracing={path="../zk-por-tracing"}
 zk-por-core={path="../zk-por-core"}
 plonky2={workspace=true}
 plonky2_field={workspace=true}
+cryptography_cuda={workspace=true}
 clap={workspace=true}
 indicatif={workspace=true}
 tracing={workspace=true}
