@@ -325,7 +325,6 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
     let proof = Proof {
         general: General {
             round_num: cfg.prover.round_no,
-            batch_num: batch_num,
             recursion_branchout_num: RECURSION_BRANCHOUT_NUM,
             batch_size: batch_size,
             token_num: token_num,

@@ -22,7 +22,6 @@ pub mod util;
 #[derive(Serialize, Deserialize)]
 pub struct General {
     pub round_num: usize,
-    pub batch_num: usize,
     pub recursion_branchout_num: usize,
     pub batch_size: usize,
     pub token_num: usize,
