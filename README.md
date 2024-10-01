@@ -39,23 +39,39 @@ output_proof_dir_path="./test-data/proof"
 cargo run --release --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_dir_path}
 ```
 
+With GPU support, run:
+```
+export NUM_OF_GPUS=1
+cargo run --release --features=cuda --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_dir_path}
+```
+This should be 40-50% faster than running on the CPU. Note: you need at least 24 GB of GPU RAM to run the code with the current parameters. This was tested on an RTX 4090 GPU.
+
+
 - verify global proof
 ```
-global_proof_path="./test-data/proof/global_proof.json"
+global_proof_path="./test-data/proof/sum_proof_data.json"
 
+# on CPU-only
 cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify-global --proof-path ${global_proof_path}
+
+# on GPU
+cargo run --features=cuda,zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify-global --proof-path ${global_proof_path}
 ```
 
 - verify user proof
 ```
-global_proof_path="./test-data/proof/global_proof.json"
+global_proof_path="./test-data/proof/sum_proof_data.json"
 # to verify all accounts
 user_proof_path_pattern="./test-data/proof/user_proofs/*.json"
 
 # to verify one account with ${accountID}
-# user_proof_path_pattern="./test-data/user_proofs/${accountID}.json"
+# user_proof_path_pattern="./test-data/proof/user_proofs/${accountID}.json"
 
+# on CPU-only
 cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify-user --global-proof-path ${global_proof_path} --user-proof-path-pattern ${user_proof_path_pattern}
+
+# on GPU
+cargo run --features=cuda,zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify-user --global-proof-path ${global_proof_path} --user-proof-path-pattern ${user_proof_path_pattern}
 ```
 
 ## cli tool

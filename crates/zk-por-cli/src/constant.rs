@@ -1,4 +1,4 @@
-pub const RECURSION_BRANCHOUT_NUM: usize = 16;
+pub const RECURSION_BRANCHOUT_NUM: usize = 8;
 pub const DEFAULT_BATCH_SIZE: usize = 1024;
 pub const GLOBAL_PROOF_FILENAME: &str = "sum_proof_data.json";
 pub const GLOBAL_INFO_FILENAME: &str = "global_info.json";
