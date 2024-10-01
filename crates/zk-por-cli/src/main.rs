@@ -117,10 +117,15 @@ impl Execute for Option<ZkPorCommitCommands> {
     }
 }
 
-fn main() -> std::result::Result<(), PoRError> {
+fn main() {
     let cli = Cli::parse();
     let r = cli.command.execute();
-    println!("Execution result: {:?}. Press Enter to quit...", r);
-    stdin().read_exact(&mut [0]).unwrap();
-    Ok(())
+    let is_prove_command =
+        matches!(cli.command, Some(ZkPorCommitCommands::Prove { cfg_path: _, output_path: _ }));
+    if is_prove_command {
+        println!("Execution result: {:?}", r);
+    } else {
+        println!("Execution result: {:?}. Press Enter to quit...", r);
+        stdin().read_exact(&mut [0]).unwrap();
+    }
 }

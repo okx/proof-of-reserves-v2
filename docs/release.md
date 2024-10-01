@@ -5,7 +5,7 @@ Edit `config/default.toml` such that `user_data_path` is the directory containin
 check all user account are non-negative
 ```
 cfg_dir_path="config"
-./zk-por-checker check-non-neg-user --cfg-path "${cfg_dir_path}" --output-path "${output_proof_dir_path}"
+./zk-por-checker check-non-neg-user --cfg-path "${cfg_dir_path}"
 ```
 
 # Prove
