@@ -1,4 +1,4 @@
-use plonky2::{hash::hash_types::HashOut, plonk::proof::ProofWithPublicInputs};
+use plonky2::plonk::{circuit_data::CircuitConfig, proof::ProofWithPublicInputs};
 use serde::*;
 use types::{C, D, F};
 
@@ -22,7 +22,6 @@ pub mod util;
 #[derive(Serialize, Deserialize)]
 pub struct General {
     pub round_num: usize,
-    pub batch_num: usize,
     pub recursion_branchout_num: usize,
     pub batch_size: usize,
     pub token_num: usize,
@@ -31,8 +30,15 @@ pub struct General {
 #[derive(Serialize, Deserialize)]
 pub struct Proof {
     pub general: General,
-    pub root_vd_digest: HashOut<F>,
+    pub circuits_info: CircuitsInfo,
     pub proof: ProofWithPublicInputs<F, C, D>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CircuitsInfo {
+    pub batch_circuit_config: CircuitConfig,
+    pub recursive_circuit_configs: Vec<CircuitConfig>,
+    pub root_verifier_data_hex: String,
 }
 
 #[derive(Serialize, Deserialize)]
