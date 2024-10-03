@@ -1,5 +1,5 @@
 use indicatif::ProgressBar;
-use plonky2::util::serialization::DefaultGateSerializer;
+use plonky2::{plonk::circuit_data::CircuitConfig, util::serialization::DefaultGateSerializer};
 use plonky2_field::types::PrimeField64;
 use rayon::iter::IntoParallelRefIterator;
 use serde_json::from_reader;
@@ -21,6 +21,11 @@ use rayon::iter::ParallelIterator;
 
 use glob::glob;
 use std::io;
+
+// some proof files may not contain the circuit_configs field, we hardcode the default config in this case.
+fn default_circuit_configs() -> (CircuitConfig, Vec<CircuitConfig>) {
+    (STANDARD_CONFIG, vec![STANDARD_CONFIG, STANDARD_CONFIG, STANDARD_ZK_CONFIG])
+}
 
 fn find_matching_files(pattern: &str) -> Result<Vec<PathBuf>, io::Error> {
     let mut matching_files = Vec::new();
@@ -127,9 +132,7 @@ pub fn verify_global(
         let batch_size = proof.general.batch_size;
 
         // There are cases that the proof file does not contain the circuit_configs field, we hardcode the default config in this case.
-        let mut recursive_circuit_configs =
-            vec![STANDARD_CONFIG, STANDARD_CONFIG, STANDARD_ZK_CONFIG];
-        let mut batch_circuit_config = STANDARD_CONFIG;
+        let (mut batch_circuit_config, mut recursive_circuit_configs) = default_circuit_configs();
 
         if let Some(circuit_configs) = &proof.circuit_configs {
             recursive_circuit_configs = circuit_configs.recursive_circuit_configs.clone();
@@ -201,9 +204,7 @@ pub fn print_circuit_verifier_hex(global_proof_path: PathBuf) -> Result<(), PoRE
     let token_num = proof.general.token_num;
     let batch_size = proof.general.batch_size;
 
-    // There are cases that the proof file does not contain the circuit_configs field, we hardcode the default config in this case.
-    let mut recursive_circuit_configs = vec![STANDARD_CONFIG, STANDARD_CONFIG, STANDARD_ZK_CONFIG];
-    let mut batch_circuit_config = STANDARD_CONFIG;
+    let (mut batch_circuit_config, mut recursive_circuit_configs) = default_circuit_configs();
 
     if let Some(circuit_configs) = &proof.circuit_configs {
         recursive_circuit_configs = circuit_configs.recursive_circuit_configs.clone();
