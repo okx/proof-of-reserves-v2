@@ -2,10 +2,10 @@
 Edit `config/default.toml` such that `user_data_path` is the directory containing the user files only. Currently, it is set to `./sample_data` for demo. 
 
 # Check 
-check all user accounst are non-negative
+check all user account are non-negative
 ```
 cfg_dir_path="config"
-./zk-por-checker check-non-neg-user --cfg-path "${cfg_dir_path}" --output-path "${output_proof_dir_path}"
+./zk-por-checker check-non-neg-user --cfg-path "${cfg_dir_path}"
 ```
 
 # Prove
@@ -36,6 +36,7 @@ If successful, the console shows
 start to reconstruct the circuit with 1 recursive levels for round 0
 successfully reconstruct the circuit for round 0 in 19.930038084s
 successfully verify the global proof for round 0, total exchange users' equity is 8801210029, debt is 875, exchange liability is 8801209154
+Execution result: Ok(()). Press Enter to quit...
 ```
 
 ## Batch-verify user proofs
@@ -50,7 +51,7 @@ If successful, the console shows
 successfully identify 8 user proof files
 █████████████████████████████████████████████████████████████████████████████████████████████ 8/8
 8/8 user proofs pass the verification. 0 fail, the first 0 failed proof files: []
-Execution result: Ok(())
+Execution result: Ok(()). Press Enter to quit...
 ```
 
 ## Global proof and user proofs
