@@ -3,7 +3,7 @@ function build_and_package() {
 	TARGET=$1
     rustup target add $TARGET
     VERSION=$2
-    # below cargo build will read $COMMIT_HASH into binary. 
+    # below cargo build will build $COMMIT_HASH into binary. 
     export COMMIT_HASH=$(git rev-parse --short HEAD)
     
     RUSTFLAGS="-C target-feature=+crt-static" cargo build --features zk-por-core/verifier --release --target ${TARGET} --package zk-por-cli --bin zk-por-cli 
