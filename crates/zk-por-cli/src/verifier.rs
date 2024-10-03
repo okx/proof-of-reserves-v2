@@ -1,4 +1,5 @@
 use indicatif::ProgressBar;
+use plonky2::{plonk::circuit_data::CircuitConfig, util::serialization::DefaultGateSerializer};
 use plonky2_field::types::PrimeField64;
 use rayon::iter::IntoParallelRefIterator;
 use serde_json::from_reader;
@@ -6,22 +7,25 @@ use std::{fs::File, path::PathBuf};
 // Assuming Proof is defined in lib.rs and lib.rs is in the same crate
 use super::constant::RECURSION_BRANCHOUT_NUM;
 use zk_por_core::{
-    circuit_registry::registry::CircuitRegistry,
+    circuit_config::{STANDARD_CONFIG, STANDARD_ZK_CONFIG},
+    circuit_registry::{precompiled_registry::get_verifier_for_round, registry::CircuitRegistry},
     error::PoRError,
     merkle_proof::MerkleProof,
     recursive_prover::recursive_circuit::RecursiveTargets,
-    types::{C, D, F},
+    types::F,
     Proof,
 };
 
-use plonky2::{
-    hash::hash_types::HashOut, plonk::circuit_data::VerifierCircuitData,
-    util::serialization::DefaultGateSerializer,
-};
+use plonky2::hash::hash_types::HashOut;
 use rayon::iter::ParallelIterator;
 
 use glob::glob;
 use std::io;
+
+// some proof files may not contain the circuit_configs field, we hardcode the default config in this case.
+fn default_circuit_configs() -> (CircuitConfig, Vec<CircuitConfig>) {
+    (STANDARD_CONFIG, vec![STANDARD_CONFIG, STANDARD_CONFIG, STANDARD_ZK_CONFIG])
+}
 
 fn find_matching_files(pattern: &str) -> Result<Vec<PathBuf>, io::Error> {
     let mut matching_files = Vec::new();
@@ -118,25 +122,23 @@ pub fn verify_global(
     if proof.general.recursion_branchout_num != RECURSION_BRANCHOUT_NUM {
         panic!("The recursion_branchout_num is not configured to be equal to 64");
     }
-
-    let root_circuit_verifier_data_bytes = hex::decode(proof.circuits_info.root_verifier_data_hex)
-        .expect("fail to decode root circuit verifier data hex string");
-
-    let root_circuit_verifier_data = VerifierCircuitData::<F, C, D>::from_bytes(
-        root_circuit_verifier_data_bytes,
-        &DefaultGateSerializer,
-    )
-    .expect("fail to parse root circuit verifier data");
+    let round_num = proof.general.round_num;
+    let root_circuit_verifier_data = get_verifier_for_round(round_num);
 
     let round_num = proof.general.round_num;
     if check_circuit {
         let token_num = proof.general.token_num;
         let round_num = proof.general.round_num;
         let batch_size = proof.general.batch_size;
-        let recursive_circuit_configs = proof.circuits_info.recursive_circuit_configs;
-        let batch_circuit_config = proof.circuits_info.batch_circuit_config;
 
-        // not to use trace::log to avoid the dependency on the trace config.
+        // There are cases that the proof file does not contain the circuit_configs field, we hardcode the default config in this case.
+        let (mut batch_circuit_config, mut recursive_circuit_configs) = default_circuit_configs();
+
+        if let Some(circuit_configs) = &proof.circuit_configs {
+            recursive_circuit_configs = circuit_configs.recursive_circuit_configs.clone();
+            batch_circuit_config = circuit_configs.batch_circuit_config.clone();
+        }
+
         if verbose {
             println!(
                 "start to reconstruct the circuit with {} recursive levels for round {}",
@@ -154,7 +156,10 @@ pub fn verify_global(
 
         let rebuilt_root_circuit_verifier_data =
             circuit_registry.get_root_circuit().verifier_data();
-        if rebuilt_root_circuit_verifier_data != root_circuit_verifier_data {
+
+        if rebuilt_root_circuit_verifier_data.verifier_only.circuit_digest
+            != root_circuit_verifier_data.verifier_only.circuit_digest
+        {
             return Err(PoRError::CircuitMismatch);
         }
         if verbose {
@@ -164,6 +169,9 @@ pub fn verify_global(
                 start.elapsed()
             );
         }
+    }
+    if proof.root_vd_digest != root_circuit_verifier_data.verifier_only.circuit_digest {
+        return Err(PoRError::CircuitMismatch);
     }
 
     let result = root_circuit_verifier_data.verify(proof.proof.clone());
@@ -183,4 +191,45 @@ pub fn verify_global(
     }
 
     result.map_err(|_| PoRError::InvalidProof)
+}
+
+pub fn print_circuit_verifier_hex(global_proof_path: PathBuf) -> Result<(), PoRError> {
+    let proof_file = File::open(&global_proof_path).unwrap();
+    let reader = std::io::BufReader::new(proof_file);
+    let proof: Proof = from_reader(reader).unwrap();
+
+    if proof.general.recursion_branchout_num != RECURSION_BRANCHOUT_NUM {
+        panic!("The recursion_branchout_num is not configured to be equal to 64");
+    }
+    let token_num = proof.general.token_num;
+    let batch_size = proof.general.batch_size;
+
+    let (mut batch_circuit_config, mut recursive_circuit_configs) = default_circuit_configs();
+
+    if let Some(circuit_configs) = &proof.circuit_configs {
+        recursive_circuit_configs = circuit_configs.recursive_circuit_configs.clone();
+        batch_circuit_config = circuit_configs.batch_circuit_config.clone();
+    }
+
+    let circuit_registry = CircuitRegistry::<RECURSION_BRANCHOUT_NUM>::init(
+        batch_size,
+        token_num,
+        batch_circuit_config,
+        recursive_circuit_configs,
+    );
+
+    let root_circuit = circuit_registry.get_root_circuit();
+
+    let verifier_data = root_circuit.verifier_data().clone();
+
+    let gate_serializer = DefaultGateSerializer;
+    let verifier_data_bytes = verifier_data.to_bytes(&gate_serializer).unwrap();
+
+    if proof.root_vd_digest != verifier_data.verifier_only.circuit_digest {
+        return Err(PoRError::CircuitMismatch);
+    }
+
+    println!("{}", hex::encode(verifier_data_bytes));
+
+    Ok(())
 }
