@@ -30,7 +30,7 @@ use zk_por_core::{
     parser::{AccountParser, FileAccountReader, FileManager, FilesCfg},
     recursive_prover::recursive_circuit::RecursiveTargets,
     types::F,
-    General, Info, Proof, CircuitConfigs,
+    CircuitConfigs, General, Info, Proof,
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
 

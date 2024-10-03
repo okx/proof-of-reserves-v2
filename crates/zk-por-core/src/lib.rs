@@ -1,5 +1,7 @@
-use plonky2::plonk::{circuit_data::CircuitConfig, proof::ProofWithPublicInputs};
-use plonky2::hash::hash_types::HashOut;
+use plonky2::{
+    hash::hash_types::HashOut,
+    plonk::{circuit_data::CircuitConfig, proof::ProofWithPublicInputs},
+};
 use serde::*;
 use types::{C, D, F};
 
@@ -32,7 +34,7 @@ pub struct General {
 pub struct Proof {
     pub general: General,
     pub root_vd_digest: HashOut<F>,
-    #[serde(default)] // some proof files may not have this field. 
+    #[serde(default)] // some proof files may not have this field.
     pub circuit_configs: Option<CircuitConfigs>,
     pub proof: ProofWithPublicInputs<F, C, D>,
 }

@@ -43,7 +43,7 @@ fn test() {
 
 #[ignore] // avoid this test as this test takes a long time to run, and not necessary for the CI.
 #[test]
-fn test_get_root_circuit() {
+fn test_serialize_root_circuit() {
     let batch_circuit_config = zk_por_core::circuit_config::STANDARD_CONFIG;
     let mut recursive_level_configs = vec![zk_por_core::circuit_config::STANDARD_CONFIG; 3];
     *recursive_level_configs.last_mut().unwrap() = zk_por_core::circuit_config::STANDARD_ZK_CONFIG;
@@ -69,6 +69,4 @@ fn test_get_root_circuit() {
             .unwrap();
     assert_eq!(verifier_data.common, recovered_verifier_data.common);
     assert_eq!(verifier_data.verifier_only, recovered_verifier_data.verifier_only);
-
-    println!("root_circuit_verifier_data: {:?}", hex::encode(verifier_data_bytes));
 }

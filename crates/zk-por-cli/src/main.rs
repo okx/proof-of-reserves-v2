@@ -9,7 +9,7 @@ use zk_por_cli::{
     checker::check_non_neg_user,
     constant::{DEFAULT_USER_PROOF_FILE_PATTERN, GLOBAL_PROOF_FILENAME},
     prover::prove,
-    verifier::{verify_global, verify_user},
+    verifier::{print_circuit_verifier_hex, verify_global, verify_user},
 };
 use zk_por_core::error::PoRError;
 
@@ -35,6 +35,10 @@ pub enum ZkPorCommitCommands {
     CheckNonNegUser {
         #[arg(short, long)]
         cfg_path: String, // path to config file
+    },
+    PrintRootCircuitVerifier {
+        #[arg(short, long)]
+        proof_path: String,
     },
 
     VerifyGlobal {
@@ -66,6 +70,11 @@ impl Execute for Option<ZkPorCommitCommands> {
                     .map_err(|e| PoRError::ConfigError(e))?;
                 let prover_cfg = cfg.try_deserialize().unwrap();
                 check_non_neg_user(prover_cfg)
+            }
+
+            Some(ZkPorCommitCommands::PrintRootCircuitVerifier { proof_path }) => {
+                let global_proof_path = PathBuf::from_str(&proof_path).unwrap();
+                print_circuit_verifier_hex(global_proof_path)
             }
 
             Some(ZkPorCommitCommands::VerifyGlobal { proof_path: global_proof_path }) => {

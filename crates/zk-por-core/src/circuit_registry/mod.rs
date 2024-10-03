@@ -1,2 +1,2 @@
-pub mod registry;
 pub mod precompiled_registry;
+pub mod registry;
