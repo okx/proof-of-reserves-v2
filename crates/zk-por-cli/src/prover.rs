@@ -30,7 +30,7 @@ use zk_por_core::{
     parser::{AccountParser, FileAccountReader, FileManager, FilesCfg},
     recursive_prover::recursive_circuit::RecursiveTargets,
     types::F,
-    General, Info, Proof,
+    CircuitConfigs, General, Info, Proof,
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
 
@@ -105,11 +105,12 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
         "start to precompute circuits and empty proofs for {} recursive levels",
         recursive_level
     );
+    let batch_circuit_config = STANDARD_CONFIG;
     let circuit_registry = CircuitRegistry::<RECURSION_BRANCHOUT_NUM>::init(
         batch_size,
         token_num,
-        STANDARD_CONFIG,
-        recursive_circuit_configs,
+        batch_circuit_config.clone(),
+        recursive_circuit_configs.clone(),
     );
 
     tracing::info!(
@@ -314,17 +315,20 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
         start.elapsed()
     );
 
-    let root_circuit_digest = circuit_registry.get_root_circuit().verifier_only.circuit_digest;
+    let root_vd_digest = circuit_registry.get_root_circuit().verifier_only.circuit_digest;
 
     let proof = Proof {
         general: General {
             round_num: cfg.prover.round_no,
-            batch_num: batch_num,
             recursion_branchout_num: RECURSION_BRANCHOUT_NUM,
             batch_size: batch_size,
             token_num: token_num,
         },
-        root_vd_digest: root_circuit_digest,
+        root_vd_digest: root_vd_digest,
+        circuit_configs: Some(CircuitConfigs {
+            batch_circuit_config: batch_circuit_config,
+            recursive_circuit_configs: recursive_circuit_configs,
+        }),
         proof: root_proof,
     };
 
