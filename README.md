@@ -22,8 +22,8 @@ file_num=10
 per_file_account_num=131072 # multiple of 1024, the batch size
 
 # test data will be generated to ./test-data/user-data
-rm -rf ./text-data/user-data
-mkdir -p ./text-data/user-data
+rm -rf ./test-data/user-data
+mkdir -p ./test-data/user-data
 python3 scripts/gen_test_data.py ${file_num} ${per_file_account_num}
 ```
 
@@ -64,7 +64,7 @@ cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin z
 - verify both the global proof and a user proof
 
 Note: 
-1. The cmd will NOT rebuild the circuit. Instead, it directly uses and trusts the circuit in the proof file. So the verification is fast, but not as secure as above. 
+1. The cmd will NOT rebuild the circuit. Instead, it directly uses and trusts the circuit in the proof file. So the verification is fast, but a user needs to incur a weaker trust assumption. 
 2. The cmd will auto-detect sum_proof_data.json and *_inclusion_proof.json in the same directory of the binary for the verification. 
 
 ```

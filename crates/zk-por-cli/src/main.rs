@@ -136,12 +136,14 @@ impl Execute for Option<ZkPorCommands> {
 fn main() {
     let cli = Cli::parse();
     let r = cli.command.execute();
+    let start = std::time::Instant::now();
     let is_prove_command =
         matches!(cli.command, Some(ZkPorCommands::Prove { cfg_path: _, output_path: _ }));
+    let duration = start.elapsed();
     if is_prove_command {
-        println!("Execution result: {:?}", r);
+        println!("Execution result: {:?}, duration: {:?}", r, duration);
     } else {
-        println!("Execution result: {:?}. Press Enter to quit...", r);
+        println!("Execution result: {:?}, duration: {:?}. Press Enter to quit...", r, duration);
         stdin().read_exact(&mut [0]).unwrap();
     }
 }
