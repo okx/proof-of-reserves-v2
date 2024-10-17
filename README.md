@@ -77,9 +77,9 @@ cp $global_proof_path tmp/sum_proof_data.json
 rm -rf tmp
 ```
 
-- print circuit verifier data
+- print commit hash
 ```
-cargo run --release --package zk-por-cli --bin zk-por-cli print-root-circuit-verifier --proof-path ${global_proof_path}
+cargo run --release --package zk-por-cli --bin zk-por-cli show-commit-hash
 ```
 
 ## cli tool
