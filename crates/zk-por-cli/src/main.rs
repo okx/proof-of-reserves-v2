@@ -103,22 +103,30 @@ impl Execute for Option<ZkPorCommands> {
                     .to_str()
                     .unwrap()
                     .to_string();
-                let mut result = Ok(());
-                if verify_global(global_proof_path.clone(), false, false).is_ok() {
+
+                let global_result = verify_global(global_proof_path.clone(), false, false);
+                let user_result = verify_user(global_proof_path, &user_proof_path_pattern, false);
+
+                if global_result.is_ok() {
                     println!("Total sum and non-negative constraint validation passed");
                 } else {
                     println!("Total sum and non-negative constraint validation failed");
-                    result = Err(PoRError::InvalidProof);
                 }
 
-                if verify_user(global_proof_path, &user_proof_path_pattern, false).is_ok() {
+                if user_result.is_ok() {
                     println!("Inclusion constraint validation passed");
                 } else {
                     println!("Inclusion constraint validation failed");
-                    result = Err(PoRError::InvalidProof);
                 }
                 println!("============Validation finished============");
-                result
+
+                if global_result.is_err() {
+                    global_result
+                } else if user_result.is_err() {
+                    user_result
+                } else {
+                    Ok(())
+                }
             }
         }
     }
