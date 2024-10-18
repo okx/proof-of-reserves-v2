@@ -3,7 +3,7 @@ use super::constant::{
     USER_PROOF_DIRNAME,
 };
 use indicatif::ProgressBar;
-use plonky2::hash::hash_types::HashOut;
+use plonky2::{hash::hash_types::HashOut, util::serialization::DefaultGateSerializer};
 use plonky2_field::types::PrimeField64;
 use rayon::{iter::ParallelIterator, prelude::*};
 
@@ -30,7 +30,7 @@ use zk_por_core::{
     parser::{AccountParser, FileAccountReader, FileManager, FilesCfg},
     recursive_prover::recursive_circuit::RecursiveTargets,
     types::F,
-    CircuitConfigs, General, Info, Proof,
+    CircuitsInfo, General, Info, Proof,
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
 
@@ -317,6 +317,13 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
 
     let root_vd_digest = circuit_registry.get_root_circuit().verifier_only.circuit_digest;
 
+    let root_circuit_verifier_data = circuit_registry.get_root_circuit().verifier_data();
+
+    let root_circuit_verifier_data_bytes = root_circuit_verifier_data
+        .to_bytes(&DefaultGateSerializer)
+        .expect("fail to serialize root circuit verifier data");
+    let root_circuit_verifier_data_hex_str = hex::encode(root_circuit_verifier_data_bytes);
+
     let proof = Proof {
         general: General {
             round_num: cfg.prover.round_no,
@@ -324,11 +331,12 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
             batch_size: batch_size,
             token_num: token_num,
         },
-        root_vd_digest: root_vd_digest,
-        circuit_configs: Some(CircuitConfigs {
+        circuits_info: Some(CircuitsInfo {
             batch_circuit_config: batch_circuit_config,
             recursive_circuit_configs: recursive_circuit_configs,
+            root_verifier_data_hex: root_circuit_verifier_data_hex_str,
         }),
+        root_vd_digest: root_vd_digest,
         proof: root_proof,
     };
 
