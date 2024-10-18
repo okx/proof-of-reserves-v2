@@ -2705,10 +2705,10 @@ dependencies = [
  "plonky2",
  "plonky2_field",
  "rayon",
+ "serde",
  "serde_json",
  "tracing",
  "zk-por-core",
- "zk-por-db",
  "zk-por-tracing",
 ]
 

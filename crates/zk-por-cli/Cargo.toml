@@ -19,7 +19,6 @@ cuda = ["cryptography_cuda/cuda","plonky2/cuda","plonky2/batch"]
 
 [dependencies]
 zk-por-tracing={path="../zk-por-tracing"}
-zk-por-db={path="../zk-por-db"}
 zk-por-core={path="../zk-por-core"}
 plonky2={workspace=true}
 plonky2_field={workspace=true}
@@ -27,6 +26,7 @@ clap={workspace=true}
 indicatif={workspace=true}
 tracing={workspace=true}
 serde_json={workspace=true}
+serde={workspace=true}
 rayon={workspace=true}
 num_cpus={workspace=true}
 hex={workspace=true}
