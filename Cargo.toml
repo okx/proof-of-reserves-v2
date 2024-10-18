@@ -33,9 +33,9 @@ once_cell = "1.14"
 static_assertions = { version = "1.1.0", default-features = false }
 unroll = { version = "0.1.5", default-features = false }
 # zkp
-plonky2 = { git = "https://github.com/okx/plonky2", rev = "9a917ba27c26aca6d0e5d9760e8575cd5fc8dd0a" }
-plonky2_field = { git = "https://github.com/okx/plonky2", rev = "9a917ba27c26aca6d0e5d9760e8575cd5fc8dd0a" }
-cryptography_cuda = { git = "ssh://git@github.com/okx/cryptography_cuda.git", rev = "2a7c42d29ee72d7c2c2da9378ae816384c43cdec" }
+plonky2 = { git = "https://github.com/okx/plonky2", rev = "8a00c2bc54a76355a0bf73dcaabb560d688cab4d" }
+plonky2_field = { git = "https://github.com/okx/plonky2", rev = "8a00c2bc54a76355a0bf73dcaabb560d688cab4d" }
+cryptography_cuda = { git = "ssh://git@github.com/okx/cryptography_cuda.git", rev = "547192b2ef42dc7519435059c86f88431b8de999" }
 # computing
 rayon = "1.8"
 # data
