@@ -1,5 +1,4 @@
 function build_and_package() {
-    mkdir -p validator/bin
 	TARGET=$1
     rustup target add $TARGET
     VERSION=$2
@@ -19,6 +18,5 @@ function build_and_package() {
 
     zip ./zk_STARK_Validator_V2_${TARGET}_${VERSION}.zip ./zk_STARK_Validator_V2_${TARGET}_${VERSION}
     rm ./zk_STARK_Validator_V2_${TARGET}_${VERSION}
-    mv ./zk_STARK_Validator_V2_${TARGET}_${VERSION}.zip validator/bin
     unset COMMIT_HASH
 }

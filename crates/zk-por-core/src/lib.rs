@@ -35,14 +35,15 @@ pub struct Proof {
     pub general: General,
     pub root_vd_digest: HashOut<F>,
     #[serde(default)] // some proof files may not have this field.
-    pub circuit_configs: Option<CircuitConfigs>,
+    pub circuits_info: Option<CircuitsInfo>,
     pub proof: ProofWithPublicInputs<F, C, D>,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct CircuitConfigs {
+pub struct CircuitsInfo {
     pub batch_circuit_config: CircuitConfig,
     pub recursive_circuit_configs: Vec<CircuitConfig>,
+    pub root_verifier_data_hex: String,
 }
 
 #[derive(Serialize, Deserialize)]

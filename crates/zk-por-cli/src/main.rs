@@ -9,7 +9,7 @@ use zk_por_cli::{
     checker::check_non_neg_user,
     constant::{DEFAULT_USER_PROOF_FILE_PATTERN, GLOBAL_PROOF_FILENAME},
     prover::prove,
-    verifier::{print_circuit_verifier_hex, verify_global, verify_user},
+    verifier::{verify_global, verify_user},
 };
 use zk_por_core::error::PoRError;
 
@@ -35,10 +35,6 @@ pub enum ZkPorCommands {
     CheckNonNegUser {
         #[arg(short, long)]
         cfg_path: String, // path to config file
-    },
-    PrintRootCircuitVerifier {
-        #[arg(short, long)]
-        proof_path: String,
     },
 
     VerifyGlobal {
@@ -72,11 +68,6 @@ impl Execute for Option<ZkPorCommands> {
                     .map_err(|e| PoRError::ConfigError(e))?;
                 let prover_cfg = cfg.try_deserialize().unwrap();
                 check_non_neg_user(prover_cfg)
-            }
-
-            Some(ZkPorCommands::PrintRootCircuitVerifier { proof_path }) => {
-                let global_proof_path = PathBuf::from_str(&proof_path).unwrap();
-                print_circuit_verifier_hex(global_proof_path)
             }
 
             Some(ZkPorCommands::VerifyGlobal { proof_path: global_proof_path }) => {
@@ -135,13 +126,15 @@ impl Execute for Option<ZkPorCommands> {
 
 fn main() {
     let cli = Cli::parse();
+    let start = std::time::Instant::now();
     let r = cli.command.execute();
+    let duration = start.elapsed();
+    println!("Execution result: {:?}, duration: {:?}", r, duration);
+
     let is_prove_command =
         matches!(cli.command, Some(ZkPorCommands::Prove { cfg_path: _, output_path: _ }));
-    if is_prove_command {
-        println!("Execution result: {:?}", r);
-    } else {
-        println!("Execution result: {:?}. Press Enter to quit...", r);
+    if !is_prove_command {
+        println!("Press Enter to quit...");
         stdin().read_exact(&mut [0]).unwrap();
     }
 }
