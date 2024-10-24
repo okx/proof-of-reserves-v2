@@ -7,16 +7,17 @@ function build_and_package() {
     
     RUSTFLAGS="-C target-feature=+crt-static" cargo build --features zk-por-core/verifier --release --target ${TARGET} --package zk-por-cli --bin zk-por-cli 
 
+    VALIDATOR_BIN="./zk_STARK_Validator_V2"
     if [ -f target/${TARGET}/release/zk-por-cli ]; then
-        mv target/${TARGET}/release/zk-por-cli ./zk_STARK_Validator_V2_${TARGET}_${VERSION}
+        mv target/${TARGET}/release/zk-por-cli $VALIDATOR_BIN
     elif [ -f target/${TARGET}/release/zk-por-cli.exe ]; then
-        mv target/${TARGET}/release/zk-por-cli.exe ./zk_STARK_Validator_V2_${TARGET}_${VERSION}
+        mv target/${TARGET}/release/zk-por-cli.exe $VALIDATOR_BIN
     else
         echo "zk-por-cli binary does not exist."
         return 1
     fi 
 
-    zip ./zk_STARK_Validator_V2_${TARGET}_${VERSION}.zip ./zk_STARK_Validator_V2_${TARGET}_${VERSION}
-    rm ./zk_STARK_Validator_V2_${TARGET}_${VERSION}
+    zip ./zk_STARK_Validator_V2_${TARGET}_${VERSION}.zip $VALIDATOR_BIN
+    rm $VALIDATOR_BIN
     unset COMMIT_HASH
 }
