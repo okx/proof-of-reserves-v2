@@ -48,7 +48,12 @@ pub fn verify_user(
     user_proof_path_pattern: &String,
     verbose: bool,
 ) -> Result<(), PoRError> {
-    let proof_file = File::open(&global_proof_path).unwrap();
+    let proof_file = File::open(&global_proof_path).map_err(|e| {
+        PoRError::InvalidParameter(format!(
+            "fail to open {:?} due to error {:?}",
+            global_proof_path, e
+        ))
+    })?;
     let reader = std::io::BufReader::new(proof_file);
 
     // Parse the JSON as Proof
@@ -115,10 +120,15 @@ pub fn verify_global(
     check_circuit: bool,
     verbose: bool,
 ) -> Result<(), PoRError> {
-    let proof_file = File::open(&global_proof_path).unwrap();
+    let proof_file = File::open(&global_proof_path).map_err(|e| {
+        PoRError::InvalidParameter(format!(
+            "fail to open {:?} due to error {:?}",
+            global_proof_path, e
+        ))
+    })?;
     let reader = std::io::BufReader::new(proof_file);
 
-    let proof: Proof = from_reader(reader).unwrap();
+    let proof: Proof = from_reader(reader).map_err(|_| PoRError::InvalidProof)?;
 
     if proof.general.recursion_branchout_num != RECURSION_BRANCHOUT_NUM {
         panic!("The recursion_branchout_num is not configured to be equal to 64");
