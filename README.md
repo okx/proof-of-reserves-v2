@@ -22,8 +22,8 @@ file_num=10
 per_file_account_num=131072 # multiple of 1024, the batch size
 
 # test data will be generated to ./test-data/user-data
-rm -rf ./text-data/user-data
-mkdir -p ./text-data/user-data
+rm -rf ./test-data/user-data
+mkdir -p ./test-data/user-data
 python3 scripts/gen_test_data.py ${file_num} ${per_file_account_num}
 ```
 
@@ -43,7 +43,7 @@ cargo run --release --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg
 
 - verify global proof
 
-Note: this cmd will rebuild the circuit, instead of using the circuit provided in the proof file. Hence, the latency is longer but is more secure, i.e, 30 minutes in 8GB memory, 10 minutes in 16GB, 3 minutes in 32GB. 
+Note: this cmd will rebuild the circuit, instead of using the circuit provided in the proof file. Hence, the latency is longer but is more secure, i.e, 30 minutes in 8GB memory, 10 minutes in 16GB, 3 minutes in 32GB.
 ```
 global_proof_path="./test-data/proof/sum_proof_data.json"
 
@@ -56,30 +56,30 @@ cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin z
 user_proof_path_pattern="./test-data/proof/user_proofs/*.json"
 
 # to verify one account with ${accountID}
-# user_proof_path_pattern="./test-data/user_proofs/${accountID}.json"
+# user_proof_path_pattern="./test-data/proof/user_proofs/${accountID}.json"
 
 cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify-user --global-proof-path ${global_proof_path} --user-proof-path-pattern ${user_proof_path_pattern}
 ```
 
 - verify both the global proof and a user proof
 
-Note: 
-1. The cmd will NOT rebuild the circuit. Instead, it directly uses and trusts the circuit in the proof file. So the verification is fast, but not as secure as above. 
-2. The cmd will auto-detect sum_proof_data.json and *_inclusion_proof.json in the same directory of the binary for the verification. 
+Note:
+1. The cmd will NOT rebuild the circuit. Instead, it directly uses and trusts the circuit in the proof file. So the verification is fast, but a user needs to incur a weaker trust assumption.
+2. The cmd will auto-detect sum_proof_data.json and *_inclusion_proof.json in the same directory of the binary for the verification.
 
 ```
 cargo build --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli
 mkdir -p tmp/
 cp target/release/zk-por-cli tmp/
-cp test-data/proof/$(ls test-data/proof | head -n 1) tmp/user_inclusion_proof.json
+cp test-data/proof/user_proofs/$(ls test-data/proof/user_proofs | head -n 1) tmp/user_inclusion_proof.json
 cp $global_proof_path tmp/sum_proof_data.json
 ./tmp/zk-por-cli
 rm -rf tmp
 ```
 
-- print circuit verifier data
+- print commit hash
 ```
-cargo run --release --package zk-por-cli --bin zk-por-cli print-root-circuit-verifier --proof-path ${global_proof_path}
+cargo run --release --package zk-por-cli --bin zk-por-cli show-commit-hash
 ```
 
 ## cli tool
