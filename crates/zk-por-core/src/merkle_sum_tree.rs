@@ -1,4 +1,5 @@
 use plonky2::{hash::hash_types::HashOut, util::log2_strict};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     account::Account,
@@ -8,7 +9,7 @@ use crate::{
 
 use plonky2_field::types::Field;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct MerkleSumNode {
     pub sum_equity: F,
     pub sum_debt: F,
@@ -36,7 +37,7 @@ impl MerkleSumNode {
 }
 
 /// Struct representing a merkle sum tree, it is represented as a vector of Merkle Sum Nodes.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MerkleSumTree {
     pub merkle_sum_tree: Vec<MerkleSumNode>,
     pub tree_depth: usize,
@@ -132,8 +133,7 @@ pub mod test {
         assert_eq!(node3.sum_debt, F::from_canonical_u64(2));
     }
 
-    #[test]
-    pub fn test_new_tree_from_accounts() {
+    fn test_tree_from_accounts() -> (MerkleSumTree, F, F) {
         let fm = FileManager {};
         let path = "../../test-data/batch0.json";
         let tokens = vec!["BTC".to_owned(), "ETH".to_owned()];
@@ -152,8 +152,12 @@ pub mod test {
             });
         }
 
-        let tree = MerkleSumTree::new_tree_from_accounts(&accounts);
+        (MerkleSumTree::new_tree_from_accounts(&accounts), sum_equity, sum_debt)
+    }
 
+    #[test]
+    pub fn test_new_tree_from_accounts() {
+        let (tree, sum_equity, sum_debt) = test_tree_from_accounts();
         let root = tree.get_root();
         assert_eq!(root.sum_equity, sum_equity);
         assert_eq!(root.sum_debt, sum_debt);
@@ -176,5 +180,18 @@ pub mod test {
         let hash_offset = MerkleSumNodeTarget::pub_input_root_hash_offset();
         let proof_root_hash = HashOut::<F>::from_partial(&proof.public_inputs[hash_offset]);
         assert_eq!(proof_root_hash, merkle_sum_tree.get_root().hash);
+    }
+
+    #[test]
+    fn test_serialize_deserialize() {
+        let (tree, _, _) = test_tree_from_accounts();
+        let root = tree.get_root();
+        let serialized_tree = serde_json::to_string(&tree).unwrap();
+        let deserialized_tree: MerkleSumTree = serde_json::from_str(&serialized_tree).unwrap();
+        let serialized_node = serde_json::to_string(&root).unwrap();
+        let deserialized_node: MerkleSumNode = serde_json::from_str(&serialized_node).unwrap();
+        assert_eq!(deserialized_node, root);
+        let deserialized_root = deserialized_tree.get_root();
+        assert_eq!(deserialized_root, root);
     }
 }
