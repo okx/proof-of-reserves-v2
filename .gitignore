@@ -11,5 +11,6 @@ my_permanent_leveldb/
 *level_db*/
 *.json
 *DS_Store
-*tar
+*.tar
 /release/
+*.zip

@@ -22,6 +22,8 @@ file_num=10
 per_file_account_num=131072 # multiple of 1024, the batch size
 
 # test data will be generated to ./test-data/user-data
+rm -rf ./test-data/user-data
+mkdir -p ./test-data/user-data
 python3 scripts/gen_test_data.py ${file_num} ${per_file_account_num}
 ```
 
@@ -48,6 +50,8 @@ This should be 40-50% faster than running on the CPU. Note: you need at least 24
 
 
 - verify global proof
+
+Note: this cmd will rebuild the circuit, instead of using the circuit provided in the proof file. Hence, the latency is longer but is more secure, i.e, 30 minutes in 8GB memory, 10 minutes in 16GB, 3 minutes in 32GB.
 ```
 global_proof_path="./test-data/proof/sum_proof_data.json"
 
@@ -58,7 +62,7 @@ cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin z
 cargo run --features=cuda,zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify-global --proof-path ${global_proof_path}
 ```
 
-- verify user proof
+- batch verify user proofs
 ```
 global_proof_path="./test-data/proof/sum_proof_data.json"
 # to verify all accounts
@@ -72,6 +76,27 @@ cargo run --features zk-por-core/verifier --release --package zk-por-cli --bin z
 
 # on GPU
 cargo run --features=cuda,zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli verify-user --global-proof-path ${global_proof_path} --user-proof-path-pattern ${user_proof_path_pattern}
+```
+
+- verify both the global proof and a user proof
+
+Note:
+1. The cmd will NOT rebuild the circuit. Instead, it directly uses and trusts the circuit in the proof file. So the verification is fast, but a user needs to incur a weaker trust assumption.
+2. The cmd will auto-detect sum_proof_data.json and *_inclusion_proof.json in the same directory of the binary for the verification.
+
+```
+cargo build --features zk-por-core/verifier --release --package zk-por-cli --bin zk-por-cli
+mkdir -p tmp/
+cp target/release/zk-por-cli tmp/
+cp test-data/proof/user_proofs/$(ls test-data/proof/user_proofs | head -n 1) tmp/user_inclusion_proof.json
+cp $global_proof_path tmp/sum_proof_data.json
+./tmp/zk-por-cli
+rm -rf tmp
+```
+
+- print commit hash
+```
+cargo run --release --package zk-por-cli --bin zk-por-cli show-commit-hash
 ```
 
 ## cli tool

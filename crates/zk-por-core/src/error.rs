@@ -22,7 +22,7 @@ pub enum PoRError {
     InvalidParameter(String),
 
     #[error("The verification circuit digest does not match the prover. ")]
-    CircuitDigestMismatch,
+    CircuitMismatch,
 
     #[error("User is not valid")]
     InvalidUser,
