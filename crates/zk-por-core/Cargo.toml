@@ -17,6 +17,7 @@ categories.workspace = true
 default = []
 verifier = []
 mpi = []
+serde = []
 
 [dependencies]
 zk-por-db={path="../zk-por-db", optional = true}

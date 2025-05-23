@@ -15,6 +15,7 @@ categories.workspace = true
 
 [features]
 default = []
+mpi = []
 
 [dependencies]
 zk-por-tracing={path="../zk-por-tracing"}
@@ -29,6 +30,7 @@ serde={workspace=true}
 rayon={workspace=true}
 num_cpus={workspace=true}
 hex={workspace=true}
+mpi={workspace=true}
 glob = "=0.3.1"
 
 [dev-dependencies]

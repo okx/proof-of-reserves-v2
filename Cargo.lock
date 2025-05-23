@@ -3063,6 +3063,7 @@ dependencies = [
  "hex",
  "indicatif",
  "jemallocator",
+ "mpi",
  "num_cpus",
  "plonky2",
  "plonky2_field",

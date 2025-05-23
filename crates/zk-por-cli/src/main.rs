@@ -8,7 +8,7 @@ use clap::{Parser, Subcommand};
 use zk_por_cli::{
     checker::check_non_neg_user,
     constant::{DEFAULT_USER_PROOF_FILE_PATTERN, GLOBAL_PROOF_FILENAME},
-    prover::prove,
+    prover::{prove, prove_distributed},
     verifier::{verify_global, verify_user},
 };
 use zk_por_core::error::PoRError;
@@ -31,6 +31,8 @@ pub enum ZkPorCommands {
         cfg_path: String, // path to config file
         #[arg(short, long)]
         output_path: String, // path to output file
+        #[arg(short, long)]
+        distributed: bool, // whether to use distributed proving
     },
     CheckNonNegUser {
         #[arg(short, long)]
@@ -55,12 +57,20 @@ pub enum ZkPorCommands {
 impl Execute for Option<ZkPorCommands> {
     fn execute(&self) -> std::result::Result<(), PoRError> {
         match self {
-            Some(ZkPorCommands::Prove { cfg_path, output_path }) => {
+            Some(ZkPorCommands::Prove { cfg_path, output_path , distributed }) => {
                 let cfg = zk_por_core::config::ProverConfig::load(&cfg_path)
                     .map_err(|e| PoRError::ConfigError(e))?;
                 let prover_cfg = cfg.try_deserialize().unwrap();
                 let output_path = PathBuf::from_str(&output_path).unwrap();
-                prove(prover_cfg, output_path)
+                let ret: Result<(), PoRError>;
+                if *distributed == true {
+                    println!("Distributed proving is enabled");
+                    ret = prove_distributed(prover_cfg, output_path);
+                } else {
+                    println!("Distributed proving is disabled");
+                    ret = prove(prover_cfg, output_path);
+                }
+                ret
             }
 
             Some(ZkPorCommands::CheckNonNegUser { cfg_path }) => {
@@ -140,7 +150,7 @@ fn main() {
     println!("Execution result: {:?}, duration: {:?}", r, duration);
 
     let is_prove_command =
-        matches!(cli.command, Some(ZkPorCommands::Prove { cfg_path: _, output_path: _ }));
+        matches!(cli.command, Some(ZkPorCommands::Prove { cfg_path: _, output_path: _, distributed: _ }));
     if !is_prove_command {
         println!("Press Enter to quit...");
         stdin().read_exact(&mut [0]).unwrap();
