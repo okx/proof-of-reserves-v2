@@ -7,9 +7,11 @@ use plonky2::{hash::hash_types::HashOut, util::serialization::DefaultGateSeriali
 use plonky2_field::types::PrimeField64;
 use rayon::{iter::ParallelIterator, prelude::*};
 
+#[cfg(feature = "async")]
+use tokio::task;
+
 use std::{
-    fs,
-    fs::File,
+    fs::{self, File},
     io::{BufWriter, Write},
     path::PathBuf,
     str::FromStr,
@@ -33,6 +35,9 @@ use zk_por_core::{
     CircuitsInfo, General, Info, Proof,
 };
 use zk_por_tracing::{init_tracing, TraceConfig};
+#[cfg(feature = "async")]
+use zk_por_core::global::{GLOBAL_BATCH_PROOFS, GLOBAL_BATCH_PROOFS_INDEX};
+
 
 // as we use one thread to prove each batch, we load num_cpus batches to increase the parallelism.
 pub fn calculate_per_parse_account_num(batch_size: usize, threads_num: usize) -> usize {
@@ -57,6 +62,7 @@ fn ensure_output_dir_empty(user_proof_dir: PathBuf) -> Result<(), PoRError> {
     return Ok(());
 }
 
+#[cfg(not(feature = "async"))]
 pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRError> {
     let trace_cfg: TraceConfig = cfg.log.into();
 
@@ -258,6 +264,423 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
 
         let this_level_proofs = prove_subproofs(
             last_level_proofs,
+            last_level_circuit_vd.clone(),
+            &circuit_registry,
+            recursive_prove_threads_num,
+            level,
+        );
+
+        let recursive_circuit = circuit_registry
+            .get_recursive_circuit(&last_level_circuit_vd.circuit_digest)
+            .expect(
+                format!(
+                    "No recursive circuit found for inner circuit with vd {:?}",
+                    last_level_circuit_vd.circuit_digest
+                )
+                .as_str(),
+            )
+            .0;
+
+        last_level_circuit_vd = recursive_circuit.verifier_only.clone();
+        last_level_proofs = this_level_proofs;
+
+        tracing::debug!(
+            "finish recursive level {} with {} proofs in : {:?}",
+            level,
+            last_level_proofs.len(),
+            start.elapsed()
+        );
+    }
+
+    if last_level_proofs.len() != 1 {
+        panic!("The last level proofs should be of length 1, but got {}", last_level_proofs.len());
+    }
+    let root_proof = last_level_proofs.pop().unwrap();
+
+    // Set the root hash of the recursive circuit to the global mst
+    let hash_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_hash_offset();
+    let proof_root_hash = HashOut::<F>::from_partial(&root_proof.public_inputs[hash_offset]);
+
+    let global_mst = GLOBAL_MST.get().unwrap();
+    let mut _g = global_mst.write().expect("unable to get a lock");
+    _g.set_recursive_hash(recursive_levels, 0, proof_root_hash);
+    drop(_g);
+
+    let start = std::time::Instant::now();
+    assert!(GLOBAL_MST.get().unwrap().read().unwrap().is_integral());
+    tracing::info!("verify global mst in {:?}", start.elapsed());
+
+    circuit_registry
+        .get_root_circuit()
+        .verify(root_proof.clone())
+        .expect("fail to verify root proof");
+
+    tracing::info!(
+        "finish recursive proving {} subproofs in {:?}",
+        batch_proof_num,
+        start.elapsed()
+    );
+
+    let root_vd_digest = circuit_registry.get_root_circuit().verifier_only.circuit_digest;
+
+    let root_circuit_verifier_data = circuit_registry.get_root_circuit().verifier_data();
+
+    let root_circuit_verifier_data_bytes = root_circuit_verifier_data
+        .to_bytes(&DefaultGateSerializer)
+        .expect("fail to serialize root circuit verifier data");
+    let root_circuit_verifier_data_hex_str = hex::encode(root_circuit_verifier_data_bytes);
+
+    let proof = Proof {
+        general: General {
+            round_num: cfg.prover.round_no,
+            recursion_branchout_num: RECURSION_BRANCHOUT_NUM,
+            batch_size: batch_size,
+            token_num: token_num,
+        },
+        circuits_info: Some(CircuitsInfo {
+            batch_circuit_config: batch_circuit_config,
+            recursive_circuit_configs: recursive_circuit_configs,
+            root_verifier_data_hex: root_circuit_verifier_data_hex_str,
+        }),
+        root_vd_digest: root_vd_digest,
+        proof: root_proof,
+    };
+
+    // persist gmst to database
+
+    let global_mst = GLOBAL_MST.get().unwrap();
+
+    let _g = global_mst.read().expect("unable to get a lock");
+    let root_hash = _g.get_root().expect("no root");
+    tracing::info!("root hash is {:?}", root_hash);
+    let start = std::time::Instant::now();
+    _g.persist(&mut database);
+    tracing::info!("persist gmst to db in {:?}", start.elapsed());
+
+    dump_proofs(&cfg.prover, proof_output_path, database, &proof)?;
+    tracing::info!("finish dumping global proof and user proofs in {:?}", start.elapsed());
+
+    return Ok(());
+}
+
+#[cfg(feature = "async")]
+fn build_and_prove_batch(
+    accounts: &Vec<Account>,
+    batch_size: usize,
+    batch_idx_base: usize,
+    circuit_registry: &CircuitRegistry<RECURSION_BRANCHOUT_NUM>,
+    batch_prove_threads_num: usize,
+) {
+    if accounts.is_empty() {
+        return;
+    }
+
+    // build merkle sum tree for each batch of accounts
+    // the number of accounts in each batch is batch_size
+    // the number of threads to prove each batch is batch_prove_threads_num
+    tracing::debug!("start to build and prove merkle sum tree for {} accounts", accounts.len());
+    let msts: Vec<MerkleSumTree> = accounts
+        .par_chunks(batch_size)
+        .map(|account_batch| MerkleSumTree::new_tree_from_accounts(&account_batch.to_vec()))
+        .collect();
+
+    let global_mst = GLOBAL_MST.get().unwrap();
+    let mut _g: std::sync::RwLockWriteGuard<GlobalMst> =
+        global_mst.write().expect("unable to get a lock");
+
+    let root_hashes: Vec<HashOut<F>> = msts
+        .into_iter()
+        .enumerate()
+        .map(|(i, mst)| {
+            let batch_idx = batch_idx_base + i;
+            mst.merkle_sum_tree.iter().enumerate().for_each(|(j, node)| {
+                _g.set_batch_hash(batch_idx, j, node.hash);
+            });
+            mst.get_root().hash
+        })
+        .collect();
+    drop(_g);
+
+    let proofs: Vec<
+        plonky2::plonk::proof::ProofWithPublicInputs<
+            plonky2_field::goldilocks_field::GoldilocksField,
+            plonky2::plonk::config::PoseidonGoldilocksConfig,
+            2,
+        >,
+    > = batch_prove_accounts(
+        &circuit_registry,
+        accounts.to_vec(),
+        batch_prove_threads_num,
+        batch_size,
+    );
+
+    assert_eq!(proofs.len(), root_hashes.len());
+
+    proofs.iter().zip(root_hashes.iter()).enumerate().for_each(|(i, (proof, root_hash))|{
+            let batch_idx = batch_idx_base + i;
+            // exclude the first two pub inputs for equity and debt
+            let hash_offset = MerkleSumNodeTarget::pub_input_root_hash_offset();
+            let proof_root_hash = HashOut::<F>::from_partial(&proof.public_inputs[hash_offset]);
+            if proof_root_hash != *root_hash {
+                panic!("The root hash in proof is not equal to the one generated by merkle sum tree for batch {}", batch_idx);
+            }
+        });
+
+    println!(
+        "finish proving {} accounts in {} batches, generating {} proofs",
+        accounts.len(),
+        proofs.len(),
+        proofs.len()
+    );
+
+    let global_batch_proofs = GLOBAL_BATCH_PROOFS.get().unwrap();
+    let mut batch_proofs = global_batch_proofs.write().expect("unable to get a lock");
+    let batch_proofs_offset_start = batch_proofs.len();
+    batch_proofs.extend(proofs);
+    let batch_proofs_offset_end = batch_proofs.len();
+    drop(batch_proofs);
+
+    let global_batch_proofs_index = GLOBAL_BATCH_PROOFS_INDEX.get().unwrap();
+    let mut batch_proofs_index = global_batch_proofs_index.write().expect("unable to get a lock");
+    batch_proofs_index[batch_idx_base] = (batch_proofs_offset_start, batch_proofs_offset_end);
+    drop(batch_proofs_index);
+}
+
+#[cfg(feature = "async")]
+pub async fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRError> {
+    let trace_cfg: TraceConfig = cfg.log.into();
+
+    let _g = init_tracing(trace_cfg);
+    let user_proof_output_path = proof_output_path.join(USER_PROOF_DIRNAME);
+    ensure_output_dir_empty(user_proof_output_path)?;
+
+    let mut database = init_db(cfg.db);
+
+    let batch_size = cfg.prover.batch_size.unwrap_or(DEFAULT_BATCH_SIZE);
+    let token_num = cfg.prover.tokens.len();
+    let batch_prove_threads_num = cfg.prover.batch_prove_threads_num;
+    let recursive_prove_threads_num = cfg.prover.recursive_prove_threads_num;
+
+    // the path to dump the final generated proof
+    let file_manager = FileManager {};
+    let mut account_parser = FileAccountReader::new(
+        FilesCfg {
+            dir: std::path::PathBuf::from_str(&cfg.prover.user_data_path).unwrap(),
+            batch_size: batch_size,
+            tokens: cfg.prover.tokens.clone(),
+        },
+        &file_manager,
+    );
+    account_parser.log_state();
+
+    let batch_num = account_parser.total_num_of_users().div_ceil(batch_size);
+
+    match GLOBAL_MST.set(RwLock::new(GlobalMst::new(GlobalConfig {
+        num_of_tokens: token_num,
+        num_of_batches: batch_num,
+        batch_size: batch_size,
+        recursion_branchout_num: RECURSION_BRANCHOUT_NUM,
+    }))) {
+        Ok(_) => (),
+        Err(_) => {
+            panic!("set global mst error");
+        }
+    }
+
+    // initialize global batch proofs and index.
+    // global batch proofs: is a buffer to store all the proofs generated in each batch in an unordered manner since it is generated by async tasks
+    // global batch proofs index: is a vector of tuples (start, end) to indicate the start and end index of each batch proofs in the global batch proofs buffer.
+    //        It is used to order the proofs after all tasks are finished.
+    match GLOBAL_BATCH_PROOFS.set(RwLock::new(Vec::with_capacity(batch_num))) {
+        Ok(_) => (),
+        Err(_) => {
+            panic!("set global batch proofs error");
+        }
+    }
+    match GLOBAL_BATCH_PROOFS_INDEX.set(RwLock::new(vec![(0, 0); batch_num])) {
+        Ok(_) => (),
+        Err(_) => {
+            panic!("set global batch proofs index error");
+        }
+    }
+
+    let recursive_circuit_configs =
+        get_recursive_circuit_configs::<RECURSION_BRANCHOUT_NUM>(batch_num);
+    let recursive_level = recursive_circuit_configs.len();
+
+    tracing::info!(
+        "start to precompute circuits and empty proofs for {} recursive levels",
+        recursive_level
+    );
+    let batch_circuit_config = STANDARD_CONFIG;
+    let circuit_registry = Arc::new(CircuitRegistry::<RECURSION_BRANCHOUT_NUM>::init(
+        batch_size,
+        token_num,
+        batch_circuit_config.clone(),
+        recursive_circuit_configs.clone(),
+    ));
+
+    tracing::info!(
+        "start to prove {} accounts with {} tokens, {} batch size, {} recursive level",
+        account_parser.total_num_of_users(),
+        token_num,
+        batch_size,
+        recursive_level,
+    );
+
+    let start = std::time::Instant::now();
+    let mut offset = 0;
+    let per_parse_account_num =
+        calculate_per_parse_account_num(batch_size, batch_prove_threads_num);
+
+    let mut parse_num = 0;
+    let bar = ProgressBar::new(account_parser.total_num_of_users() as u64);
+    let mut batch_offset = 0;
+    #[cfg(feature = "async")]
+    let mut task_handles: Vec<task::JoinHandle<()>> = vec![];
+    while offset < account_parser.total_num_of_users() {
+        parse_num += 1;
+        let mut accounts =
+            account_parser.read_n_accounts(offset, per_parse_account_num, &file_manager);
+
+        persist_account_id_to_gmst_pos(&mut database, &accounts, offset);
+
+        let account_num = accounts.len();
+        if account_num % batch_size != 0 {
+            let pad_num = batch_size - account_num % batch_size;
+            tracing::info!("in {} parse, account number {} is not a multiple of batch size {}, hence padding {} empty accounts", parse_num, account_num, batch_size,pad_num);
+            accounts.resize(account_num + pad_num, Account::get_empty_account(token_num));
+        }
+
+        assert_eq!(accounts.len() % batch_size, 0);
+
+        tracing::debug!(
+            "parse {} times, with number of accounts {}, number of batches {}",
+            parse_num,
+            account_num,
+            batch_num,
+        );
+
+        let batch_offset_copy = batch_offset;
+        let accounts_num = accounts.len();
+
+        #[cfg(feature = "async")]
+        {
+            let circuit_registry_copy = circuit_registry.clone();
+            task_handles.push(task::spawn(async move {
+                build_and_prove_batch(
+                    &accounts,
+                    batch_size,
+                    batch_offset_copy,
+                    &circuit_registry_copy,
+                    batch_prove_threads_num,
+                );
+            }));
+        }
+        #[cfg(not(feature = "async"))]
+        build_and_prove_batch(
+            &accounts,
+            batch_size,
+            batch_offset_copy,
+            &circuit_registry,
+            batch_prove_threads_num,
+        );
+        batch_offset += accounts_num / batch_size;
+
+        tracing::debug!(
+            "queued {} batches of accounts in {} parse, since start {:?}",
+            batch_num,
+            parse_num,
+            start.elapsed()
+        );
+
+        bar.inc(account_num as u64);
+        offset += per_parse_account_num;
+    }
+    bar.finish();
+
+    // wait for all tasks to finish
+    #[cfg(feature = "async")]
+    for handle in task_handles {
+        handle.await.expect("await task failed");
+    }
+
+    // order the batch proofs
+    let unordered_batch_proofs =
+        GLOBAL_BATCH_PROOFS.get().unwrap().write().expect("unable to get a lock");
+    let mut batch_proofs = unordered_batch_proofs.clone();
+    let batch_proof_num = batch_proofs.len();
+    let mut ordered_batch_idx = 0;
+    let batch_proofs_order =
+        GLOBAL_BATCH_PROOFS_INDEX.get().unwrap().write().expect("unable to get a lock");
+    while ordered_batch_idx < batch_num {
+        let (batch_proofs_offset_start, batch_proofs_offset_end) = batch_proofs_order[ordered_batch_idx];
+        let step = batch_proofs_offset_end - batch_proofs_offset_start;
+        batch_proofs.splice(
+            ordered_batch_idx..ordered_batch_idx + step,
+            unordered_batch_proofs[batch_proofs_offset_start..batch_proofs_offset_end].to_vec(),
+        );
+        ordered_batch_idx += step;
+    }
+
+    tracing::info!(
+        "finish batch proving {} accounts, generating {} proofs in {:?}",
+        account_parser.total_num_of_users(),
+        batch_proof_num,
+        start.elapsed()
+    );
+
+    let (batch_circuit, _) = circuit_registry.get_batch_circuit();
+    let mut last_level_circuit_vd = batch_circuit.verifier_only.clone();
+    let mut last_level_proofs = batch_proofs.clone();
+    let recursive_levels = circuit_registry.get_recursive_levels();
+
+    // level 0 for mst root hash
+    for level in 1..=recursive_levels {
+        let start = std::time::Instant::now();
+        let last_level_vd_digest = last_level_circuit_vd.circuit_digest;
+        let last_level_empty_proof = circuit_registry
+            .get_empty_proof(&last_level_vd_digest)
+            .expect(
+                format!("fail to find empty proof for circuit vd {:?}", last_level_vd_digest)
+                    .as_str(),
+            )
+            .clone();
+
+        let subproof_len = last_level_proofs.len();
+
+        tracing::info!(
+            "start to recursively prove {} subproofs at level {}/{}",
+            subproof_len,
+            level,
+            recursive_levels,
+        );
+
+        if subproof_len % RECURSION_BRANCHOUT_NUM != 0 {
+            let pad_num = RECURSION_BRANCHOUT_NUM - subproof_len % RECURSION_BRANCHOUT_NUM;
+            tracing::info!("At level {}, {} subproofs are not a multiple of RECURSION_BRANCHOUT_NUM {}, hence padding {} empty proofs. ", level, subproof_len, RECURSION_BRANCHOUT_NUM, pad_num);
+
+            last_level_proofs.resize(subproof_len + pad_num, last_level_empty_proof);
+        }
+
+        let global_mst = GLOBAL_MST.get().unwrap();
+        let mut _g = global_mst.write().expect("unable to get a lock");
+        last_level_proofs.iter().enumerate().for_each(|(i, proof)| {
+            let hash_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_hash_offset();
+            let proof_root_hash = HashOut::<F>::from_partial(&proof.public_inputs[hash_offset]);
+
+            _g.set_recursive_hash(level - 1, i, proof_root_hash);
+        });
+        drop(_g);
+
+        let this_level_proofs: Vec<
+            plonky2::plonk::proof::ProofWithPublicInputs<
+                plonky2_field::goldilocks_field::GoldilocksField,
+                plonky2::plonk::config::PoseidonGoldilocksConfig,
+                2,
+            >,
+        > = prove_subproofs(
+            last_level_proofs.to_vec(),
             last_level_circuit_vd.clone(),
             &circuit_registry,
             recursive_prove_threads_num,

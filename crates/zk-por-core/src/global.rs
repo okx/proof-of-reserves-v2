@@ -21,6 +21,14 @@ pub struct GlobalConfig {
 
 pub static GLOBAL_MST: OnceCell<RwLock<GlobalMst>> = OnceCell::new();
 
+pub static GLOBAL_BATCH_PROOFS: OnceCell<RwLock<Vec<plonky2::plonk::proof::ProofWithPublicInputs<
+    plonky2_field::goldilocks_field::GoldilocksField,
+    plonky2::plonk::config::PoseidonGoldilocksConfig,
+    2,
+>>>> = OnceCell::new();
+
+pub static GLOBAL_BATCH_PROOFS_INDEX: OnceCell<RwLock<Vec<(usize,usize)>>> = OnceCell::new();
+
 pub struct GlobalMst {
     pub inner: Vec<HashOut<F>>,
     top_recursion_level: usize,

@@ -17,7 +17,8 @@ export NUM_OF_GPUS=1
 # cargo run --release --features=cuda --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_dir_path}
 
 # CPU (no vectorization)
-cargo run --release --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_dir_path}
+cargo run --release --package zk-por-cli --features=async --bin zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_dir_path}
+# cargo run --package zk-por-cli --features=async --bin zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_dir_path}
 
 # CPU (with AVX512)
 # RUSTFLAGS="-C target-cpu=native -C target-feature=+avx2,+avx512dq" cargo run --release --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_dir_path}
