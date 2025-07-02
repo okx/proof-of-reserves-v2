@@ -4,7 +4,6 @@ use std::{
     str::FromStr,
 };
 
-#[cfg(feature = "async")]
 use async_trait::async_trait;
 
 use clap::{Parser, Subcommand};
@@ -26,15 +25,9 @@ struct Cli {
     command: Option<ZkPorCommands>,
 }
 
-#[cfg(feature = "async")]
 #[async_trait]
 pub trait Execute {
     async fn execute(&self) -> std::result::Result<(), PoRError>;
-}
-
-#[cfg(not(feature = "async"))]
-pub trait Execute {
-    fn execute(&self) -> std::result::Result<(), PoRError>;
 }
 
 #[derive(Subcommand)]
@@ -65,7 +58,6 @@ pub enum ZkPorCommands {
     ShowCommitHash,
 }
 
-#[cfg(feature = "async")]
 #[async_trait]
 impl Execute for Option<ZkPorCommands> {
     async fn execute(&self) -> std::result::Result<(), PoRError> {
@@ -75,89 +67,11 @@ impl Execute for Option<ZkPorCommands> {
                     .map_err(|e| PoRError::ConfigError(e))?;
                 let prover_cfg = cfg.try_deserialize().unwrap();
                 let output_path = PathBuf::from_str(&output_path).unwrap();
-                let _r = prove(prover_cfg, output_path).await.expect("Failed to prove");
-                Ok(())
-            }
-
-            Some(ZkPorCommands::CheckNonNegUser { cfg_path }) => {
-                let cfg = zk_por_core::config::ProverConfig::load(&cfg_path)
-                    .map_err(|e| PoRError::ConfigError(e))?;
-                let prover_cfg = cfg.try_deserialize().unwrap();
-                check_non_neg_user(prover_cfg)
-            }
-
-            Some(ZkPorCommands::VerifyGlobal { proof_path: global_proof_path }) => {
-                let global_proof_path = PathBuf::from_str(&global_proof_path).unwrap();
-                verify_global(global_proof_path, true, true)
-            }
-
-            Some(ZkPorCommands::VerifyUser { global_proof_path, user_proof_path_pattern }) => {
-                let global_proof_path = PathBuf::from_str(&global_proof_path).unwrap();
-                verify_user(global_proof_path, user_proof_path_pattern, true)
-            }
-
-            Some(ZkPorCommands::ShowCommitHash) => {
-                let commit_hash = option_env!("COMMIT_HASH").unwrap_or("n.a.");
-                println!("\tCOMMIT_HASH: {}", commit_hash);
-                Ok(())
-            }
-
-            None => {
-                println!("============Validation started============");
-
-                let exec_parent_path = std::env::current_exe()
-                    .expect("fail to get current exe path")
-                    .parent()
-                    .unwrap()
-                    .to_path_buf();
-
-                // join the dir path and GLOBAL_PROOF_FILENAME
-                let global_proof_path = exec_parent_path.join(GLOBAL_PROOF_FILENAME);
-
-                let user_proof_path_pattern = exec_parent_path
-                    .join(DEFAULT_USER_PROOF_FILE_PATTERN)
-                    .to_str()
-                    .unwrap()
-                    .to_string();
-
-                let global_result = verify_global(global_proof_path.clone(), false, false);
-                let user_result = verify_user(global_proof_path, &user_proof_path_pattern, false);
-
-                if global_result.is_ok() {
-                    println!("Total sum and non-negative constraint validation passed");
-                } else {
-                    println!("Total sum and non-negative constraint validation failed");
-                }
-
-                if user_result.is_ok() {
-                    println!("Inclusion constraint validation passed");
-                } else {
-                    println!("Inclusion constraint validation failed");
-                }
-                println!("============Validation finished============");
-
-                if global_result.is_err() {
-                    global_result
-                } else if user_result.is_err() {
-                    user_result
-                } else {
-                    Ok(())
-                }
-            }
-        }
-    }
-}
-
-#[cfg(not(feature = "async"))]
-impl Execute for Option<ZkPorCommands> {
-    fn execute(&self) -> std::result::Result<(), PoRError> {
-        match self {
-            Some(ZkPorCommands::Prove { cfg_path, output_path }) => {
-                let cfg = zk_por_core::config::ProverConfig::load(&cfg_path)
-                    .map_err(|e| PoRError::ConfigError(e))?;
-                let prover_cfg = cfg.try_deserialize().unwrap();
-                let output_path = PathBuf::from_str(&output_path).unwrap();
-                prove(prover_cfg, output_path)
+                #[cfg(not(feature = "async"))]
+                let r: std::result::Result<(), PoRError> = prove(prover_cfg, output_path);
+                #[cfg(feature = "async")]
+                let r: std::result::Result<(), PoRError> = prove(prover_cfg, output_path).await;
+                r
             }
 
             Some(ZkPorCommands::CheckNonNegUser { cfg_path }) => {
@@ -237,11 +151,7 @@ async fn main() {
     let cli = Cli::parse();
     let start = std::time::Instant::now();
 
-    #[cfg(feature = "async")]
-    let r = cli.command.execute().await.expect("Failed to execute command");
-
-    #[cfg(not(feature = "async"))]
-    let r = cli.command.execute();
+    let r = cli.command.execute().await.expect("Failed to execute command!");
 
     let duration = start.elapsed();
     println!("Execution result: {:?}, duration: {:?}", r, duration);
