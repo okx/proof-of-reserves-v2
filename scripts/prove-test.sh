@@ -7,7 +7,7 @@ cp ${cfg_dir_path}/default.toml ${cfg_dir_path}/local.toml
 sed -i 's|/opt/data/zkpor/users/|test-data/user-data|g' config/local.toml
 rm -rf ${output_proof_dir_path}
 
-FEATURES_CPU="--features=async"
+FEATURES_CPU="--features=no_cuda,async"
 FEATURES_GPU="--features=cuda,async"
 
 export FORCE_SINGLE_GPU=true

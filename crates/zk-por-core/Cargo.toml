@@ -17,6 +17,7 @@ categories.workspace = true
 default = []
 verifier = []
 cuda = ["zeknox/cuda","plonky2/cuda","plonky2/batch"]
+no_cuda = ["zeknox/no_cuda"]
 
 [dependencies]
 zk-por-db={path="../zk-por-db", optional = true}

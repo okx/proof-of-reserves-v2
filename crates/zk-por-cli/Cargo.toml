@@ -16,6 +16,7 @@ categories.workspace = true
 [features]
 default = []
 cuda = ["zeknox/cuda","plonky2/cuda","plonky2/batch"]
+no_cuda = ["zeknox/no_cuda"]
 async = []
 
 [dependencies]
