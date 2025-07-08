@@ -31,9 +31,9 @@ once_cell = "1.14"
 static_assertions = { version = "1.1.0", default-features = false }
 unroll = { version = "0.1.5", default-features = false }
 # zkp
-plonky2 = { git = "https://github.com/okx/plonky2", rev ="5e0fd65677efc8ebccebb2774875d060ab2ee9a2"}
-plonky2_field = { git = "https://github.com/okx/plonky2", rev ="5e0fd65677efc8ebccebb2774875d060ab2ee9a2"}
-zeknox = { git = "https://github.com/okx/zeknox", rev = "fb6f60f8a05b824d17a471284a4ed097d2bab26a" }
+plonky2 = { git = "https://github.com/okx/plonky2", rev ="3273a2bf002366142e494da6df71dfedd404d609"}
+plonky2_field = { git = "https://github.com/okx/plonky2", rev ="3273a2bf002366142e494da6df71dfedd404d609"}
+zeknox = { git = "https://github.com/okx/zeknox", rev = "8ec83b1ea3d22a283f02341e2eb5115c8b939d87" }
 # plonky2 = { path = "../plonky2/plonky2" }
 # plonky2_field = { path = "../plonky2/field" }
 # zeknox = { path = "../zeknox/wrappers/rust" }
