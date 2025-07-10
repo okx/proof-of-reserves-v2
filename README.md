@@ -16,6 +16,29 @@ OKX's PoR uses Zero-knowledge (ZK) Merkle Sum Tree technology to allow each user
 basis of protecting user's privacy. We use Plonky2 to build the proofs of users' assets using a Merkle Sum Tree. A detailed documentation of the technical solution can be found in the [technical specs doc](./docs/technical_spec.md).
 
 ## How to Run
+
+### Prerequisites
+- Rust
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+- GCC
+```
+sudo apt install build-essential
+```
+- [optional] for GPU execution, install [CUDA](https://developer.nvidia.com/cuda-downloads), [Nvidia drivers](https://www.nvidia.com/Download/index.aspx/), and [zeknox Goldilocks version](https://github.com/okx/zeknox/releases/tag/v1.0.1). For example, on Ubuntu 24.04 LTS, run the following commands to install CUDA 12.9, Nvidia driver 575, and zeknox 1.0.1:
+```
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo apt-get update
+sudo apt-get -y install cuda-toolkit-12-9 nvidia-driver-575
+wget https://github.com/okx/zeknox/releases/download/v1.0.1/gl64-86-89-90-libzeknox.a
+wget https://github.com/okx/zeknox/releases/download/v1.0.1/libblst.a
+sudo cp gl64-86-89-90-libzeknox.a /usr/local/lib/libzeknox.a
+sudo cp libblst.a /usr/local/lib/
+```
+
+### Run
 - generate test data
 ```
 file_num=10
