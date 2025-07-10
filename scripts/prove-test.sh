@@ -19,7 +19,6 @@ export NUM_OF_GPUS=1
 # GPU (with AVX512)
 # RUSTFLAGS="-C target-cpu=native -C target-feature=+avx2,+avx512dq" cargo run --release ${FEATURES_GPU} --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_dir_path}
 
-
 # CPU (no vectorization)
 # cargo run --release ${FEATURES_CPU} --package zk-por-cli --bin zk-por-cli prove --cfg-path ${cfg_dir_path} --output-path ${output_proof_dir_path}
 
