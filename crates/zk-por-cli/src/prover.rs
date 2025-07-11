@@ -64,6 +64,9 @@ fn ensure_output_dir_empty(user_proof_dir: PathBuf) -> Result<(), PoRError> {
 
 #[cfg(not(feature = "async"))]
 pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRError> {
+    #[cfg(feature = "timing")]
+    let mut wct = std::time::Instant::now();
+
     let trace_cfg: TraceConfig = cfg.log.into();
 
     let _g = init_tracing(trace_cfg);
@@ -103,6 +106,12 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
         }
     }
 
+    #[cfg(feature = "timing")]
+    {
+    println!("Init duration: {:?}", wct.elapsed());
+    wct = std::time::Instant::now();
+    }
+
     let recursive_circuit_configs =
         get_recursive_circuit_configs::<RECURSION_BRANCHOUT_NUM>(batch_num);
     let recursive_level = recursive_circuit_configs.len();
@@ -118,6 +127,12 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
         batch_circuit_config.clone(),
         recursive_circuit_configs.clone(),
     );
+
+    #[cfg(feature = "timing")]
+    {
+    println!("CircuitRegistry duration: {:?}", wct.elapsed());
+    wct = std::time::Instant::now();
+    }
 
     tracing::info!(
         "start to prove {} accounts with {} tokens, {} batch size, {} recursive level",
@@ -209,6 +224,12 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
         offset += per_parse_account_num;
     }
     bar.finish();
+
+    #[cfg(feature = "timing")]
+    {
+    println!("Batch proving duration: {:?}", wct.elapsed());
+    wct = std::time::Instant::now();
+    }
 
     tracing::info!(
         "finish batch proving {} accounts, generating {} proofs in {:?}",
@@ -315,6 +336,12 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
         .verify(root_proof.clone())
         .expect("fail to verify root proof");
 
+    #[cfg(feature = "timing")]
+    {
+    println!("Recursive proving duration: {:?}", wct.elapsed());
+    wct = std::time::Instant::now();
+    }
+
     tracing::info!(
         "finish recursive proving {} subproofs in {:?}",
         batch_proof_num,
@@ -359,6 +386,9 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
 
     dump_proofs(&cfg.prover, proof_output_path, database, &proof)?;
     tracing::info!("finish dumping global proof and user proofs in {:?}", start.elapsed());
+
+    #[cfg(feature = "timing")]
+    println!("Dump proofs duration: {:?}", wct.elapsed());
 
     return Ok(());
 }
@@ -448,6 +478,9 @@ fn build_and_prove_batch(
 
 #[cfg(feature = "async")]
 pub async fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRError> {
+    #[cfg(feature = "timing")]
+    let mut wct = std::time::Instant::now();
+
     let trace_cfg: TraceConfig = cfg.log.into();
 
     let _g = init_tracing(trace_cfg);
@@ -504,6 +537,12 @@ pub async fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), 
         }
     }
 
+    #[cfg(feature = "timing")]
+    {
+    println!("Init duration: {:?}", wct.elapsed());
+    wct = std::time::Instant::now();
+    }
+
     let recursive_circuit_configs =
         get_recursive_circuit_configs::<RECURSION_BRANCHOUT_NUM>(batch_num);
     let recursive_level = recursive_circuit_configs.len();
@@ -519,6 +558,12 @@ pub async fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), 
         batch_circuit_config.clone(),
         recursive_circuit_configs.clone(),
     ));
+
+    #[cfg(feature = "timing")]
+    {
+    println!("Circuit registry duration: {:?}", wct.elapsed());
+    wct = std::time::Instant::now();
+    }
 
     tracing::info!(
         "start to prove {} accounts with {} tokens, {} batch size, {} recursive level",
@@ -621,6 +666,12 @@ pub async fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), 
             unordered_batch_proofs[batch_proofs_offset_start..batch_proofs_offset_end].to_vec(),
         );
         ordered_batch_idx += step;
+    }
+
+    #[cfg(feature = "timing")]
+    {
+    println!("Batch proving duration: {:?}", wct.elapsed());
+    wct = std::time::Instant::now();
     }
 
     tracing::info!(
@@ -732,6 +783,12 @@ pub async fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), 
         .verify(root_proof.clone())
         .expect("fail to verify root proof");
 
+    #[cfg(feature = "timing")]
+    {
+    println!("Recursive proving duration: {:?}", wct.elapsed());
+    wct = std::time::Instant::now();
+    }
+
     tracing::info!(
         "finish recursive proving {} subproofs in {:?}",
         batch_proof_num,
@@ -776,6 +833,9 @@ pub async fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), 
 
     dump_proofs(&cfg.prover, proof_output_path, database, &proof)?;
     tracing::info!("finish dumping global proof and user proofs in {:?}", start.elapsed());
+
+    #[cfg(feature = "timing")]
+    println!("Dump proofs duration: {:?}", wct.elapsed());
 
     return Ok(());
 }

@@ -18,6 +18,7 @@ default = []
 cuda = ["zeknox/cuda","plonky2/cuda","plonky2/batch"]
 no_cuda = ["zeknox/no_cuda"]
 async = []
+timing = []
 
 [dependencies]
 zk-por-tracing={path="../zk-por-tracing"}
