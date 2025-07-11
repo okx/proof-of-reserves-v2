@@ -64,6 +64,8 @@ fn ensure_output_dir_empty(user_proof_dir: PathBuf) -> Result<(), PoRError> {
 
 #[cfg(not(feature = "async"))]
 pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRError> {
+    let start = std::time::Instant::now();
+
     let trace_cfg: TraceConfig = cfg.log.into();
 
     let _g = init_tracing(trace_cfg);
@@ -118,6 +120,8 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
         batch_circuit_config.clone(),
         recursive_circuit_configs.clone(),
     );
+
+    tracing::info!("init and circuit registry init took {:?}", start.elapsed());
 
     tracing::info!(
         "start to prove {} accounts with {} tokens, {} batch size, {} recursive level",
@@ -224,6 +228,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
     let mut last_level_proofs = batch_proofs;
     let recursive_levels = circuit_registry.get_recursive_levels();
 
+    let start_recursive = std::time::Instant::now();
     // level 0 for mst root hash
     for level in 1..=recursive_levels {
         let start = std::time::Instant::now();
@@ -318,7 +323,7 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
     tracing::info!(
         "finish recursive proving {} subproofs in {:?}",
         batch_proof_num,
-        start.elapsed()
+        start_recursive.elapsed()
     );
 
     let root_vd_digest = circuit_registry.get_root_circuit().verifier_only.circuit_digest;
@@ -448,6 +453,8 @@ fn build_and_prove_batch(
 
 #[cfg(feature = "async")]
 pub async fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRError> {
+    let start = std::time::Instant::now();
+
     let trace_cfg: TraceConfig = cfg.log.into();
 
     let _g = init_tracing(trace_cfg);
@@ -519,6 +526,8 @@ pub async fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), 
         batch_circuit_config.clone(),
         recursive_circuit_configs.clone(),
     ));
+
+    tracing::info!("init and circuit registry init took {:?}", start.elapsed());
 
     tracing::info!(
         "start to prove {} accounts with {} tokens, {} batch size, {} recursive level",
@@ -635,6 +644,7 @@ pub async fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), 
     let mut last_level_proofs = batch_proofs.clone();
     let recursive_levels = circuit_registry.get_recursive_levels();
 
+    let start_recursive = std::time::Instant::now();
     // level 0 for mst root hash
     for level in 1..=recursive_levels {
         let start = std::time::Instant::now();
@@ -735,7 +745,7 @@ pub async fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), 
     tracing::info!(
         "finish recursive proving {} subproofs in {:?}",
         batch_proof_num,
-        start.elapsed()
+        start_recursive.elapsed()
     );
 
     let root_vd_digest = circuit_registry.get_root_circuit().verifier_only.circuit_digest;
