@@ -1,9 +1,11 @@
+use crate::constant::MAX_PROOF_FILES_PER_FOLDER;
+
 use super::constant::{
     DEFAULT_BATCH_SIZE, GLOBAL_INFO_FILENAME, GLOBAL_PROOF_FILENAME, RECURSION_BRANCHOUT_NUM,
     USER_PROOF_DIRNAME,
 };
 use indicatif::ProgressBar;
-use plonky2::{hash::hash_types::HashOut, util::serialization::DefaultGateSerializer};
+use plonky2::{hash::hash_types::HashOut, util::{ceil_div_usize, serialization::DefaultGateSerializer}};
 use plonky2_field::types::PrimeField64;
 use rayon::{iter::ParallelIterator, prelude::*};
 
@@ -69,8 +71,6 @@ pub fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), PoRErr
     let trace_cfg: TraceConfig = cfg.log.into();
 
     let _g = init_tracing(trace_cfg);
-    let user_proof_output_path = proof_output_path.join(USER_PROOF_DIRNAME);
-    ensure_output_dir_empty(user_proof_output_path)?;
 
     let mut database = init_db(cfg.db);
 
@@ -458,8 +458,6 @@ pub async fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), 
     let trace_cfg: TraceConfig = cfg.log.into();
 
     let _g = init_tracing(trace_cfg);
-    let user_proof_output_path = proof_output_path.join(USER_PROOF_DIRNAME);
-    ensure_output_dir_empty(user_proof_output_path)?;
 
     let mut database = init_db(cfg.db);
 
@@ -796,7 +794,8 @@ fn dump_proofs(
     db: Box<dyn PoRDB>,
     root_proof: &Proof,
 ) -> Result<(), PoRError> {
-    let user_proof_output_dir_path = proof_output_dir_path.join(USER_PROOF_DIRNAME); // directory has been checked empty before.
+    let prefix_user_proof_output_dir_path = proof_output_dir_path.join(USER_PROOF_DIRNAME);
+    ensure_output_dir_empty(proof_output_dir_path.clone())?;
 
     let global_proof_output_path = proof_output_dir_path.join(GLOBAL_PROOF_FILENAME);
     let global_proof_file =
@@ -871,12 +870,39 @@ fn dump_proofs(
     let per_parse_account_num =
         calculate_per_parse_account_num(batch_size, cfg.batch_prove_threads_num);
 
+    tracing::info!("per_parse_account_num: {}", per_parse_account_num);
+    let write_to_multiple_folders = user_num > MAX_PROOF_FILES_PER_FOLDER;
+    let mut proof_files_per_folder = MAX_PROOF_FILES_PER_FOLDER;
+    if write_to_multiple_folders {
+        let mut num_output_folders = ceil_div_usize(user_num, MAX_PROOF_FILES_PER_FOLDER);
+        if proof_files_per_folder < per_parse_account_num {
+            proof_files_per_folder = per_parse_account_num;
+            num_output_folders = ceil_div_usize(user_num, proof_files_per_folder)
+        }
+        tracing::info!("Dumping proofs to multiple folders ({} folders)", num_output_folders);
+        for i in 0..num_output_folders {
+            let user_proof_output_path = prefix_user_proof_output_dir_path.join(format!("_{}", i));
+            ensure_output_dir_empty(user_proof_output_path)?;
+        }
+    } else {
+        let user_proof_output_path = prefix_user_proof_output_dir_path.clone();
+        ensure_output_dir_empty(user_proof_output_path)?;
+    }
+
     let cdb: Arc<dyn PoRDB> = Arc::from(db);
     let mut offset = 0;
     let chunk_size: usize = num_cpus::get();
     while offset < account_reader.total_num_of_users() {
         let accounts: Vec<Account> =
             account_reader.read_n_accounts(offset, per_parse_account_num, &file_manager);
+
+        let user_proof_output_dir_path:PathBuf;
+        if write_to_multiple_folders {
+            let suffix = offset / proof_files_per_folder;
+            user_proof_output_dir_path = prefix_user_proof_output_dir_path.join(format!("_{}", suffix));
+        } else {
+            user_proof_output_dir_path = prefix_user_proof_output_dir_path.clone();
+        }
         accounts.chunks(chunk_size).for_each(|chunk| {
             chunk.par_iter().for_each(|account| {
                 let user_proof = MerkleProof::new_from_account(account, cdb.clone(), &global_cfg)

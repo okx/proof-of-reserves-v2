@@ -4,3 +4,4 @@ pub const GLOBAL_PROOF_FILENAME: &str = "sum_proof_data.json";
 pub const GLOBAL_INFO_FILENAME: &str = "global_info.json";
 pub const USER_PROOF_DIRNAME: &str = "user_proofs";
 pub const DEFAULT_USER_PROOF_FILE_PATTERN: &str = "*_inclusion_proof.json";
+pub const MAX_PROOF_FILES_PER_FOLDER: usize = 4194304;
