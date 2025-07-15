@@ -8,7 +8,9 @@ use indicatif::ProgressBar;
 use plonky2::{hash::hash_types::HashOut, util::{ceil_div_usize, serialization::DefaultGateSerializer}};
 use plonky2_field::types::PrimeField64;
 use rayon::{iter::ParallelIterator, prelude::*};
+use rocksdb::{DBCommon, DBWithThreadMode, MultiThreaded, Options, DB};
 
+use serde::Serialize;
 #[cfg(feature = "async")]
 use tokio::task;
 
@@ -782,7 +784,7 @@ pub async fn prove(cfg: ProverConfig, proof_output_path: PathBuf) -> Result<(), 
     _g.persist(&mut database);
     tracing::info!("persist gmst to db in {:?}", start.elapsed());
 
-    dump_proofs(&cfg.prover, proof_output_path, database, &proof)?;
+    dump_proofs_rocksdb(&cfg.prover, proof_output_path, database, &proof)?;
     tracing::info!("finish dumping global proof and user proofs in {:?}", start.elapsed());
 
     return Ok(());
@@ -928,6 +930,123 @@ fn dump_proofs(
                     format!("fail to write user proof file for account {}", user_proof.account.id)
                         .as_str(),
                 )
+            });
+
+            bar.inc(chunk.len() as u64);
+        });
+        offset += per_parse_account_num;
+    }
+    bar.finish();
+
+    return Ok(());
+}
+
+fn dump_proofs_rocksdb(
+    cfg: &ConfigProver,
+    proof_output_dir_path: PathBuf,
+    db: Box<dyn PoRDB>,
+    root_proof: &Proof,
+) -> Result<(), PoRError> {
+    let user_proof_output_dir_path = proof_output_dir_path.join(USER_PROOF_DIRNAME);
+    ensure_output_dir_empty(proof_output_dir_path.clone())?;
+    let proofs_db: DBWithThreadMode<MultiThreaded> = DBWithThreadMode::<MultiThreaded>::open_default(user_proof_output_dir_path).unwrap();
+
+    let global_proof_output_path = proof_output_dir_path.join(GLOBAL_PROOF_FILENAME);
+    let global_proof_file =
+        File::create(global_proof_output_path.clone()).map_err(|e| PoRError::Io(e))?;
+
+    let mut global_proof_writer = BufWriter::new(global_proof_file);
+    serde_json::to_writer(&mut global_proof_writer, &root_proof).expect(
+        format!("fail to dump global proof file to {:?}", global_proof_output_path).as_str(),
+    );
+    global_proof_writer.flush()?;
+
+    ///////////////////////////////////////////////
+    let hash_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_hash_offset();
+    let root_hash = HashOut::<F>::from_partial(&root_proof.proof.public_inputs[hash_offset]);
+    let root_hash_bytes = root_hash
+        .elements
+        .iter()
+        .map(|x| x.to_canonical_u64().to_le_bytes())
+        .flatten()
+        .collect::<Vec<u8>>();
+    let root_hash = hex::encode(root_hash_bytes);
+
+    let equity_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_equity_offset();
+    let equity_sum = root_proof.proof.public_inputs[equity_offset].to_canonical_u64();
+
+    let debt_offset = RecursiveTargets::<RECURSION_BRANCHOUT_NUM>::pub_input_debt_offset();
+    let debt_sum = root_proof.proof.public_inputs[debt_offset].to_canonical_u64();
+    assert!(equity_sum >= debt_sum);
+    let balance_sum = equity_sum - debt_sum;
+    let info = Info {
+        root_hash: root_hash,
+        equity_sum: equity_sum,
+        debt_sum: debt_sum,
+        balance_sum: balance_sum,
+    };
+
+    let global_info_output_path = proof_output_dir_path.join(GLOBAL_INFO_FILENAME);
+    let global_info_file =
+        File::create(global_info_output_path.clone()).map_err(|e| PoRError::Io(e))?;
+
+    let mut global_info_writer = BufWriter::new(global_info_file);
+    serde_json::to_writer(&mut global_info_writer, &info).expect(
+        format!("fail to dump global info file to {:?}", global_proof_output_path).as_str(),
+    );
+    global_info_writer.flush()?;
+
+    ///////////////////////////////////////////////
+    // generate and dump proof for each user
+    // create a new account reader to avoid buffering previously loaded accounts in memory
+    let file_manager = FileManager {};
+    let batch_size = cfg.batch_size.unwrap_or(DEFAULT_BATCH_SIZE);
+    let mut account_reader = FileAccountReader::new(
+        FilesCfg {
+            dir: std::path::PathBuf::from_str(&cfg.user_data_path).unwrap(),
+            batch_size: batch_size,
+            tokens: cfg.tokens.clone(),
+        },
+        &file_manager,
+    );
+
+    let global_cfg = GlobalConfig {
+        num_of_tokens: cfg.tokens.len(),
+        num_of_batches: account_reader.total_num_of_batches,
+        batch_size: batch_size,
+        recursion_branchout_num: RECURSION_BRANCHOUT_NUM,
+    };
+    let user_num = account_reader.total_num_of_users();
+
+    tracing::info!("start to generate and dump merkle proof for each of {} accounts", user_num);
+
+    let bar = ProgressBar::new(user_num as u64);
+    let per_parse_account_num =
+        calculate_per_parse_account_num(batch_size, cfg.batch_prove_threads_num);
+
+    let cdb: Arc<dyn PoRDB> = Arc::from(db);
+    let mut offset = 0;
+    let chunk_size: usize = num_cpus::get();
+    while offset < account_reader.total_num_of_users() {
+        let accounts: Vec<Account> =
+            account_reader.read_n_accounts(offset, per_parse_account_num, &file_manager);
+
+        accounts.chunks(chunk_size).for_each(|chunk| {
+            chunk.par_iter().for_each(|account| {
+                let user_proof = MerkleProof::new_from_account(account, cdb.clone(), &global_cfg)
+                    .expect(
+                        format!("fail to generate merkle proof for account {}", account.id)
+                            .as_str(),
+                    );
+
+                let serialized_user_proof = serde_json::to_string(&user_proof).expect(
+                    format!("fail to serialize user proof for account {}", account.id)
+                        .as_str(),
+                );
+                proofs_db.put(account.id.as_bytes(), serialized_user_proof.as_bytes()).expect(
+                    format!("fail to put into RocksDB user proof for account {}", account.id)
+                        .as_str(),
+                );
             });
 
             bar.inc(chunk.len() as u64);
